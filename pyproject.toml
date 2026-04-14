@@ -1,0 +1,16 @@
+[project]
+name = "gcforge"
+version = "0.1.0"
+description = "Add your description here"
+requires-python = ">=3.14"
+dependencies = [
+    "beautifulsoup4>=4.13.0",
+    "django>=6.0.3",
+    "keyring>=25.7.0",
+    "pillow>=12.2.0",
+    "pycountry>=24.6.1",
+    "requests>=2.32.0",
+    "srtm-py>=0.3.7",
+    "timezonefinder>=6.5.0",
+    "whitenoise>=6.9.0",
+]

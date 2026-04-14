@@ -1,0 +1,79 @@
+{% extends "geocaches/_import_base.html" %}
+{% block import_title %}Import GPX{% endblock %}
+{% block import_heading %}Import GPX{% endblock %}
+{% block form_action %}{% url 'geocaches:import_gpx' %}{% endblock %}
+
+{% block help_text %}
+<p class="text-muted small mb-3">
+  Import a <code>.gpx</code> file, a <code>.zip</code> archive, multiple files,
+  or a whole folder from geocaching.com or opencaching.de.
+  The file format is detected automatically.
+</p>
+{% endblock %}
+
+{% block file_field %}
+{% if recent_files %}
+<div class="mb-3">
+  <label class="form-label small fw-semibold">Recent imports</label>
+  <div class="list-group list-group-flush">
+    {% for rf in recent_files %}
+    <a href="#" class="list-group-item list-group-item-action py-1 px-2 small"
+       onclick="selectRecentGpx('{{ rf.path|escapejs }}'); return false;">
+      <span class="font-monospace">{{ rf.path }}</span>
+      <span class="text-muted ms-2">{{ rf.date }}</span>
+    </a>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+<div class="mb-3">
+  <label class="form-label small fw-semibold">File or folder path</label>
+  <div class="input-group input-group-sm">
+    <input type="text" name="gpx_path" id="gpx_path" class="form-control font-monospace"
+           placeholder="C:\Downloads\6588060.gpx or folder path"
+           data-detect-url="{% url 'geocaches:detect_gpx_format' %}">
+    <button type="button" class="btn btn-outline-secondary"
+            onclick="fbOpen('gpx_path', '.gpx,.zip')">Browse…</button>
+    <button type="button" class="btn btn-outline-secondary"
+            onclick="fbOpen('gpx_path', '.gpx,.zip', true)">Multi / Folder…</button>
+  </div>
+  <div class="form-text text-muted small">
+    Use <strong>Browse</strong> for a single file, or <strong>Multi / Folder</strong>
+    to select multiple files or an entire folder.
+  </div>
+  <div id="format-badge" class="mt-1" style="display:none">
+    <span id="format-label" class="badge bg-secondary"></span>
+  </div>
+</div>
+
+<div class="mb-3" id="wpts-group">
+  <label class="form-label small fw-semibold">Child waypoints</label>
+  <select name="include_wpts" id="include_wpts" class="form-select form-select-sm">
+    <option value="include" selected>Include child waypoints file</option>
+    <option value="exclude">Exclude child waypoints file</option>
+  </select>
+  <div class="form-text text-muted small" id="wpts-help">
+    When importing a <code>.gpx</code> file, the companion <code>-wpts.gpx</code>
+    file in the same folder is detected and imported automatically.
+    For <code>.zip</code> archives, waypoints inside the archive are always included.
+  </div>
+</div>
+
+<div class="mb-3">
+  <div class="form-check">
+    <input type="checkbox" class="form-check-input" name="delete_after_import" id="delete_after_import"
+           {% if delete_after_import %}checked{% endif %}>
+    <label class="form-check-label small" for="delete_after_import">
+      Delete source file(s) after successful import
+    </label>
+  </div>
+</div>
+{% endblock %}
+
+{% block submit_label %}Import GPX{% endblock %}
+
+{% block extra_js %}
+{% load static %}
+<script src="{% static 'js/gpx-detect.js' %}"></script>
+{% endblock %}

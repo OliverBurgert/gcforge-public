@@ -1,0 +1,41 @@
+{% extends "geocaches/_import_base.html" %}
+{% block import_title %}Import lab2gpx{% endblock %}
+{% block import_heading %}Import Adventure Lab Caches (lab2gpx){% endblock %}
+{% block form_action %}{% url 'geocaches:import_lab2gpx' %}{% endblock %}
+
+{% block help_text %}
+<p class="text-muted small mb-3">
+  Import a <code>.gpx</code> file exported by
+  <a href="https://gcutils.de/lab2gpx/" target="_blank" rel="noopener">lab2gpx</a>.
+  Both single-stage and multi-cache (waypoint) export formats are supported.
+</p>
+{% endblock %}
+
+{% block file_field %}
+{% if recent_files %}
+<div class="mb-3">
+  <label class="form-label small fw-semibold">Recent imports</label>
+  <div class="list-group list-group-flush">
+    {% for rf in recent_files %}
+    <a href="#" class="list-group-item list-group-item-action py-1 px-2 small"
+       onclick="document.querySelector('[name=lab2gpx_path]').value='{{ rf.path|escapejs }}'; return false;">
+      <span class="font-monospace">{{ rf.path }}</span>
+      <span class="text-muted ms-2">{{ rf.date }}</span>
+    </a>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+<div class="mb-3">
+  <label class="form-label small fw-semibold">File path</label>
+  <div class="input-group input-group-sm">
+    <input type="text" name="lab2gpx_path" class="form-control font-monospace"
+           placeholder="C:\Downloads\adventures.gpx">
+    <button type="button" class="btn btn-outline-secondary"
+            onclick="fbOpen('lab2gpx_path', '.gpx')">Browse…</button>
+  </div>
+</div>
+{% endblock %}
+
+{% block submit_label %}Import lab2gpx{% endblock %}

@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% block title %}Find duplicate GC/OC caches — GCForge{% endblock %}
+{% block content %}
+<div class="px-3 py-3" style="max-width:1200px">
+  <h5 class="mb-3">Find duplicate GC/OC caches</h5>
+
+  {% if total == 0 %}
+  <div class="card">
+    <div class="card-body">
+      <p class="mb-2">No duplicate GC/OC pairs found. All caches appear to be unique entries.</p>
+      <a href="{% url 'geocaches:list' %}" class="btn btn-primary btn-sm">Back to list</a>
+    </div>
+  </div>
+  {% else %}
+  <p class="text-muted small mb-2">
+    Found {{ total }} potential duplicate{{ total|pluralize }}: caches that exist as both a GC and OC record
+    within 15 m of each other. Merging keeps the GC record and adds the OC code, logs, and waypoints to it.
+    All merge actions are logged in <a href="{% url 'preferences:log' %}">the log</a>.
+    Pairs marked "don't fuse" are hidden here — manage them in
+    <a href="{% url 'geocaches:tools_manage_fused' %}">Manage fused caches</a>.
+  </p>
+
+  <form method="post" class="mb-3">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="merge_all">
+    <button type="submit" class="btn btn-primary btn-sm"
+            onclick="return confirm('Merge all {{ total }} duplicate pair(s)?')">
+      Merge all ({{ total }})
+    </button>
+    <a href="{% url 'geocaches:list' %}" class="btn btn-secondary btn-sm ms-1">Back to list</a>
+  </form>
+
+  <table class="table table-sm table-bordered align-middle">
+    <thead class="table-light">
+      <tr>
+        <th>GC code</th>
+        <th>GC name</th>
+        <th>GC owner</th>
+        <th>OC code</th>
+        <th>OC name</th>
+        <th>OC owner</th>
+        <th class="text-end">Distance</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for d in duplicates %}
+      <tr>
+        <td class="font-monospace small">
+          <a href="{% url 'geocaches:detail' d.gc_code %}">{{ d.gc_code }}</a>
+        </td>
+        <td class="small desc-cell" title="{{ d.gc_name }}">{{ d.gc_name }}</td>
+        <td class="small">{{ d.gc_owner }}</td>
+        <td class="font-monospace small">
+          <a href="{% url 'geocaches:detail' d.oc_code %}">{{ d.oc_code }}</a>
+        </td>
+        <td class="small desc-cell" title="{{ d.oc_name }}">{{ d.oc_name }}</td>
+        <td class="small">{{ d.oc_owner }}</td>
+        <td class="small text-end font-monospace">{{ d.distance_m }} m</td>
+        <td class="text-nowrap">
+          <form method="post" class="d-inline">
+            {% csrf_token %}
+            <input type="hidden" name="gc_pk" value="{{ d.gc_pk }}">
+            <input type="hidden" name="oc_pk" value="{{ d.oc_pk }}">
+            <input type="hidden" name="action" value="merge">
+            <button type="submit" class="btn btn-outline-primary btn-sm py-0 px-2"
+                    style="font-size:0.75rem">Merge</button>
+          </form>
+          <form method="post" class="d-inline ms-1">
+            {% csrf_token %}
+            <input type="hidden" name="gc_code" value="{{ d.gc_code }}">
+            <input type="hidden" name="oc_code" value="{{ d.oc_code }}">
+            <input type="hidden" name="action" value="dont_fuse">
+            <button type="submit" class="btn btn-outline-danger btn-sm py-0 px-2"
+                    style="font-size:0.75rem"
+                    onclick="return confirm(&quot;Mark {{ d.gc_code }}/{{ d.oc_code }} as \'don\'t fuse\'? It will be hidden from this list.&quot;)">
+              Don't fuse
+            </button>
+          </form>
+          <form method="post" class="d-inline ms-1">
+            {% csrf_token %}
+            <input type="hidden" name="gc_code" value="{{ d.gc_code }}">
+            <input type="hidden" name="oc_code" value="{{ d.oc_code }}">
+            <input type="hidden" name="action" value="postpone">
+            <button type="submit" class="btn btn-outline-secondary btn-sm py-0 px-2"
+                    style="font-size:0.75rem">Postpone</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+</div>
+{% endblock %}

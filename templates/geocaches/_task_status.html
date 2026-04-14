@@ -1,0 +1,18 @@
+{% for task in tasks %}
+<span class="d-flex align-items-center gap-2 small text-light me-2">
+  {% if task.state == "running" %}
+    <span class="spinner-border spinner-border-sm text-warning" role="status" aria-hidden="true"></span>
+    <span class="text-warning">{{ task.name }}{% if task.phase %} — {{ task.phase }}{% endif %} {{ task.progress_pct }}%</span>
+    <a href="{% url 'geocaches:enrich_cancel' %}" hx-post="{% url 'geocaches:enrich_cancel' %}" hx-swap="none"
+       class="text-warning text-decoration-none" title="Cancel">✕</a>
+  {% elif task.state == "failed" %}
+    <span class="text-danger">{{ task.name }} failed{% if task.error %}: {{ task.error|truncatechars:40 }}{% endif %}</span>
+    <script>(function(){var n="{{task.name|escapejs}}";if(n.startsWith("Preview ")||n.startsWith("Sync "))return;var k="gcf_reloaded_{{task.id}}";if(!sessionStorage.getItem(k)&&(document.getElementById('filter-form')||document.querySelector('[data-task-reload]'))){sessionStorage.setItem(k,"1");window.location.reload();}})();</script>
+  {% elif task.state == "completed" %}
+    <span class="text-success">{{ task.name }} done ({{ task.completed }}/{{ task.total }})</span>
+    <script>(function(){var n="{{task.name|escapejs}}";if(n.startsWith("Preview ")||n.startsWith("Sync "))return;var k="gcf_reloaded_{{task.id}}";if(!sessionStorage.getItem(k)&&(document.getElementById('filter-form')||document.querySelector('[data-task-reload]'))){sessionStorage.setItem(k,"1");window.location.reload();}})();</script>
+  {% elif task.state == "cancelled" %}
+    <span class="text-muted">{{ task.name }} cancelled</span>
+  {% endif %}
+</span>
+{% endfor %}

@@ -1,0 +1,106 @@
+{% comment %}
+Map fetch dialog — Bootstrap modal with two pages:
+  1. Preview (light API search, ghost markers)
+  2. Sync (full API fetch, save to DB)
+{% endcomment %}
+
+<div class="modal fade" id="mapFetchDialog" tabindex="-1" aria-labelledby="mapFetchDialogLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+
+      {% comment %} ── Preview page ── {% endcomment %}
+      <div id="fetch-page-preview">
+        <div class="modal-header">
+          <h6 class="modal-title" id="mapFetchDialogLabel">Preview API caches</h6>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <p class="text-muted small mb-2">
+            Search the drawn area for caches without saving them.
+          </p>
+
+          <div class="mb-3">
+            <label class="form-label fw-semibold small">Providers</label>
+            <div id="fetch-providers"></div>
+            <div id="fetch-no-providers" class="text-muted small" style="display:none">
+              No platform accounts configured. Add them in Settings &rarr; Accounts.
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-semibold small">Daily quota</label>
+            <div id="fetch-quota" class="small text-muted">Loading...</div>
+          </div>
+
+          <div id="fetch-region-summary" class="small text-muted mb-2"></div>
+
+          {% comment %} Progress area {% endcomment %}
+          <div id="fetch-preview-progress" style="display:none">
+            <div class="progress mb-1" style="height:6px">
+              <div class="progress-bar" id="fetch-preview-bar" style="width:0%"></div>
+            </div>
+            <div class="small text-muted" id="fetch-preview-phase"></div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-sm btn-primary" id="fetch-preview-btn" onclick="gcfSubmitPreview()">
+            Preview
+          </button>
+        </div>
+      </div>
+
+      {% comment %} ── Sync page ── {% endcomment %}
+      <div id="fetch-page-sync" style="display:none">
+        <div class="modal-header">
+          <h6 class="modal-title">Sync caches to database</h6>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div id="fetch-sync-summary" class="small mb-3"></div>
+
+          <div class="mb-2">
+            <label for="fetch-tags" class="form-label fw-semibold small">Tags (comma-separated)</label>
+            <input type="text" class="form-control form-control-sm" id="fetch-tags"
+                   placeholder="e.g. trip-2026, new-finds">
+            <div id="fetch-tag-suggestions" class="mt-1"></div>
+          </div>
+
+          <div class="row mb-2">
+            <div class="col-6">
+              <label for="fetch-log-count" class="form-label fw-semibold small">Logs per cache</label>
+              <input type="number" class="form-control form-control-sm" id="fetch-log-count"
+                     value="5" min="0" max="100">
+            </div>
+            <div class="col-6 d-flex align-items-end">
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="fetch-own-logs" checked>
+                <label class="form-check-label small" for="fetch-own-logs">Include my own logs</label>
+              </div>
+            </div>
+          </div>
+
+          <div class="mb-2">
+            <label class="form-label fw-semibold small">Full-mode quota</label>
+            <div id="fetch-sync-quota" class="small text-muted">Loading...</div>
+          </div>
+
+          {% comment %} Progress area {% endcomment %}
+          <div id="fetch-sync-progress" style="display:none">
+            <div class="progress mb-1" style="height:6px">
+              <div class="progress-bar" id="fetch-sync-bar" style="width:0%"></div>
+            </div>
+            <div class="small text-muted" id="fetch-sync-phase"></div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-sm btn-secondary" onclick="gcfFetchShowPage('preview')">Back</button>
+          <button type="button" class="btn btn-sm btn-success" id="fetch-sync-btn" onclick="gcfSubmitSync()">
+            Sync
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>

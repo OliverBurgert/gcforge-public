@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Deleting caches — GCForge{% endblock %}
+
+{% block extra_head %}{% if auto_refresh %}<meta http-equiv="refresh" content="2">{% endif %}{% endblock %}
+
+{% block content %}
+<div class="px-3 py-4" style="max-width:500px">
+  <h5 class="mb-3">Deleting caches</h5>
+
+  {% if status.phase == "done" %}
+  <div class="alert alert-success">
+    Deleted <strong>{{ status.total }}</strong> cache{{ status.total|pluralize }} successfully.
+  </div>
+  <a href="{% url 'geocaches:list' %}" class="btn btn-sm btn-primary">Back to list</a>
+
+  {% elif status.phase == "error" %}
+  <div class="alert alert-danger">
+    Deletion failed after {{ status.deleted }} of {{ status.total }}: {{ status.error }}
+  </div>
+  <a href="{% url 'geocaches:list' %}" class="btn btn-sm btn-secondary">Back to list</a>
+
+  {% elif status.running %}
+  <p class="text-muted small mb-2">
+    Deleting {{ status.total }} cache{{ status.total|pluralize }} and related data (logs, waypoints, notes, images)...
+  </p>
+  <div class="progress mb-2" style="height:20px">
+    <div class="progress-bar progress-bar-striped progress-bar-animated bg-danger"
+         role="progressbar"
+         style="width:{{ status.progress_pct }}%"
+         aria-valuenow="{{ status.progress_pct }}" aria-valuemin="0" aria-valuemax="100">
+      {{ status.progress_pct }}%
+    </div>
+  </div>
+  <p class="text-muted small">{{ status.deleted }} / {{ status.total }} deleted</p>
+
+  {% else %}
+  <p class="text-muted">No deletion in progress.</p>
+  <a href="{% url 'geocaches:list' %}" class="btn btn-sm btn-secondary">Back to list</a>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,83 @@
+<tr id="ftf-row-{{ item.cache.pk }}"{% if item.verified and not item.reasons %} class="table-secondary"{% endif %}>
+  <td class="font-monospace small">
+    <a href="{% url 'geocaches:detail' item.cache.display_code %}">{{ item.cache.display_code }}</a>
+  </td>
+  <td class="small">{{ item.cache.name }}</td>
+  <td class="small text-center">
+    {% if item.current_ftf %}
+      <span class="badge bg-success">Yes</span>
+    {% else %}
+      <span class="text-muted">No</span>
+    {% endif %}
+  </td>
+  <td class="small">
+    {% for reason in item.reasons %}
+      <span class="badge bg-info text-dark">{{ reason }}</span>
+    {% endfor %}
+    {% if item.verified and item.verify_msg %}
+      <span class="badge bg-secondary">{{ item.verify_msg }}</span>
+    {% endif %}
+    {% if item.verified and not item.reasons %}
+      <span class="badge bg-warning text-dark">Not FTF</span>
+    {% endif %}
+  </td>
+  <td class="small">
+    {% if item.suggestion == "set" %}
+      <span class="text-success">Set FTF</span>
+    {% elif item.suggestion == "unset" %}
+      <span class="text-danger">Unset FTF</span>
+    {% elif item.verified and not item.reasons %}
+      <span class="text-muted">Skip</span>
+    {% else %}
+      <span class="text-muted">No change</span>
+    {% endif %}
+  </td>
+  <td>
+    {% if item.needs_verify %}
+    <button type="button" class="btn btn-outline-info btn-sm py-0 px-2 ftf-verify-btn"
+            style="font-size:0.75rem"
+            data-pk="{{ item.cache.pk }}"
+            data-url="{% url 'geocaches:ftf_verify_row' item.cache.pk %}"
+            onclick="gcfVerifySingleFTF(this)">
+      Verify
+      <span id="verify-spinner-{{ item.cache.pk }}" class="spinner-border spinner-border-sm ms-1 d-none" style="width:0.7rem;height:0.7rem"></span>
+    </button>
+    {% elif not item.verified %}
+      {% if not item.current_ftf %}
+      <form method="post" class="d-inline">
+        {% csrf_token %}
+        <input type="hidden" name="pk" value="{{ item.cache.pk }}">
+        <input type="hidden" name="action" value="set">
+        <button type="submit" class="btn btn-outline-success btn-sm py-0 px-2"
+                style="font-size:0.75rem">Set FTF</button>
+      </form>
+      {% else %}
+      <form method="post" class="d-inline">
+        {% csrf_token %}
+        <input type="hidden" name="pk" value="{{ item.cache.pk }}">
+        <input type="hidden" name="action" value="unset">
+        <button type="submit" class="btn btn-outline-danger btn-sm py-0 px-2"
+                style="font-size:0.75rem">Unset FTF</button>
+      </form>
+      {% endif %}
+    {% else %}
+      {% if item.reasons and not item.current_ftf %}
+      <form method="post" class="d-inline">
+        {% csrf_token %}
+        <input type="hidden" name="pk" value="{{ item.cache.pk }}">
+        <input type="hidden" name="action" value="set">
+        <button type="submit" class="btn btn-outline-success btn-sm py-0 px-2"
+                style="font-size:0.75rem">Set FTF</button>
+      </form>
+      {% elif item.current_ftf %}
+      <form method="post" class="d-inline">
+        {% csrf_token %}
+        <input type="hidden" name="pk" value="{{ item.cache.pk }}">
+        <input type="hidden" name="action" value="unset">
+        <button type="submit" class="btn btn-outline-danger btn-sm py-0 px-2"
+                style="font-size:0.75rem">Unset FTF</button>
+      </form>
+      {% endif %}
+    {% endif %}
+  </td>
+</tr>

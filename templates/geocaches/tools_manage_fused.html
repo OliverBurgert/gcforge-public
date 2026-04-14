@@ -1,0 +1,150 @@
+{% extends "base.html" %}
+{% block title %}Manage fused GC/OC caches — GCForge{% endblock %}
+{% block content %}
+<div class="px-3 py-3" style="max-width:1200px" data-task-reload>
+  <h5 class="mb-3">Manage fused GC/OC caches</h5>
+
+  <p class="text-muted small mb-3">
+    Lists caches that are fused (a single DB record with both a GC and OC code) and pairs that have a
+    recorded user decision. Auto-fused caches were linked because the cache owner explicitly published
+    the cross-reference on opencaching.de.
+  </p>
+
+  <!-- Tab bar -->
+  <ul class="nav nav-tabs mb-3" style="font-size:0.875rem">
+    <li class="nav-item">
+      <a class="nav-link {% if tab == 'fused' %}active{% endif %}"
+         href="?tab=fused">User-fused</a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link {% if tab == 'auto' %}active{% endif %}"
+         href="?tab=auto">Auto-fused</a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link {% if tab == 'dont_fuse' %}active{% endif %}"
+         href="?tab=dont_fuse">Don't fuse</a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link {% if tab == 'all' %}active{% endif %}"
+         href="?tab=all">All</a>
+    </li>
+  </ul>
+
+  <div class="mb-3 d-flex align-items-center gap-2">
+    <form method="post">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="refresh_all">
+      <input type="hidden" name="tab" value="{{ tab }}">
+      <button type="submit" class="btn btn-outline-secondary btn-sm"
+              onclick="return confirm('Re-fetch OC data from the API for all {{ total }} cache(s) in this tab?')">
+        Refresh OC data for this tab ({{ total }})
+      </button>
+    </form>
+  </div>
+
+  {% if total == 0 %}
+  <div class="card">
+    <div class="card-body">
+      <p class="mb-0">No records in this category.</p>
+    </div>
+  </div>
+  {% else %}
+  <p class="text-muted small mb-2">{{ total }} record{{ total|pluralize }}</p>
+  <table class="table table-sm table-bordered align-middle">
+    <thead class="table-light">
+      <tr>
+        <th>GC code</th>
+        <th>OC code</th>
+        <th>Name</th>
+        <th>Owner</th>
+        <th>Link type</th>
+        <th>Decision</th>
+        <th>Status</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in rows %}
+      <tr>
+        <td class="font-monospace small">
+          {% if r.gc_code %}
+          <a href="https://www.geocaching.com/geocache/{{ r.gc_code }}" target="_blank" rel="noopener">{{ r.gc_code }}</a>
+          {% else %}—{% endif %}
+        </td>
+        <td class="font-monospace small">
+          {% if r.oc_code %}
+          <a href="https://www.opencaching.de/viewcache.php?wp={{ r.oc_code }}" target="_blank" rel="noopener">{{ r.oc_code }}</a>
+          {% else %}—{% endif %}
+        </td>
+        <td class="small desc-cell" title="{{ r.name }}">
+          <a href="{% url 'geocaches:detail' r.gc_code %}">{{ r.name }}</a>
+        </td>
+        <td class="small">{{ r.owner }}</td>
+        <td class="small">
+          {% if r.auto_linked %}
+          <span class="badge bg-info text-dark">Auto (owner-confirmed)</span>
+          {% else %}
+          <span class="badge bg-secondary">User / proximity</span>
+          {% endif %}
+        </td>
+        <td class="small">
+          {% if r.user_decision == "fuse" %}
+          <span class="badge bg-success">Fused</span>
+          {% elif r.user_decision == "dont_fuse" %}
+          <span class="badge bg-danger">Don't fuse</span>
+          {% elif r.user_decision == "postpone" %}
+          <span class="badge bg-warning text-dark">Postponed</span>
+          {% else %}
+          <span class="text-muted">—</span>
+          {% endif %}
+        </td>
+        <td class="small">
+          {% if r.is_fused %}
+          <span class="text-success">Fused</span>
+          {% else %}
+          <span class="text-muted">Split</span>
+          {% endif %}
+        </td>
+        <td class="text-nowrap">
+          {% if r.is_fused %}
+          <!-- De-fuse: link to detail page defuse modal -->
+          <a href="{% url 'geocaches:detail' r.gc_code %}#defuseModal"
+             class="btn btn-outline-warning btn-sm py-0 px-2"
+             style="font-size:0.75rem"
+             {% if r.auto_linked %}
+             onclick="return confirm('Warning: this cache was linked by its owner on opencaching.de, meaning the cache owner explicitly confirmed this GC/OC connection.\n\nAre you sure you want to de-fuse {{ r.gc_code }}/{{ r.oc_code }}?')"
+             {% endif %}
+             title="{% if r.auto_linked %}This is an owner-confirmed link from opencaching.de.{% endif %}">
+            De-fuse…
+          </a>
+          <!-- Mark as don't fuse without splitting -->
+          <form method="post" class="d-inline ms-1">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="mark_dont_fuse">
+            <input type="hidden" name="gc_code" value="{{ r.gc_code }}">
+            <input type="hidden" name="oc_code" value="{{ r.oc_code }}">
+            <button type="submit" class="btn btn-outline-danger btn-sm py-0 px-2"
+                    style="font-size:0.75rem"
+                    onclick="return confirm('Mark {{ r.gc_code }}/{{ r.oc_code }} as \'don\'t fuse\'? This only sets the decision flag; use De-fuse to actually split the records.'){% if r.auto_linked %} &amp;&amp; confirm('Warning: this is an owner-confirmed link from opencaching.de.'){% endif %}">
+              Mark don't fuse
+            </button>
+          </form>
+          {% endif %}
+          {% if r.user_decision == "dont_fuse" %}
+          <form method="post" class="d-inline {% if r.is_fused %}ms-1{% endif %}">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="remove_decision">
+            <input type="hidden" name="gc_code" value="{{ r.gc_code }}">
+            <input type="hidden" name="oc_code" value="{{ r.oc_code }}">
+            <button type="submit" class="btn btn-outline-secondary btn-sm py-0 px-2"
+                    style="font-size:0.75rem">Remove don't-fuse</button>
+          </form>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+</div>
+{% endblock %}

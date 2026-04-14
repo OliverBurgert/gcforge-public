@@ -1,0 +1,34 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+
+# Django
+db.sqlite3
+db.sqlite3-wal
+db.sqlite3-shm
+*.log
+
+# Database backups and user databases
+/backups/
+/databases/
+gcforge.conf
+/staticfiles/
+/media/
+
+# GSAK help (extracted from proprietary CHM — not redistributable)
+docs/gsak-help/
+
+# PyCharm
+.idea/
+
+# uv
+.python-version
+/logs/
+/groundspeak_tokens.json
+
+# Field notes (user data — keep folder structure, ignore content)
+/fieldnotes/*.txt
+/fieldnotes/processed/*.txt
+/docs/cgeo-master/

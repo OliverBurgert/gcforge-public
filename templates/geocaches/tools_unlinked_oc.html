@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}OC caches missing GC data — GCForge{% endblock %}
+{% block content %}
+<div class="px-3 py-3" style="max-width:1100px">
+  <h5 class="mb-3">OC caches missing GC data</h5>
+
+  <p class="text-muted small mb-3">
+    These OC caches reference a GC cache code (the cache owner published the link on opencaching.de),
+    but the GC data has not been imported yet. Only the OC data is available locally.
+    Use <strong>Import GC data</strong> to fetch the full GC record from the geocaching.com API.
+    A GC API connection is required.
+  </p>
+
+  {% if total == 0 %}
+  <div class="card">
+    <div class="card-body">
+      <p class="mb-0">No unlinked OC caches found — all OC caches with GC cross-references have GC data imported.</p>
+    </div>
+  </div>
+  {% else %}
+  <p class="text-muted small mb-2">{{ total }} cache{{ total|pluralize }}</p>
+  <table class="table table-sm table-bordered align-middle">
+    <thead class="table-light">
+      <tr>
+        <th>GC code</th>
+        <th>OC code</th>
+        <th>Name</th>
+        <th>Owner</th>
+        <th class="text-end">Lat</th>
+        <th class="text-end">Lon</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for c in caches %}
+      <tr>
+        <td class="font-monospace small">
+          <a href="{% url 'geocaches:detail' c.gc_code %}">{{ c.gc_code }}</a>
+        </td>
+        <td class="font-monospace small">{{ c.oc_code }}</td>
+        <td class="small desc-cell" title="{{ c.name }}">{{ c.name }}</td>
+        <td class="small">{{ c.owner }}</td>
+        <td class="small text-end font-monospace">{{ c.latitude|floatformat:5 }}</td>
+        <td class="small text-end font-monospace">{{ c.longitude|floatformat:5 }}</td>
+        <td>
+          <form method="post" class="d-inline">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="import_gc">
+            <input type="hidden" name="gc_code" value="{{ c.gc_code }}">
+            <button type="submit" class="btn btn-outline-primary btn-sm py-0 px-2"
+                    style="font-size:0.75rem">Import GC data</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+</div>
+{% endblock %}

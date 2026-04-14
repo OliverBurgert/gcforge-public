@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Log — GCForge{% endblock %}
+
+{% block extra_head %}{% if auto_refresh %}<meta http-equiv="refresh" content="4;url={% url 'preferences:log' %}?until={{ until }}">{% endif %}{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-3">
+  <div class="d-flex align-items-center gap-3 mb-2">
+    <h5 class="mb-0">Log</h5>
+    <a href="{% url 'preferences:log' %}{% if auto_refresh %}?until={{ until }}{% endif %}" class="btn btn-sm btn-outline-secondary">Refresh</a>
+    <span class="text-muted small">{{ log_path }}</span>
+  </div>
+  <p class="text-muted small mb-3">
+    This log records API sync, enrichment, import, and backup activity.
+    Background operations (sync, enrichment) — {% if auto_refresh %}page refreshes automatically.{% else %}press <strong>Refresh</strong> for updates.{% endif %}
+  </p>
+
+  {% if lines %}
+  <pre class="bg-dark text-light rounded p-3" style="font-size:0.8rem;max-height:80vh;overflow-y:auto;white-space:pre-wrap;word-break:break-all;">{% for line in lines %}<span class="{% if 'rate limited' in line or 'quota exceeded' in line %}text-danger fw-semibold{% elif 'ERROR' in line or 'WARNING' in line %}text-warning{% elif '--- Enrichment start' in line or '--- Enrichment done' in line or 'import start' in line or 'import done' in line or 'backup start' in line or 'backup done' in line or 'Restore start' in line or 'Restore done' in line or '--- Sync start' in line or '--- Sync done' in line or '--- Preview start' in line or '--- Preview done' in line %}text-info{% elif 'void' in line or 'no data' in line %}text-secondary{% endif %}">{{ line }}</span>
+{% endfor %}</pre>
+  {% else %}
+  <p class="text-muted">No log entries yet. Log will appear here once you run a sync, enrichment, or import operation.</p>
+  <p class="text-muted small">Log file: <code>{{ log_path }}</code></p>
+  {% endif %}
+</div>
+{% endblock %}

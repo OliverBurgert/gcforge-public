@@ -1,0 +1,407 @@
+{# Advanced Filter Dialog — no custom template tags needed #}
+{# Advanced Filter Dialog — Bootstrap 5 modal #}
+<div class="modal fade" id="filterDialog" tabindex="-1" aria-labelledby="filterDialogLabel" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-scrollable">
+    <div class="modal-content">
+
+      <div class="modal-header py-2">
+        <h5 class="modal-title" id="filterDialogLabel">Advanced Filters</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body p-0">
+        <ul class="nav nav-tabs px-3 pt-2" id="filterTabs" role="tablist">
+          <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#ft-general" type="button">General <span class="badge bg-secondary ms-1 filter-tab-badge" id="badge-general"></span></button></li>
+          <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#ft-typesize" type="button">Type / Size <span class="badge bg-secondary ms-1 filter-tab-badge" id="badge-typesize"></span></button></li>
+          <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#ft-dates" type="button">Dates <span class="badge bg-secondary ms-1 filter-tab-badge" id="badge-dates"></span></button></li>
+          <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#ft-flags" type="button">Flags <span class="badge bg-secondary ms-1 filter-tab-badge" id="badge-flags"></span></button></li>
+          <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#ft-tags" type="button">Tags <span class="badge bg-secondary ms-1 filter-tab-badge" id="badge-tags"></span></button></li>
+          <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#ft-attributes" type="button">Attributes <span class="badge bg-secondary ms-1 filter-tab-badge" id="badge-attributes"></span></button></li>
+          <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#ft-location" type="button">Location <span class="badge bg-secondary ms-1 filter-tab-badge" id="badge-location"></span></button></li>
+          <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#ft-where" type="button">Where <span class="badge bg-secondary ms-1 filter-tab-badge" id="badge-where"></span></button></li>
+        </ul>
+
+        <div class="tab-content p-3" id="filterTabContent">
+
+          {# ── Tab 1: General ─────────────────────────────────────────────── #}
+          <div class="tab-pane fade show active" id="ft-general" role="tabpanel">
+            <div class="row g-3">
+              <div class="col-12">
+                <label class="form-label fw-semibold mb-1">Cache name</label>
+                <div class="input-group input-group-sm">
+                  <select id="d-fname-op" class="form-select" style="max-width:160px">
+                    <option value="contains">contains</option>
+                    <option value="not_contains">not contains</option>
+                    <option value="starts_with">starts with</option>
+                    <option value="not_starts_with">not starts with</option>
+                    <option value="equals">equals</option>
+                    <option value="not_equals">not equals</option>
+                    <option value="in_list">in list (;-sep)</option>
+                    <option value="not_in_list">not in list</option>
+                    <option value="empty">is empty</option>
+                    <option value="not_empty">not empty</option>
+                  </select>
+                  <input type="text" id="d-fname" class="form-control" placeholder="e.g. Iron Horse">
+                </div>
+              </div>
+              <div class="col-12">
+                <label class="form-label fw-semibold mb-1">Code (GC / OC)</label>
+                <div class="input-group input-group-sm">
+                  <select id="d-fcode-op" class="form-select" style="max-width:160px">
+                    <option value="contains">contains</option>
+                    <option value="not_contains">not contains</option>
+                    <option value="in_list">in list (;-sep)</option>
+                    <option value="not_in_list">not in list</option>
+                  </select>
+                  <input type="text" id="d-fcode" class="form-control" placeholder="e.g. GC12345">
+                </div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold mb-1">Owner</label>
+                <div class="input-group input-group-sm">
+                  <select id="d-fowner-op" class="form-select" style="max-width:160px">
+                    <option value="contains">contains</option>
+                    <option value="not_contains">not contains</option>
+                    <option value="in_list">in list (;-sep)</option>
+                    <option value="not_in_list">not in list</option>
+                    <option value="empty">is empty</option>
+                    <option value="not_empty">not empty</option>
+                  </select>
+                  <input type="text" id="d-fowner" class="form-control" placeholder="Owner name">
+                </div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold mb-1">Placed by</label>
+                <div class="input-group input-group-sm">
+                  <select id="d-fplacedby-op" class="form-select" style="max-width:160px">
+                    <option value="contains">contains</option>
+                    <option value="not_contains">not contains</option>
+                    <option value="in_list">in list (;-sep)</option>
+                    <option value="not_in_list">not in list</option>
+                    <option value="empty">is empty</option>
+                    <option value="not_empty">not empty</option>
+                  </select>
+                  <input type="text" id="d-fplacedby" class="form-control" placeholder="Placed by">
+                </div>
+              </div>
+              <div class="col-12">
+                <label class="form-label fw-semibold mb-1">Full-text search <small class="text-muted fw-normal">(description + hint)</small></label>
+                <input type="text" id="d-ftext" class="form-control form-control-sm" placeholder="Search in description and hint…">
+              </div>
+              <div class="col-md-4">
+                <label class="form-label fw-semibold mb-1">Difficulty</label>
+                <div class="d-flex align-items-center gap-2">
+                  <input type="number" id="d-diff-min" class="form-control form-control-sm" placeholder="1" min="1" max="5" step="0.5" style="width:80px">
+                  <span class="text-muted small">–</span>
+                  <input type="number" id="d-diff-max" class="form-control form-control-sm" placeholder="5" min="1" max="5" step="0.5" style="width:80px">
+                </div>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label fw-semibold mb-1">Terrain</label>
+                <div class="d-flex align-items-center gap-2">
+                  <input type="number" id="d-terr-min" class="form-control form-control-sm" placeholder="1" min="1" max="5" step="0.5" style="width:80px">
+                  <span class="text-muted small">–</span>
+                  <input type="number" id="d-terr-max" class="form-control form-control-sm" placeholder="5" min="1" max="5" step="0.5" style="width:80px">
+                </div>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label fw-semibold mb-1">Favourite points</label>
+                <div class="d-flex align-items-center gap-2">
+                  <input type="number" id="d-fav-min" class="form-control form-control-sm" placeholder="0" min="0" style="width:80px">
+                  <span class="text-muted small">–</span>
+                  <input type="number" id="d-fav-max" class="form-control form-control-sm" placeholder="∞" min="0" style="width:80px">
+                </div>
+              </div>
+            </div>
+          </div>{# /ft-general #}
+
+          {# ── Tab 2: Type / Size ──────────────────────────────────────────── #}
+          <div class="tab-pane fade" id="ft-typesize" role="tabpanel">
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label fw-semibold mb-2">Cache type <button type="button" class="btn btn-link btn-sm py-0 px-1" onclick="gcfToggleAll('d-types')">all</button> / <button type="button" class="btn btn-link btn-sm py-0 px-1" onclick="gcfToggleNone('d-types')">none</button></label>
+                <div id="d-types" class="d-flex flex-wrap gap-2">
+                  {% for value, label in cache_types %}
+                  <div class="form-check form-check-inline m-0">
+                    <input class="form-check-input" type="checkbox" value="{{ value }}" id="dt-{{ forloop.counter }}">
+                    <label class="form-check-label small" for="dt-{{ forloop.counter }}">{{ label }}</label>
+                  </div>
+                  {% endfor %}
+                </div>
+              </div>
+              <div class="col-md-3">
+                <label class="form-label fw-semibold mb-2">Size <button type="button" class="btn btn-link btn-sm py-0 px-1" onclick="gcfToggleAll('d-sizes')">all</button></label>
+                <div id="d-sizes">
+                  {% for value, label in cache_sizes %}
+                  <div class="form-check">
+                    <input class="form-check-input" type="checkbox" value="{{ value }}" id="ds-{{ forloop.counter }}">
+                    <label class="form-check-label small" for="ds-{{ forloop.counter }}">{{ label }}</label>
+                  </div>
+                  {% endfor %}
+                </div>
+              </div>
+              <div class="col-md-3">
+                <label class="form-label fw-semibold mb-2">Status <button type="button" class="btn btn-link btn-sm py-0 px-1" onclick="gcfToggleAll('d-statuses')">all</button></label>
+                <div id="d-statuses">
+                  {% for value, label in cache_statuses %}
+                  <div class="form-check">
+                    <input class="form-check-input" type="checkbox" value="{{ value }}" id="dstat-{{ forloop.counter }}">
+                    <label class="form-check-label small" for="dstat-{{ forloop.counter }}">{{ label }}</label>
+                  </div>
+                  {% endfor %}
+                </div>
+              </div>
+            </div>
+          </div>{# /ft-typesize #}
+
+          {# ── Tab 3: Dates ────────────────────────────────────────────────── #}
+          <div class="tab-pane fade" id="ft-dates" role="tabpanel">
+            <div class="row g-3">
+              <div class="col-md-4">
+                <label class="form-label fw-semibold mb-1">Hidden date (placed)</label>
+                <div class="d-flex align-items-center gap-2">
+                  <input type="date" id="d-hidden-from" class="form-control form-control-sm">
+                  <span class="text-muted small">–</span>
+                  <input type="date" id="d-hidden-to" class="form-control form-control-sm">
+                </div>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label fw-semibold mb-1">Last found date</label>
+                <div class="d-flex align-items-center gap-2">
+                  <input type="date" id="d-lf-from" class="form-control form-control-sm">
+                  <span class="text-muted small">–</span>
+                  <input type="date" id="d-lf-to" class="form-control form-control-sm">
+                </div>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label fw-semibold mb-1">Found by me date</label>
+                <div class="d-flex align-items-center gap-2">
+                  <input type="date" id="d-fd-from" class="form-control form-control-sm">
+                  <span class="text-muted small">–</span>
+                  <input type="date" id="d-fd-to" class="form-control form-control-sm">
+                </div>
+              </div>
+            </div>
+          </div>{# /ft-dates #}
+
+          {# ── Tab 4: Flags ────────────────────────────────────────────────── #}
+          <div class="tab-pane fade" id="ft-flags" role="tabpanel">
+            <table class="table table-sm table-bordered align-middle" style="font-size:0.85rem; max-width:420px">
+              <thead class="table-light">
+                <tr>
+                  <th>Flag</th>
+                  <th class="text-center" style="width:70px">Must ✓</th>
+                  <th class="text-center" style="width:70px">Must ✗</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for val, lbl in flag_choices %}
+                <tr>
+                  <td>{{ lbl }}</td>
+                  <td class="text-center"><input class="form-check-input d-flag"     type="checkbox" value="{{ val }}" id="df-y-{{ val }}"></td>
+                  <td class="text-center"><input class="form-check-input d-flag-not" type="checkbox" value="{{ val }}" id="df-n-{{ val }}"></td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>{# /ft-flags #}
+
+          {# ── Tab: Tags ──────────────────────────────────────────────── #}
+          <div class="tab-pane fade" id="ft-tags" role="tabpanel">
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label fw-semibold mb-2">Include tags (AND)</label>
+                <div class="form-text mb-2">Cache must have ALL selected tags</div>
+                <div id="d-tags-include">
+                  {% for tag in tags %}
+                  <div class="form-check">
+                    <input class="form-check-input d-tag-inc" type="checkbox"
+                           value="{{ tag.name }}" id="dti-{{ forloop.counter }}">
+                    <label class="form-check-label small" for="dti-{{ forloop.counter }}">
+                      {{ tag.name }}
+                    </label>
+                  </div>
+                  {% endfor %}
+                  <div class="form-check mt-2">
+                    <input class="form-check-input d-tag-inc" type="checkbox"
+                           value="__none__" id="dti-none">
+                    <label class="form-check-label small text-muted" for="dti-none">
+                      (untagged)
+                    </label>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold mb-2">Exclude tags</label>
+                <div class="form-text mb-2">Cache must NOT have any selected tag</div>
+                <div id="d-tags-exclude">
+                  {% for tag in tags %}
+                  <div class="form-check">
+                    <input class="form-check-input d-tag-exc" type="checkbox"
+                           value="{{ tag.name }}" id="dte-{{ forloop.counter }}">
+                    <label class="form-check-label small" for="dte-{{ forloop.counter }}">
+                      {{ tag.name }}
+                    </label>
+                  </div>
+                  {% endfor %}
+                </div>
+              </div>
+            </div>
+          </div>{# /ft-tags #}
+
+          {# ── Tab 5: Attributes ────────────────────────────────────────────── #}
+          <div class="tab-pane fade" id="ft-attributes" role="tabpanel">
+            {% if attrs_by_source %}
+              {% for source, attrs in attrs_by_source.items %}
+              <h6 class="text-muted small text-uppercase mt-2 mb-1">{{ source }}</h6>
+              <div class="table-responsive">
+                <table class="table table-sm table-bordered align-middle" style="font-size:0.8rem">
+                  <thead class="table-light"><tr>
+                    <th>Attribute</th>
+                    <th class="text-center" style="width:60px">Must ✓</th>
+                    <th class="text-center" style="width:60px">Must ✗</th>
+                  </tr></thead>
+                  <tbody>
+                  {% regroup attrs by name as attr_groups %}
+                  {% for group in attr_groups %}
+                  <tr>
+                    <td>{{ group.grouper }}</td>
+                    <td class="text-center">
+                      {% for a in group.list %}{% if a.is_positive %}
+                      <input type="checkbox" class="form-check-input d-attr-yes" value="{{ a.pk }}" title="{{ a.name }} (yes)">
+                      {% endif %}{% endfor %}
+                    </td>
+                    <td class="text-center">
+                      {% for a in group.list %}{% if not a.is_positive %}
+                      <input type="checkbox" class="form-check-input d-attr-no" value="{{ a.pk }}" title="{{ a.name }} (no)">
+                      {% endif %}{% endfor %}
+                    </td>
+                  </tr>
+                  {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+              {% endfor %}
+            {% else %}
+              <p class="text-muted small mt-3">No attributes in database yet.</p>
+            {% endif %}
+          </div>{# /ft-attributes #}
+
+          {# ── Tab 6: Location ─────────────────────────────────────────────── #}
+          <div class="tab-pane fade" id="ft-location" role="tabpanel">
+            <div class="row g-3">
+              <div class="col-md-4">
+                <label class="form-label fw-semibold mb-1">State / Province</label>
+                <input type="text" id="d-state" class="form-control form-control-sm" placeholder="e.g. Bavaria">
+                <div class="form-text">Leave blank for all. Use <code>__none__</code> to filter unset.</div>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label fw-semibold mb-1">County / District</label>
+                <input type="text" id="d-county" class="form-control form-control-sm" placeholder="e.g. Los Angeles">
+              </div>
+              <div class="col-md-4">
+                <label class="form-label fw-semibold mb-1">Bearing direction</label>
+                <div id="d-bearing" class="d-flex flex-wrap gap-2">
+                  {% for dir in bearing_dirs %}
+                  <div class="form-check form-check-inline m-0">
+                    <input class="form-check-input d-bearing-cb" type="checkbox" value="{{ dir }}" id="db-{{ dir }}">
+                    <label class="form-check-label small" for="db-{{ dir }}">{{ dir }}</label>
+                  </div>
+                  {% endfor %}
+                </div>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label fw-semibold mb-1">Exclude countries</label>
+                <select id="d-country-exclude" class="form-select form-select-sm" multiple
+                        size="4" style="min-height:80px">
+                  {% for c in countries %}
+                  <option value="{{ c.code }}">{{ c.name }}</option>
+                  {% endfor %}
+                </select>
+                <div class="form-text">Hold Ctrl to select multiple</div>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label fw-semibold mb-1">Exclude states</label>
+                <input type="text" id="d-state-exclude" class="form-control form-control-sm"
+                       placeholder="Comma-separated">
+              </div>
+              <div class="col-md-4">
+                <label class="form-label fw-semibold mb-1">Exclude counties</label>
+                <input type="text" id="d-county-exclude" class="form-control form-control-sm"
+                       placeholder="Comma-separated">
+              </div>
+            </div>
+          </div>{# /ft-location #}
+
+          {# ── Tab 7: Where ────────────────────────────────────────────────── #}
+          <div class="tab-pane fade" id="ft-where" role="tabpanel">
+            <div class="row g-3">
+              <div class="col-12">
+                <label class="form-label fw-semibold mb-1">Raw SQLite WHERE clause</label>
+                <textarea id="d-where-sql" class="form-control form-control-sm font-monospace" rows="4"
+                  placeholder="e.g. gc_code IN ('GC12345','GC67890')  OR  difficulty >= 4 AND terrain >= 4"></textarea>
+                <div class="form-text">Applied as an additional AND condition on <code>geocaches_geocache</code>.</div>
+                {% if fv.where_error %}
+                <div class="text-danger small mt-1">{{ fv.where_error }}</div>
+                {% endif %}
+              </div>
+
+              <div class="col-md-6">
+                <label class="form-label fw-semibold mb-1">Save as named clause</label>
+                <div class="input-group input-group-sm">
+                  <input type="text" id="d-where-save-name" class="form-control" placeholder="Filter name…">
+                  <button type="button" class="btn btn-outline-secondary" onclick="gcfSaveWhereClause()">Save</button>
+                </div>
+              </div>
+
+              <div class="col-md-6">
+                <label class="form-label fw-semibold mb-1">Load saved / recent</label>
+                <select id="d-where-load" class="form-select form-select-sm" onchange="gcfLoadWhereClause(this)">
+                  <option value="">— select —</option>
+                  {% if named_where_clauses %}
+                  <optgroup label="Named">
+                    {% for wc in named_where_clauses %}
+                    <option value="{{ wc.pk }}" data-sql="{{ wc.sql }}" data-name="{{ wc.name }}">{{ wc.name }}</option>
+                    {% endfor %}
+                  </optgroup>
+                  {% endif %}
+                  {% if recent_where_clauses %}
+                  <optgroup label="Recent">
+                    {% for wc in recent_where_clauses %}
+                    <option value="{{ wc.pk }}" data-sql="{{ wc.sql }}" data-name="">{{ wc.sql|truncatechars:60 }}</option>
+                    {% endfor %}
+                  </optgroup>
+                  {% endif %}
+                </select>
+                <button type="button" class="btn btn-sm btn-outline-danger mt-1" id="d-where-delete-btn" onclick="gcfDeleteWhereClause()" style="display:none">Delete selected</button>
+              </div>
+
+              {% if named_where_clauses %}
+              <div class="col-12">
+                <p class="text-muted small mb-1">Named clauses (click to load):</p>
+                <div class="d-flex flex-wrap gap-2" id="d-where-named-list">
+                  {% for wc in named_where_clauses %}
+                  <span class="badge bg-light text-dark border" style="cursor:pointer" onclick="gcfLoadWhereById({{ wc.pk }}, '{{ wc.sql|escapejs }}')">{{ wc.name }}</span>
+                  {% endfor %}
+                </div>
+              </div>
+              {% endif %}
+            </div>
+          </div>{# /ft-where #}
+
+        </div>{# /tab-content #}
+      </div>{# /modal-body #}
+
+      <div class="modal-footer py-2 d-flex gap-2 flex-wrap">
+        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="gcfDialogClear()">Clear all</button>
+        <div class="input-group input-group-sm me-auto" style="max-width:260px">
+          <input type="text" id="d-save-filter-name" class="form-control" placeholder="Save as filter…">
+          <button type="button" class="btn btn-outline-secondary" onclick="gcfDialogApply()">Save &amp; Apply</button>
+        </div>
+        <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-sm btn-primary" onclick="gcfDialogApply()">Apply</button>
+      </div>
+
+    </div>
+  </div>
+</div>

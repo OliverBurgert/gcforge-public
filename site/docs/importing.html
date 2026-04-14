@@ -1,0 +1,192 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Importing Data — GCForge</title>
+  <meta name="description" content="How to import caches from GPX, GSAK databases, and Adventure Lab exports into GCForge.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/styles.css">
+  <link rel="icon" href="../img/logo.svg" type="image/svg+xml">
+</head>
+<body>
+
+  <nav class="nav">
+    <div class="nav__inner">
+      <a href="../index.html" class="nav__brand">
+        <img src="../img/logo.svg" alt="" style="border-radius: 4px;">
+        <img src="../img/logo-text.png" alt="GCForge" class="nav__brand-text">
+      </a>
+      <ul class="nav__links">
+        <li><a href="../index.html#features">Features</a></li>
+        <li><a href="../index.html#screenshots">Screenshots</a></li>
+        <li><a href="../index.html#download">Download</a></li>
+        <li><a href="getting-started.html">Docs</a></li>
+        <li><a href="https://github.com/OliverBurgert/gcforge-public" class="nav__cta">GitHub</a></li>
+      </ul>
+      <button class="nav__toggle" aria-label="Toggle navigation">☰</button>
+    </div>
+  </nav>
+
+  <div class="page-header">
+    <div class="container">
+      <h1>Importing Data</h1>
+      <p>Import caches from GPX files, GSAK databases, and Adventure Lab exports.</p>
+    </div>
+  </div>
+
+  <div class="content">
+    <div class="container" style="max-width: 800px;">
+
+      <h2 id="overview">Overview</h2>
+      <p>
+        GCForge supports importing caches from multiple sources. All imported data
+        goes into a single SQLite database — no more juggling separate database files.
+      </p>
+      <p>
+        Supported import formats:
+      </p>
+      <ul>
+        <li><strong>GPX / Pocket Query</strong> — standard geocaching.com GPX format with Groundspeak extensions</li>
+        <li><strong>GSAK Database</strong> — <code>sqlite.db3</code> files exported from GSAK</li>
+        <li><strong>Adventure Lab</strong> — GPX exports from the lab2gpx tool</li>
+      </ul>
+
+      <h2 id="gpx">GPX / Pocket Query</h2>
+      <p>
+        GCForge imports standard GPX files from geocaching.com, including Pocket Queries
+        downloaded as <code>.gpx</code> or <code>.zip</code> files.
+      </p>
+
+      <h3>What Gets Imported</h3>
+      <ul>
+        <li>Cache code, name, type, size, difficulty, terrain</li>
+        <li>Coordinates (posted and corrected)</li>
+        <li>Description and hint (encrypted)</li>
+        <li>Attributes</li>
+        <li>Logs (with dates, authors, and types)</li>
+        <li>Child waypoints (trailhead, parking, stages)</li>
+        <li>Owner information</li>
+        <li>Last found date</li>
+      </ul>
+
+      <h3>Steps</h3>
+      <ol>
+        <li>Go to <strong>Import → GPX / Pocket Query</strong></li>
+        <li>Select your <code>.gpx</code> or <code>.zip</code> file</li>
+        <li>Optionally select tags to apply to the imported caches</li>
+        <li>Click <strong>Import</strong></li>
+        <li>Import runs in the background — monitor progress in the task bar</li>
+      </ol>
+
+      <h3>Duplicate Handling</h3>
+      <p>
+        If a cache already exists in the database (matched by GC code), the import
+        updates it with the newer data rather than creating a duplicate. Logs are
+        merged — new logs are added, existing logs are not duplicated.
+      </p>
+
+      <h2 id="gsak">GSAK Database</h2>
+      <p>
+        GCForge can directly import from GSAK's SQLite database files (<code>.db3</code>).
+        This is the recommended migration path for existing GSAK users.
+      </p>
+
+      <h3>What Gets Imported</h3>
+      <ul>
+        <li>All GPX fields listed above</li>
+        <li>Corrected coordinates (from GSAK's correction fields)</li>
+        <li>User flags and notes</li>
+        <li>GSAK tags (each database becomes a tag)</li>
+        <li>Child waypoints</li>
+        <li>Adventure Lab stages (from <code>CacheType='Q'</code> rows)</li>
+      </ul>
+
+      <h3>GSAK Cache Type Mapping</h3>
+      <table style="width: 100%; border-collapse: collapse; margin: var(--space-lg) 0;">
+        <thead>
+          <tr style="border-bottom: 2px solid var(--pebble-gray); text-align: left;">
+            <th style="padding: var(--space-sm);">GSAK Code</th>
+            <th style="padding: var(--space-sm);">GCForge Type</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr style="border-bottom: 1px solid var(--pebble-gray);"><td style="padding: var(--space-sm);">T</td><td style="padding: var(--space-sm);">Traditional</td></tr>
+          <tr style="border-bottom: 1px solid var(--pebble-gray);"><td style="padding: var(--space-sm);">M</td><td style="padding: var(--space-sm);">Multi-cache</td></tr>
+          <tr style="border-bottom: 1px solid var(--pebble-gray);"><td style="padding: var(--space-sm);">U</td><td style="padding: var(--space-sm);">Mystery</td></tr>
+          <tr style="border-bottom: 1px solid var(--pebble-gray);"><td style="padding: var(--space-sm);">V</td><td style="padding: var(--space-sm);">Virtual</td></tr>
+          <tr style="border-bottom: 1px solid var(--pebble-gray);"><td style="padding: var(--space-sm);">E</td><td style="padding: var(--space-sm);">EarthCache</td></tr>
+          <tr style="border-bottom: 1px solid var(--pebble-gray);"><td style="padding: var(--space-sm);">L</td><td style="padding: var(--space-sm);">Letterbox</td></tr>
+          <tr style="border-bottom: 1px solid var(--pebble-gray);"><td style="padding: var(--space-sm);">Q</td><td style="padding: var(--space-sm);">Adventure Lab</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Steps</h3>
+      <ol>
+        <li>Go to <strong>Import → GSAK Database</strong></li>
+        <li>Select your <code>sqlite.db3</code> file</li>
+        <li>Click <strong>Import</strong></li>
+        <li>The first database import creates tags matching your GSAK database names</li>
+      </ol>
+
+      <h2 id="adventure-lab">Adventure Lab</h2>
+      <p>
+        GCForge imports Adventure Lab GPX exports produced by the
+        <a href="https://github.com/Adventure-Lab-GPX/lab2gpx">lab2gpx</a> tool.
+      </p>
+
+      <h3>Supported Formats</h3>
+      <ul>
+        <li>
+          <strong>Format A</strong> — individual stage waypoints (each stage is a top-level waypoint)
+        </li>
+        <li>
+          <strong>Format B</strong> — parent adventure cache with child stage waypoints
+        </li>
+      </ul>
+
+      <h3>How It Works</h3>
+      <p>
+        Each Adventure Lab is stored as a parent cache with child stage waypoints.
+        Stage order is determined by the waypoint sequence in the GPX.
+        Adventure identity uses the adventure GUID as the primary key for stability
+        across re-imports.
+      </p>
+
+      <h2 id="enrichment">Background Enrichment</h2>
+      <p>
+        After importing, caches can be enriched with additional data from external
+        sources. Enrichment runs as a background task and includes:
+      </p>
+      <ul>
+        <li>Automated fetch of state and county if missing</li>
+        <li>Elevation update</li>
+      </ul>
+      <p>
+        To trigger enrichment: select caches → <strong>Actions → Enrich</strong>.
+      </p>
+
+      <h2 id="enrichment">Stay up to date</h2>
+      <p>
+        You can update Favorite points and cache status using the light update function on your currently filtered caches.
+          (currently OC only because of missing API key for geocaching.com) → <strong>Update → Light Update</strong>.
+      </p>
+
+    </div>
+  </div>
+
+  <footer class="footer">
+    <div class="container">
+      <div class="footer__bottom">
+        <span>&copy; 2026 GCForge Contributors. Open source under MIT License.</span>
+        <div class="footer__social">
+          <a href="https://github.com/OliverBurgert/gcforge-public" title="GitHub">GitHub</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+</body>
+</html>

@@ -1,0 +1,314 @@
+{% load cache_tags icon_tags %}
+<div class="d-flex justify-content-between align-items-center mb-1"
+     data-sort="{{ f_sort }}" data-order="{{ f_order }}" data-params="{{ request.GET.urlencode }}">
+  <div class="d-flex align-items-center gap-2">
+    <small class="text-muted">{{ total }} cache{{ total|pluralize }} found</small>
+    <div class="dropdown d-inline-block" id="export-gpx-dropdown"
+         data-export-url="{% url 'geocaches:export_gpx' %}?{{ request.GET.urlencode }}"
+         data-recent-url="{% url 'geocaches:export_recent_folders' %}">
+      <button class="btn btn-sm btn-outline-success dropdown-toggle" data-bs-toggle="dropdown"
+              onclick="gcfLoadExportFolders()">Export GPX</button>
+      <ul class="dropdown-menu">
+        <li><a class="dropdown-item" href="#" onclick="gcfExportGpxDownload(); return false;">Download (browser)</a></li>
+        <li><a class="dropdown-item" href="#" onclick="gcfExportGpxBrowse(); return false;">Select folder...</a></li>
+        <li id="export-recent-separator" class="d-none"><hr class="dropdown-divider"></li>
+        <li id="export-recent-header" class="d-none"><h6 class="dropdown-header">Recent folders</h6></li>
+      </ul>
+    </div>
+    <div class="dropdown">
+      <button class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">Tags</button>
+      <ul class="dropdown-menu">
+        <li><a class="dropdown-item" href="{% url 'geocaches:bulk_tag_add' %}?{{ request.GET.urlencode }}">Add tag to filtered…</a></li>
+        <li><a class="dropdown-item" href="{% url 'geocaches:bulk_tag_remove' %}?{{ request.GET.urlencode }}">Remove tag from filtered…</a></li>
+      </ul>
+    </div>
+    <div class="dropdown">
+      <button class="btn btn-sm btn-outline-info dropdown-toggle" data-bs-toggle="dropdown">Enrich</button>
+      <ul class="dropdown-menu">
+        <li><h6 class="dropdown-header">All</h6></li>
+        <li><a class="dropdown-item" href="{% url 'geocaches:enrich' %}?{{ request.GET.urlencode }}&fields=all">Fill all missing fields</a></li>
+        <li><a class="dropdown-item" href="{% url 'geocaches:list' %}?{{ request.GET.urlencode }}&missing=any">Show caches with missing fields</a></li>
+        <li><hr class="dropdown-divider"></li>
+        <li><h6 class="dropdown-header">Elevation</h6></li>
+        <li><a class="dropdown-item" href="{% url 'geocaches:enrich' %}?{{ request.GET.urlencode }}&fields=elevation">Fill missing elevation</a></li>
+        <li><a class="dropdown-item" href="{% url 'geocaches:enrich' %}?{{ request.GET.urlencode }}&fields=elevation_update">Update elevation (overwrite, SRTM)</a></li>
+        <li><a class="dropdown-item" href="{% url 'geocaches:enrich' %}?{{ request.GET.urlencode }}&fields=elevation_hires">Update elevation (EU-DEM / Copernicus, online)</a></li>
+        <li><a class="dropdown-item" href="{% url 'geocaches:list' %}?{{ request.GET.urlencode }}&elevation=none">Show missing elevation</a></li>
+        <li><hr class="dropdown-divider"></li>
+        <li><h6 class="dropdown-header">Location</h6></li>
+        <li><a class="dropdown-item" href="{% url 'geocaches:enrich' %}?{{ request.GET.urlencode }}&fields=location">Fill missing country / state / county</a></li>
+        <li><a class="dropdown-item" href="{% url 'geocaches:enrich' %}?{{ request.GET.urlencode }}&fields=location_update">Force country / state / county update</a></li>
+        <li><a class="dropdown-item" href="{% url 'geocaches:list' %}?{{ request.GET.urlencode }}&state=__none__">Show missing state</a></li>
+        <li><a class="dropdown-item" href="{% url 'geocaches:list' %}?{{ request.GET.urlencode }}&county=__none__">Show missing county</a></li>
+      </ul>
+    </div>
+    <div class="dropdown">
+      <button class="btn btn-sm btn-outline-warning dropdown-toggle" data-bs-toggle="dropdown">Update</button>
+      <ul class="dropdown-menu">
+        <li><a class="dropdown-item" href="{% url 'geocaches:update' %}?{{ request.GET.urlencode }}&action=light_update">Light update (incl. fav &amp; status)</a></li>
+        <li><hr class="dropdown-divider"></li>
+        <li><h6 class="dropdown-header">Fetch Logs</h6></li>
+        <li><a class="dropdown-item" href="{% url 'geocaches:update' %}?{{ request.GET.urlencode }}&action=gc_recent_logs">GC: Fetch recent 50 logs</a></li>
+        <li><a class="dropdown-item" href="{% url 'geocaches:update' %}?{{ request.GET.urlencode }}&action=gc_all_logs">GC: Fetch all logs</a></li>
+        <li><a class="dropdown-item" href="#" onclick="var n=prompt('Number of logs to fetch:','50'); if(n) location.href='{% url 'geocaches:update' %}?{{ request.GET.urlencode }}&action=oc_logs&count='+n; return false;">OC: Fetch newest logs…</a></li>
+      </ul>
+    </div>
+    <a href="{% url 'geocaches:delete_filtered' %}?{{ request.GET.urlencode }}"
+       class="btn btn-sm btn-outline-danger">Delete filtered…</a>
+    <div hx-get="{% url 'geocaches:enrich_status' %}"
+         hx-trigger="load, every 3s"
+         hx-swap="innerHTML"
+         id="enrich-progress"></div>
+    <div hx-get="{% url 'geocaches:update_status' %}"
+         hx-trigger="load, every 3s"
+         hx-swap="innerHTML"
+         id="update-progress"></div>
+  </div>
+  <div class="d-flex align-items-center gap-3">
+    {% if page_obj.paginator.num_pages > 1 %}
+    <small class="text-muted">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</small>
+    {% endif %}
+    <form hx-get="{% url 'geocaches:list' %}"
+          hx-target="#cache-table-container"
+          hx-trigger="change"
+          hx-push-url="true"
+          class="d-flex align-items-center gap-1">
+      <small class="text-muted">Columns:</small>
+      <input type="hidden" name="q"            value="{{ f_q }}">
+      <input type="hidden" name="type"         value="{{ f_type }}">
+      <input type="hidden" name="status"       value="{{ f_status }}">
+      <input type="hidden" name="size"         value="{{ f_size }}">
+      <input type="hidden" name="found"        value="{{ f_found }}">
+      <input type="hidden" name="tag"          value="{{ f_tag }}">
+      <input type="hidden" name="country"      value="{{ f_country }}">
+      <input type="hidden" name="state"        value="{{ fv.state }}">
+      <input type="hidden" name="county"       value="{{ fv.county }}">
+      <input type="hidden" name="missing"      value="{{ fv.missing }}">
+      <input type="hidden" name="ref"          value="{{ f_ref }}">
+      <input type="hidden" name="radius"       value="{{ f_radius }}">
+      <input type="hidden" name="flag"         value="{{ f_flag }}">
+      <input type="hidden" name="elevation"    value="{{ f_elevation }}">
+      <input type="hidden" name="sort"         value="{{ f_sort }}">
+      <input type="hidden" name="order"        value="{{ f_order }}">
+      <input type="hidden" name="fname"        value="{{ fv.fname }}">
+      <input type="hidden" name="fname_op"     value="{{ fv.fname_op }}">
+      <input type="hidden" name="fcode"        value="{{ fv.fcode }}">
+      <input type="hidden" name="fcode_op"     value="{{ fv.fcode_op }}">
+      <input type="hidden" name="fowner"       value="{{ fv.fowner }}">
+      <input type="hidden" name="fowner_op"    value="{{ fv.fowner_op }}">
+      <input type="hidden" name="fplacedby"    value="{{ fv.fplacedby }}">
+      <input type="hidden" name="fplacedby_op" value="{{ fv.fplacedby_op }}">
+      <input type="hidden" name="ftext"        value="{{ fv.ftext }}">
+      <input type="hidden" name="types"        value="{{ fv.types }}">
+      <input type="hidden" name="sizes"        value="{{ fv.sizes }}">
+      <input type="hidden" name="statuses"     value="{{ fv.statuses }}">
+      <input type="hidden" name="diff_min"     value="{{ fv.diff_min }}">
+      <input type="hidden" name="diff_max"     value="{{ fv.diff_max }}">
+      <input type="hidden" name="terr_min"     value="{{ fv.terr_min }}">
+      <input type="hidden" name="terr_max"     value="{{ fv.terr_max }}">
+      <input type="hidden" name="fav_min"      value="{{ fv.fav_min }}">
+      <input type="hidden" name="fav_max"      value="{{ fv.fav_max }}">
+      <input type="hidden" name="hidden_from"  value="{{ fv.hidden_from }}">
+      <input type="hidden" name="hidden_to"    value="{{ fv.hidden_to }}">
+      <input type="hidden" name="lf_from"      value="{{ fv.lf_from }}">
+      <input type="hidden" name="lf_to"        value="{{ fv.lf_to }}">
+      <input type="hidden" name="fd_from"      value="{{ fv.fd_from }}">
+      <input type="hidden" name="fd_to"        value="{{ fv.fd_to }}">
+      <input type="hidden" name="flags"        value="{{ fv.flags }}">
+      <input type="hidden" name="flags_not"   value="{{ fv.flags_not }}">
+      <input type="hidden" name="attrs_yes"    value="{{ fv.attrs_yes }}">
+      <input type="hidden" name="attrs_no"     value="{{ fv.attrs_no }}">
+      <input type="hidden" name="bearing"      value="{{ fv.bearing }}">
+      <input type="hidden" name="where_name"   value="{{ fv.where_name }}">
+      <input type="hidden" name="where_sql"    value="{{ fv.where_sql }}">
+      <select name="preset" class="form-select form-select-sm" style="width:110px">
+        {% for preset in column_presets %}
+          <option value="{{ preset.name }}" {% if active_preset_name == preset.name %}selected{% endif %}>
+            {{ preset.name }}{% if not preset.is_builtin %} *{% endif %}
+          </option>
+        {% endfor %}
+      </select>
+    </form>
+  </div>
+</div>
+
+<div class="table-responsive">
+<table class="table table-sm table-hover table-bordered align-middle mb-1">
+  <thead class="table-dark">
+    <tr>
+      {% if "gc_code"         in active_columns %}{% sort_header "gc_code"         "Code"       f_sort f_order %}{% endif %}
+      {% if "name"            in active_columns %}{% sort_header "name"            "Name"       f_sort f_order %}{% endif %}
+      {% if "cache_type"      in active_columns %}{% sort_header "cache_type"      "Type"       f_sort f_order %}{% endif %}
+      {% if "size"            in active_columns %}{% sort_header "size"            "Size"       f_sort f_order %}{% endif %}
+      {% if "difficulty"      in active_columns %}{% sort_header "difficulty"      "D"          f_sort f_order %}{% endif %}
+      {% if "terrain"         in active_columns %}{% sort_header "terrain"         "T"          f_sort f_order %}{% endif %}
+      {% if "status"          in active_columns %}{% sort_header "status"          "Status"     f_sort f_order %}{% endif %}
+      {% if "fav_points"      in active_columns %}{% sort_header "fav_points"      "♥"          f_sort f_order %}{% endif %}
+      {% if "owner"           in active_columns %}{% sort_header "owner"           "Owner"      f_sort f_order %}{% endif %}
+      {% if "placed_by"       in active_columns %}{% sort_header "placed_by"       "Placed by"  f_sort f_order %}{% endif %}
+      {% if "country"         in active_columns %}{% sort_header "country"         "Country"    f_sort f_order %}{% endif %}
+      {% if "state"           in active_columns %}{% sort_header "state"           "State"      f_sort f_order %}{% endif %}
+      {% if "county"          in active_columns %}{% sort_header "county"          "County"     f_sort f_order %}{% endif %}
+      {% if "elevation"       in active_columns %}{% if distance_unit == "mi" %}{% sort_header "elevation" "Elev (ft)"  f_sort f_order %}{% else %}{% sort_header "elevation" "Elev (m)"   f_sort f_order %}{% endif %}{% endif %}
+      {% if "hidden_date"     in active_columns %}{% sort_header "hidden_date"     "Hidden"     f_sort f_order %}{% endif %}
+      {% if "last_found_date" in active_columns %}{% sort_header "last_found_date" "Last found" f_sort f_order %}{% endif %}
+      {% if "found_date"      in active_columns %}{% sort_header "found_date"      "Found"      f_sort f_order %}{% endif %}
+      {% if "updated_at"      in active_columns %}{% sort_header "updated_at"      "Updated"    f_sort f_order %}{% endif %}
+      {% if "distance"        in active_columns %}{% if ref_point %}{% if distance_unit == "mi" %}{% sort_header "distance_km" "Dist (mi)" f_sort f_order %}{% else %}{% sort_header "distance_km" "Dist (km)" f_sort f_order %}{% endif %}{% else %}<th>Dist</th>{% endif %}{% endif %}
+      {% if "bearing"         in active_columns %}{% if ref_point %}{% sort_header "bearing_deg" "Bearing"   f_sort f_order %}{% else %}<th>Bearing</th>{% endif %}{% endif %}
+      {% if "tags"            in active_columns %}<th>Tags</th>{% endif %}
+      {% if "flags"           in active_columns %}<th>Flags</th>{% endif %}
+    </tr>
+  </thead>
+  <tbody>
+    {% for cache in page_obj %}
+    <tr data-code="{{ cache.display_code }}" data-lat="{{ cache.latitude }}" data-lon="{{ cache.longitude }}"
+        class="{% if cache.found or cache.completed %}table-success{% elif has_accounts and cache.is_mine %}table-mine{% elif cache.status == 'Archived' %}table-secondary{% elif cache.status == 'Disabled' %}table-warning{% endif %}">
+      {% if "gc_code" in active_columns %}
+      <td class="font-monospace text-nowrap">
+        {% if cache.external_url %}<a href="{{ cache.external_url }}" target="_blank" rel="noopener" title="Open on {{ cache.external_urls.0.0 }}">{{ cache.display_code }}</a>{% else %}{{ cache.display_code }}{% endif %}
+        {% if cache.gc_code and cache.oc_code %}<span class="text-muted ms-1 small" title="Also: {{ cache.oc_code }}">+</span>{% endif %}
+      </td>
+      {% endif %}
+      {% if "name" in active_columns %}<td class="desc-cell" title="{{ cache.name }}"><a href="{% url 'geocaches:detail' cache.display_code %}" class="cache-name-link">{{ cache.name }}</a></td>{% endif %}
+      {% if "cache_type"      in active_columns %}<td>{% cache_type_icon cache.cache_type "16" cache=cache %} {{ cache.cache_type }}</td>{% endif %}
+      {% if "size"            in active_columns %}<td>{{ cache.size_override|default:cache.size }}</td>{% endif %}
+      {% if "difficulty"      in active_columns %}<td class="text-center">{{ cache.difficulty|default:"—" }}</td>{% endif %}
+      {% if "terrain"         in active_columns %}<td class="text-center">{{ cache.terrain|default:"—" }}</td>{% endif %}
+      {% if "status" in active_columns %}
+      <td>
+        {% if cache.status == "Active" %}
+          <span class="badge bg-success">Active</span>
+        {% elif cache.status == "Disabled" %}
+          <span class="badge bg-warning text-dark">Disabled</span>
+        {% elif cache.status == "Archived" %}
+          <span class="badge bg-secondary">Archived</span>
+        {% else %}
+          <span class="badge bg-light text-dark">{{ cache.status }}</span>
+        {% endif %}
+      </td>
+      {% endif %}
+      {% if "fav_points" in active_columns %}<td class="text-center">{% if cache.fav_points is not None %}{{ cache.fav_points }}{% endif %}</td>{% endif %}
+      {% if "owner"           in active_columns %}<td class="desc-cell" title="{{ cache.owner }}">{{ cache.owner }}</td>{% endif %}
+      {% if "placed_by"       in active_columns %}<td class="desc-cell-sm" title="{{ cache.placed_by }}">{{ cache.placed_by }}</td>{% endif %}
+      {% if "country"         in active_columns %}<td>{% if cache.iso_country_code %}{{ cache.iso_country_code|country_name }}{% else %}{{ cache.country }}{% endif %}</td>{% endif %}
+      {% if "state"           in active_columns %}<td class="desc-cell-sm" title="{{ cache.state }}">{{ cache.state }}</td>{% endif %}
+      {% if "county"          in active_columns %}<td class="desc-cell-sm" title="{{ cache.county }}">{{ cache.county }}</td>{% endif %}
+      {% if "elevation" in active_columns %}
+      <td class="text-end font-monospace text-nowrap">
+        {% with ele=cache.elevation_user|default:cache.elevation %}
+          {% if ele is not None %}
+            {% if distance_unit == "mi" %}{{ ele|multiply:3.28084|floatformat:0 }}{% else %}{{ ele|floatformat:0 }}{% endif %}
+          {% else %}—{% endif %}
+        {% endwith %}
+      </td>
+      {% endif %}
+      {% if "hidden_date"     in active_columns %}<td class="text-nowrap">{{ cache.hidden_date|date:"Y-m-d"|default:"—" }}</td>{% endif %}
+      {% if "last_found_date" in active_columns %}<td class="text-nowrap">{{ cache.last_found_date|date:"Y-m-d"|default:"—" }}</td>{% endif %}
+      {% if "found_date"      in active_columns %}<td class="text-nowrap">{{ cache.found_date|date:"Y-m-d"|default:"—" }}</td>{% endif %}
+      {% if "updated_at"      in active_columns %}<td class="text-nowrap">{{ cache.updated_at|date:"Y-m-d H:i"|default:"—" }}</td>{% endif %}
+      {% if "distance" in active_columns %}
+      <td class="text-end font-monospace text-nowrap">
+        {% if ref_point %}{% if cache.distance_km is not None %}{% if distance_unit == "mi" %}{{ cache.distance_km|multiply:0.621371|floatformat:1 }}{% else %}{{ cache.distance_km|floatformat:1 }}{% endif %}{% else %}—{% endif %}{% else %}—{% endif %}
+      </td>
+      {% endif %}
+      {% if "bearing" in active_columns %}
+      <td class="text-nowrap">
+        {% if ref_point %}{{ cache.bearing_deg|bearing_label }}{% else %}—{% endif %}
+      </td>
+      {% endif %}
+      {% if "tags" in active_columns %}
+      <td>{% for t in cache.tags.all %}<a href="#"
+            onclick="filterByTag('{{ t.name|escapejs }}'); return false;"
+            class="badge text-decoration-none me-1 {% if f_tag == t.name %}bg-primary{% else %}bg-secondary{% endif %}">{{ t.name }}</a>{% endfor %}</td>
+      {% endif %}
+      {% if "flags" in active_columns %}
+      <td class="text-nowrap">
+        {% if cache.found %}<span class="badge badge-found bg-success" title="Found">✓</span>{% endif %}
+        {% if has_accounts and cache.is_mine %}<span class="badge bg-warning text-dark" title="Cache owner">CO</span>{% endif %}
+        {% if cache.ftf %}<span class="badge bg-warning text-dark" title="FTF">FTF</span>{% endif %}
+        {% if cache.dnf %}<span class="badge badge-dnf bg-danger" title="DNF">DNF</span>{% endif %}
+        {% if cache.user_flag %}<span class="badge badge-flag bg-warning text-dark" title="Flagged">🚩</span>{% endif %}
+        {% if cache.is_premium %}<span class="badge bg-info text-dark" title="Premium">PM</span>{% endif %}
+        {% if cache.has_trackable %}<span class="badge bg-secondary" title="Has trackable">TB</span>{% endif %}
+        {% if cache.import_locked %}<span class="badge bg-dark" title="Import locked">🔒</span>{% endif %}
+        {% if cache.corrected_coordinates %}<span class="badge bg-success" title="Has corrected coordinates">⊙</span>{% endif %}
+      </td>
+      {% endif %}
+    </tr>
+    {% empty %}
+    <tr><td colspan="{{ active_columns|length }}" class="text-center text-muted py-4">No caches match the current filters.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+</div>
+
+{% if page_obj.paginator.num_pages > 1 %}
+{% with last=page_obj.paginator.num_pages lo=page_obj.number|add:"-3" hi=page_obj.number|add:"3" %}
+<nav>
+  <ul class="pagination pagination-sm">
+
+    {% if page_obj.has_previous %}
+      <li class="page-item">
+        <a class="page-link"
+           hx-get="{% url 'geocaches:list' %}?{{ request.GET.urlencode }}&page={{ page_obj.previous_page_number }}"
+           hx-target="#cache-table-container"
+           href="?{{ request.GET.urlencode }}&page={{ page_obj.previous_page_number }}">«</a>
+      </li>
+    {% endif %}
+
+    {# Always show page 1 when it falls outside the window #}
+    {% if lo > 1 %}
+      <li class="page-item">
+        <a class="page-link"
+           hx-get="{% url 'geocaches:list' %}?{{ request.GET.urlencode }}&page=1"
+           hx-target="#cache-table-container"
+           href="?{{ request.GET.urlencode }}&page=1">1</a>
+      </li>
+      {% if lo > 2 %}
+        <li class="page-item disabled"><span class="page-link">…</span></li>
+      {% endif %}
+    {% endif %}
+
+    {# Window: current page ±3 #}
+    {% for num in page_obj.paginator.page_range %}
+      {% if num >= lo and num <= hi %}
+        {% if page_obj.number == num %}
+          <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+        {% else %}
+          <li class="page-item">
+            <a class="page-link"
+               hx-get="{% url 'geocaches:list' %}?{{ request.GET.urlencode }}&page={{ num }}"
+               hx-target="#cache-table-container"
+               href="?{{ request.GET.urlencode }}&page={{ num }}">{{ num }}</a>
+          </li>
+        {% endif %}
+      {% endif %}
+    {% endfor %}
+
+    {# Always show last page when it falls outside the window #}
+    {% if hi < last %}
+      {% if hi < last|add:"-1" %}
+        <li class="page-item disabled"><span class="page-link">…</span></li>
+      {% endif %}
+      <li class="page-item">
+        <a class="page-link"
+           hx-get="{% url 'geocaches:list' %}?{{ request.GET.urlencode }}&page={{ last }}"
+           hx-target="#cache-table-container"
+           href="?{{ request.GET.urlencode }}&page={{ last }}">{{ last }}</a>
+      </li>
+    {% endif %}
+
+    {% if page_obj.has_next %}
+      <li class="page-item">
+        <a class="page-link"
+           hx-get="{% url 'geocaches:list' %}?{{ request.GET.urlencode }}&page={{ page_obj.next_page_number }}"
+           hx-target="#cache-table-container"
+           href="?{{ request.GET.urlencode }}&page={{ page_obj.next_page_number }}">»</a>
+      </li>
+    {% endif %}
+
+  </ul>
+</nav>
+{% endwith %}
+{% endif %}

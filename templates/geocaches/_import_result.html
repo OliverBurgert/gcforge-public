@@ -1,0 +1,15 @@
+{% if result %}
+<div class="alert {% if result.errors %}alert-warning{% else %}alert-success{% endif %} mb-4">
+  <strong>{% if db_name %}{{ db_name }} import complete{% else %}Import complete{% endif %}</strong>{% if result.file_count %} ({{ result.file_count }} files){% endif %} —
+  created: {{ result.created }}, updated: {{ result.updated }}, locked: {{ result.locked }}
+  {% if result.errors %}
+  <ul class="mb-0 mt-2 small">
+    {% for e in result.errors %}<li>{{ e }}</li>{% endfor %}
+  </ul>
+  {% endif %}
+</div>
+{% endif %}
+
+{% for e in errors %}
+<div class="alert alert-danger">{{ e }}</div>
+{% endfor %}

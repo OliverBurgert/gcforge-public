@@ -1,0 +1,224 @@
+{% extends "base.html" %}
+{% load cache_tags %}
+{% block title %}Bulk Logging — GCForge{% endblock %}
+
+{% block content %}
+<style>
+  #bulk-layout { display: flex; height: calc(100vh - 56px); overflow: hidden; }
+  #bulk-left  { width: 380px; min-width: 280px; display: flex; flex-direction: column; border-right: 1px solid #dee2e6; }
+  #bulk-list  { flex: 1; overflow-y: auto; min-height: 0; }
+  #bulk-editor-header { flex-shrink: 0; }
+  #bulk-editor { padding: 0.75rem; overflow-y: auto; max-height: 52vh; }
+  #bulk-right { flex: 1; overflow: hidden; }
+  #detail-frame { width: 100%; height: 100%; border: none; }
+  .note-row { cursor: pointer; border-left: 3px solid transparent; }
+  .note-row.active { border-left-color: #0d6efd; background: #eef3ff; }
+  .chip-new    { background: #6c757d; }
+  .chip-draft  { background: #0d6efd; }
+  .chip-logged { background: #198754; }
+  .chip-error  { background: #dc3545; }
+</style>
+
+<div id="bulk-layout">
+
+  {# ===== LEFT: list + editor ===== #}
+  <div id="bulk-left">
+
+    {# --- Tab bar --- #}
+    <ul class="nav nav-tabs nav-fill border-bottom px-2 pt-2 flex-shrink-0" style="font-size:.8rem">
+      <li class="nav-item">
+        <a class="nav-link py-1 {% if active_tab == 'pending' %}active{% endif %}"
+           href="?tab=pending{% if selected_note %}&note={{ selected_note.pk }}{% endif %}">
+          Pending
+          <span class="badge bg-secondary ms-1">{{ pending_notes|length }}</span>
+        </a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link py-1 {% if active_tab == 'done' %}active{% endif %}"
+           href="?tab=done{% if selected_note %}&note={{ selected_note.pk }}{% endif %}">
+          Done
+          <span class="badge bg-success ms-1">{{ done_notes|length }}</span>
+        </a>
+      </li>
+    </ul>
+
+    {# --- Note list --- #}
+    <div id="bulk-list">
+      {% if active_tab == 'pending' %}
+        {% if pending_notes %}
+        <div class="list-group list-group-flush">
+          {% for note in pending_notes %}
+          <a href="?tab=pending&note={{ note.pk }}"
+             class="list-group-item list-group-item-action note-row py-2 px-3
+                    {% if selected_note and selected_note.pk == note.pk %}active{% endif %}">
+            <div class="d-flex align-items-center justify-content-between">
+              <span class="small fw-semibold text-truncate" style="max-width:185px">
+                {{ note.geocache.display_code }}{% if not note.geocache.is_placeholder %} — {{ note.geocache.name|truncatechars:28 }}{% endif %}
+                {% if note.geocache.is_placeholder %}<span class="text-warning-emphasis" title="Not in database">(pending)</span>{% endif %}
+              </span>
+              <span class="badge chip-{{ note.status }} text-white ms-1" style="font-size:.62rem" data-role="status-chip">{{ note.status }}</span>
+            </div>
+            <div class="d-flex align-items-center justify-content-between mt-1">
+              <span class="text-muted" style="font-size:.73rem" data-role="log-type-text">
+                {{ note.log_type }}{% if note.logged_at %} · {{ note.logged_at|date:"Y-m-d H:i" }}{% endif %}
+              </span>
+              <span class="text-muted" style="font-size:.7rem">#{{ note.auto_seq }}</span>
+            </div>
+            {% if note.status == "error" %}
+            <div class="text-danger mt-1" style="font-size:.7rem">{{ note.submit_error|truncatechars:70 }}</div>
+            {% endif %}
+          </a>
+          {% endfor %}
+        </div>
+        {% else %}
+        <p class="text-muted small px-3 pt-3">No pending field notes.</p>
+        {% endif %}
+
+      {% else %}
+        {# Done tab #}
+        {% if done_notes %}
+        <div class="list-group list-group-flush">
+          {% for note in done_notes %}
+          <a href="?tab=done&note={{ note.pk }}"
+             class="list-group-item list-group-item-action note-row py-2 px-3
+                    {% if selected_note and selected_note.pk == note.pk %}active{% endif %}">
+            <div class="d-flex align-items-center justify-content-between">
+              <span class="small fw-semibold text-truncate" style="max-width:200px">
+                {{ note.geocache.display_code }} — {{ note.geocache.name|truncatechars:28 }}
+              </span>
+              <span class="badge chip-logged text-white ms-1" style="font-size:.62rem">logged</span>
+            </div>
+            <div class="text-muted mt-1" style="font-size:.73rem">
+              {{ note.log_type }}{% if note.submitted_at %} · {{ note.submitted_at|date:"Y-m-d H:i" }}{% endif %}
+            </div>
+          </a>
+          {% endfor %}
+        </div>
+        {% else %}
+        <p class="text-muted small px-3 pt-3">No submitted logs yet.</p>
+        {% endif %}
+      {% endif %}
+    </div>
+
+    {# --- Editor --- #}
+    <div id="bulk-editor-header" class="d-flex align-items-center justify-content-between px-3 py-2 flex-shrink-0"
+         style="background:#e9ecef;border-top:2px solid #adb5bd;min-height:2.5rem">
+      {% if selected_note %}
+      <strong class="small text-truncate" style="max-width:230px">
+        {{ selected_note.geocache.display_code }}{% if not selected_note.geocache.is_placeholder %} — {{ selected_note.geocache.name|truncatechars:28 }}{% else %} <span class="text-warning-emphasis fw-normal">(pending)</span>{% endif %}
+      </strong>
+      <span class="badge chip-{{ selected_note.status }} text-white ms-2" style="font-size:.65rem">{{ selected_note.status }}</span>
+      {% else %}
+      <span class="text-muted small">No note selected</span>
+      {% endif %}
+    </div>
+    <div id="bulk-editor">
+      {% if selected_note %}
+
+      {% if selected_note.submit_error %}
+      <div class="alert alert-danger py-1 mb-2" style="font-size:.8rem">{{ selected_note.submit_error }}</div>
+      {% endif %}
+
+      <form method="post" action="{% url 'geocaches:bulk_logging' %}"
+            enctype="multipart/form-data">
+        {% csrf_token %}
+        <input type="hidden" name="note_id" value="{{ selected_note.pk }}">
+
+        {% include "geocaches/_log_form_fields.html" %}
+
+        <div class="d-flex align-items-center gap-1 mt-2 flex-wrap">
+          <a href="#" class="btn btn-sm btn-outline-secondary" id="btn-prev">&#8592;</a>
+          <a href="#" class="btn btn-sm btn-outline-secondary" id="btn-next">&#8594;</a>
+          {% if submit_platforms %}
+          <button type="button" class="btn btn-sm btn-outline-secondary ms-1"
+                  onclick="gcfImageOpen()">+ Image</button>
+          {% endif %}
+          <button type="submit" name="action" value="save_draft"
+                  class="btn btn-sm btn-outline-primary ms-1">Save draft</button>
+          <button type="submit" name="action" value="submit_now"
+                  class="btn btn-sm btn-success">Submit now</button>
+          <button type="submit" name="action" value="delete"
+                  class="btn btn-sm btn-outline-danger ms-auto"
+                  onclick="return confirm('Remove from pending queue? The field note will be kept.')">Remove from queue</button>
+        </div>
+      </form>
+
+      {% else %}
+      <p class="text-muted small">Select a field note from the list.</p>
+      {% endif %}
+    </div>
+
+  </div>
+
+  {# ===== RIGHT: cache detail iframe ===== #}
+  <div id="bulk-right">
+    {% if selected_note %}
+    <iframe id="detail-frame"
+            src="{% url 'geocaches:detail' selected_note.geocache.display_code %}?embed=1"
+            title="Cache detail"></iframe>
+    {% else %}
+    <div class="d-flex align-items-center justify-content-center h-100 text-muted small">
+      Select a field note to preview the cache.
+    </div>
+    {% endif %}
+  </div>
+
+</div>
+
+{% if selected_note and submit_platforms %}
+{% include "geocaches/_log_image_dialog.html" %}
+<script>
+gcfImageSetPlatforms([{% for p in submit_platforms %}'{{ p.id }}'{% if not forloop.last %},{% endif %}{% endfor %}]);
+</script>
+{% endif %}
+
+<script>
+(function () {
+  var pending = [{% for n in pending_notes %}{{ n.pk }}{% if not forloop.last %},{% endif %}{% endfor %}];
+  var selectedId = {% if selected_note %}{{ selected_note.pk }}{% else %}null{% endif %};
+  var tab = '{{ active_tab }}';
+  var idx = pending.indexOf(selectedId);
+
+  function noteUrl(id) {
+    return '?tab=' + tab + '&note=' + id;
+  }
+
+  var btnPrev = document.getElementById('btn-prev');
+  var btnNext = document.getElementById('btn-next');
+  if (btnPrev) {
+    if (idx > 0) { btnPrev.href = noteUrl(pending[idx - 1]); }
+    else { btnPrev.classList.add('disabled'); btnPrev.setAttribute('aria-disabled','true'); }
+  }
+  if (btnNext) {
+    if (idx >= 0 && idx < pending.length - 1) { btnNext.href = noteUrl(pending[idx + 1]); }
+    else { btnNext.classList.add('disabled'); btnNext.setAttribute('aria-disabled','true'); }
+  }
+
+  // Reload editor when the detail iframe navigates (e.g. after cache refresh)
+  // so the passphrase field appears if req_passwd changed.
+  var detailFrame = document.getElementById('detail-frame');
+  if (detailFrame) {
+    var iframeInitialLoad = true;
+    detailFrame.addEventListener('load', function () {
+      if (iframeInitialLoad) { iframeInitialLoad = false; return; }
+      window.location.reload();
+    });
+  }
+
+  // Live-update log type text in the active list item when the select changes
+  var logTypeSelect = document.querySelector('select[name="log_type"]');
+  if (logTypeSelect) {
+    logTypeSelect.addEventListener('change', function () {
+      var activeRow = document.querySelector('.note-row.active');
+      if (!activeRow) return;
+      var logTypeSpan = activeRow.querySelector('[data-role="log-type-text"]');
+      if (logTypeSpan) {
+        var current = logTypeSpan.textContent;
+        var datePart = current.indexOf(' · ') >= 0 ? current.substring(current.indexOf(' · ')) : '';
+        logTypeSpan.textContent = this.value + datePart;
+      }
+    });
+  }
+})();
+</script>
+{% endblock %}

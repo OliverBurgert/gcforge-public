@@ -1,0 +1,293 @@
+import json
+import re
+from urllib.parse import urlencode
+
+from django import template
+from django.utils.html import escape
+from django.utils.safestring import mark_safe
+
+from geocaches.countries import iso_to_name
+
+register = template.Library()
+
+
+@register.filter(is_safe=True)
+def tojson(value):
+    """Encode a Python value as a safe JSON literal for inline use in HTML attributes."""
+    return mark_safe(json.dumps(value, ensure_ascii=False))
+
+
+@register.filter
+def country_name(iso_code):
+    """Convert an ISO 3166-1 alpha-2 code to English country name."""
+    return iso_to_name(iso_code) if iso_code else ""
+
+
+_SCRIPT_RE = re.compile(r'<script[^>]*>.*?</script>', re.IGNORECASE | re.DOTALL)
+_STYLE_RE = re.compile(r'<style[^>]*>.*?</style>', re.IGNORECASE | re.DOTALL)
+_EVENT_RE = re.compile(r'\s+on\w+=(?:"[^"]*"|\'[^\']*\'|[^\s>]*)', re.IGNORECASE)
+_JS_HREF_RE = re.compile(r'(href|src)=["\']javascript:[^"\']*["\']', re.IGNORECASE)
+
+
+@register.filter(is_safe=True)
+def safe_html(value):
+    """Strip script/style/event-handler content; mark result safe for HTML rendering."""
+    if not value:
+        return value
+    cleaned = _SCRIPT_RE.sub('', value)
+    cleaned = _STYLE_RE.sub('', cleaned)
+    cleaned = _EVENT_RE.sub('', cleaned)
+    cleaned = _JS_HREF_RE.sub('href="#"', cleaned)
+    return mark_safe(cleaned)
+
+
+# ---------------------------------------------------------------------------
+# Log text rendering
+# ---------------------------------------------------------------------------
+
+# GC smiley codes → Unicode emoji
+_GC_SMILEYS = {
+    '[:)]':   '😊',  # Smile
+    '[:-)]':  '😊',
+    '[:D]':   '😁',  # Big smile
+    '[:-D]':  '😁',
+    '[8D]':   '😎',  # Cool
+    '[:I]':   '😊',  # Blush (no distinct emoji)
+    '[:P]':   '😛',  # Tongue
+    '[:-P]':  '😛',
+    '[}:)]':  '😈',  # Evil
+    '[:O]':   '😮',  # Shocked
+    '[:-O]':  '😮',
+    '[;)]':   '😉',  # Wink
+    '[;-)]':  '😉',
+    '[:o)]':  '🤡',  # Clown
+    '[B)]':   '😎',  # Black eye (sunglasses)
+    '[8]':    '🎱',  # Eightball
+    '[:(]':   '🙁',  # Frown
+    '[8)]':   '😊',  # Shy
+    '[:(!!]': '😡',  # Angry
+    '[xx(]':  '😵',  # Dead
+    '[\\|)]': '😴',  # Sleepy
+    '[|(]':   '😴',  # Sleepy (alt)
+    '[|)]':   '😴',  # Sleepy (alt)
+    '[:X]':   '😘',  # Kisses
+    '[^]':    '👍',  # Approve
+    '[V]':    '👎',  # Disapprove
+    '[?]':    '❓',  # Question
+    '[LOL]':  '😂',  # LOL (seen in older GC logs)
+}
+
+# Detect whether a text already contains HTML markup
+_HTML_TAG_DETECT_RE = re.compile(
+    r'<(?:p|br|div|span|b|i|u|em|strong|a[\s>]|ul|ol|li|h[1-6]|blockquote|img|hr)[\s>/]',
+    re.IGNORECASE,
+)
+
+# BBCode patterns (matched after HTML-escaping, so tag content is safe)
+_BB_DETECT      = re.compile(r'\[(?:b|i|u|url|img)[\]=]', re.IGNORECASE)
+_BB_BOLD        = re.compile(r'\[b\](.*?)\[/b\]',        re.IGNORECASE | re.DOTALL)
+_BB_ITALIC      = re.compile(r'\[i\](.*?)\[/i\]',        re.IGNORECASE | re.DOTALL)
+_BB_UNDERLINE   = re.compile(r'\[u\](.*?)\[/u\]',        re.IGNORECASE | re.DOTALL)
+_BB_URL_NAMED   = re.compile(r'\[url=([^\]]+)\](.*?)\[/url\]', re.IGNORECASE | re.DOTALL)
+_BB_URL_PLAIN   = re.compile(r'\[url\](https?://[^\[]+)\[/url\]', re.IGNORECASE)
+_BB_IMG         = re.compile(r'\[img\](https?://[^\[]+)\[/img\]', re.IGNORECASE)
+
+# GC markdown patterns (inline; applied after HTML-escaping)
+_MD_BOLD            = re.compile(r'\*\*(.+?)\*\*')
+_MD_ITALIC_STAR     = re.compile(r'\*([^*\n]+)\*')
+_MD_ITALIC_UNDER    = re.compile(r'(?<!\w)_([^_\n]+)_(?!\w)')
+# Link: [text](url) or [text](url "title") — captures URL up to first space/paren
+_MD_LINK            = re.compile(r'\[([^\]]+)\]\((https?://[^\s)]+)[^)]*\)')
+# Ordered list item: "1. text"
+_MD_OL              = re.compile(r'^(\d+)\. (.+)$')
+
+# Link post-processor: add target="_blank" to every <a> tag
+_LINK_TAG_RE = re.compile(r'<a(\s[^>]*)>', re.IGNORECASE)
+
+
+def _sanitize(html: str) -> str:
+    html = _SCRIPT_RE.sub('', html)
+    html = _STYLE_RE.sub('', html)
+    html = _EVENT_RE.sub('', html)
+    html = _JS_HREF_RE.sub('href="#"', html)
+    return html
+
+
+def _add_link_targets(html: str) -> str:
+    def _patch(m):
+        attrs = m.group(1)
+        if 'target=' not in attrs.lower():
+            attrs += ' target="_blank" rel="noopener"'
+        elif 'rel=' not in attrs.lower():
+            attrs += ' rel="noopener"'
+        return f'<a{attrs}>'
+    return _LINK_TAG_RE.sub(_patch, html)
+
+
+def _gc_markup_to_html(text: str) -> str:
+    """Convert a GC log text (plain / mini-markup / old HTML) to safe HTML."""
+    # 1. Smiley substitution (before any escaping)
+    for code, emoji in _GC_SMILEYS.items():
+        text = text.replace(code, emoji)
+
+    # 2. If text already contains HTML, sanitise and return
+    if _HTML_TAG_DETECT_RE.search(text):
+        return _add_link_targets(_sanitize(text))
+
+    # 3. Detect BBCode before escaping (brackets are unaffected by escape())
+    has_bb = bool(_BB_DETECT.search(text))
+
+    # 4. Escape HTML entities — all subsequent markup is generated by us
+    text = str(escape(text))
+
+    # 5. BBCode
+    if has_bb:
+        text = _BB_BOLD.sub(r'<strong>\1</strong>', text)
+        text = _BB_ITALIC.sub(r'<em>\1</em>', text)
+        text = _BB_UNDERLINE.sub(r'<u>\1</u>', text)
+        text = _BB_URL_NAMED.sub(
+            r'<a href="\1" target="_blank" rel="noopener">\2</a>', text)
+        text = _BB_URL_PLAIN.sub(
+            r'<a href="\1" target="_blank" rel="noopener">\1</a>', text)
+        text = _BB_IMG.sub(
+            r'<a href="\1" target="_blank" rel="noopener">[image]</a>', text)
+
+    # 6. GC markdown — block elements first (line-by-line)
+    lines = text.split('\n')
+    processed = []
+    for line in lines:
+        s = line.lstrip()
+        if s.startswith('### '):
+            processed.append(f'<strong>{s[4:].rstrip(" #")}</strong>')
+        elif s.startswith('## '):
+            processed.append(f'<strong>{s[3:].rstrip(" #")}</strong>')
+        elif s.startswith('# '):
+            processed.append(f'<strong>{s[2:].rstrip(" #")}</strong>')
+        elif s.startswith('> '):
+            processed.append(
+                f'<span class="d-block ms-2 ps-2 border-start text-muted fst-italic">{s[2:]}</span>')
+        elif s in ('---', '* * *', '***'):
+            processed.append('<hr>')
+        elif s.startswith('* ') or s.startswith('- '):
+            processed.append(f'• {s[2:]}')
+        else:
+            m = _MD_OL.match(s)
+            if m:
+                processed.append(f'{m.group(1)}. {m.group(2)}')
+            else:
+                processed.append(line)
+    text = '\n'.join(processed)
+
+    # 7. GC markdown — inline (bold before italic to handle ** correctly)
+    text = _MD_BOLD.sub(r'<strong>\1</strong>', text)
+    text = _MD_ITALIC_STAR.sub(r'<em>\1</em>', text)
+    text = _MD_ITALIC_UNDER.sub(r'<em>\1</em>', text)
+    text = _MD_LINK.sub(r'<a href="\2" target="_blank" rel="noopener">\1</a>', text)
+
+    # 8. Newlines → <br>
+    text = text.replace('\n', '<br>')
+
+    return text
+
+
+@register.filter(is_safe=True)
+def render_log_text(text, source=''):
+    """Render a geocache log entry as safe HTML.
+
+    OC logs (source starts with 'oc_') are treated as HTML and sanitised.
+    GC / unknown-source logs are converted from GC mini-markup (smileys,
+    GC markdown subset, BBCode, old inline HTML) to safe HTML.
+    All links get target="_blank" rel="noopener".
+    """
+    if not text:
+        return text
+
+    if str(source).startswith('oc_'):
+        html = _add_link_targets(_sanitize(text))
+        return mark_safe(html)
+
+    return mark_safe(_gc_markup_to_html(text))
+
+
+_ROT13 = str.maketrans(
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz",
+    "NOPQRSTUVWXYZABCDEFGHIJKLMnopqrstuvwxyzabcdefghijklm",
+)
+
+
+@register.filter
+def rot13(value):
+    """Encode/decode a string with ROT13."""
+    if not value:
+        return value
+    return value.translate(_ROT13)
+
+
+_COMPASS = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"]
+
+
+@register.filter
+def multiply(value, arg):
+    """Multiply a numeric value by arg (e.g. for unit conversion)."""
+    try:
+        return float(value) * float(arg)
+    except (TypeError, ValueError):
+        return value
+
+
+@register.filter
+def tojson(value):
+    """Serialize a Python value to a JSON string for use in HTML attributes.
+    Do NOT mark safe — Django's HTML auto-escaping must convert " to &quot;."""
+    return json.dumps(value)
+
+
+@register.filter
+def bearing_label(deg):
+    """Format a bearing in degrees as '274° W'."""
+    if deg is None:
+        return "—"
+    direction = _COMPASS[round(deg / 45) % 8]
+    return f"{deg:.0f}° {direction}"
+
+
+@register.simple_tag
+def coords(lat, lon, fmt="dd"):
+    """
+    Format a lat/lon pair in the requested display format.
+    Returns a 2-tuple (lat_str, lon_str) — use with {% coords lat lon fmt as c %}
+    and then {{ c.0 }} / {{ c.1 }}.
+    """
+    from geocaches.coords import format_coords
+    return format_coords(lat, lon, fmt)
+
+
+@register.simple_tag(takes_context=True)
+def sort_header(context, field, label, current_sort, current_order):
+    """Render a <th> with a sortable column header link."""
+    request = context.get("request")
+
+    if current_sort == field:
+        next_order = "desc" if current_order == "asc" else "asc"
+        arrow = (
+            '<span class="sort-arrow active">▲</span>'
+            if current_order == "asc"
+            else '<span class="sort-arrow active">▼</span>'
+        )
+    else:
+        next_order = "asc"
+        arrow = '<span class="sort-arrow">▲</span>'
+
+    params = request.GET.copy() if request else {}
+    params["sort"] = field
+    params["order"] = next_order
+    params.pop("page", None)
+    url = f"?{urlencode(params)}"
+
+    return mark_safe(
+        f'<th>'
+        f'<a hx-get="{url}" hx-target="#cache-table-container" href="{url}">'
+        f'{label} {arrow}'
+        f'</a>'
+        f'</th>'
+    )

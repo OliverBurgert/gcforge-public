@@ -1,0 +1,15 @@
+{% load cache_tags %}
+{% if builtin_filters %}
+<optgroup label="Built-in">
+  {% for sf in builtin_filters %}
+  <option value="{{ sf.pk }}" data-params="{{ sf.params|tojson }}" data-builtin="1">{{ sf.name }}</option>
+  {% endfor %}
+</optgroup>
+{% endif %}
+{% if user_filters %}
+<optgroup label="My filters">
+  {% for sf in user_filters %}
+  <option value="{{ sf.pk }}" data-params="{{ sf.params|tojson }}">{{ sf.name }}</option>
+  {% endfor %}
+</optgroup>
+{% endif %}

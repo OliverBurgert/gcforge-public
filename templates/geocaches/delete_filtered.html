@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Delete caches — GCForge{% endblock %}
+
+{% block content %}
+<div class="px-3 py-4" style="max-width:500px">
+  <h5 class="mb-3">Delete filtered caches</h5>
+
+  {% if count == 0 %}
+  <div class="alert alert-info">No caches match the current filter — nothing to delete.</div>
+  <a href="{% url 'geocaches:list' %}?{{ query_string }}" class="btn btn-sm btn-secondary">Back</a>
+
+  {% else %}
+  <div class="alert alert-danger">
+    <strong>Warning:</strong> This will permanently delete
+    <strong>{{ count }} cache{{ count|pluralize }}</strong> and all their related data
+    (logs, waypoints, notes, images). This cannot be undone.
+  </div>
+
+  <form method="post" action="{% url 'geocaches:delete_filtered' %}?{{ query_string }}">
+    {% csrf_token %}
+    <div class="d-flex gap-2">
+      <button type="submit" class="btn btn-sm btn-danger">Delete {{ count }} cache{{ count|pluralize }}</button>
+      <a href="{% url 'geocaches:list' %}?{{ query_string }}" class="btn btn-sm btn-secondary">Cancel</a>
+    </div>
+  </form>
+  {% endif %}
+</div>
+{% endblock %}

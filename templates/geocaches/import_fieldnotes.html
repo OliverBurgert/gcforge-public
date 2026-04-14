@@ -1,0 +1,247 @@
+{% extends "base.html" %}
+{% block title %}Import Field Notes — GCForge{% endblock %}
+
+{% block content %}
+<div class="px-3 py-3" style="max-width:700px">
+  <h5 class="mb-3">Import Field Notes</h5>
+
+  {% if errors %}
+  <div class="alert alert-danger py-2 small">
+    {% for e in errors %}<div>{{ e }}</div>{% endfor %}
+  </div>
+  {% endif %}
+
+  {% if result %}
+  {% if result.not_found_entries %}
+  {# ---- Decision dialog: some caches not in DB ---- #}
+  <div class="card border-warning mb-3">
+    <div class="card-header py-2 small fw-semibold text-warning-emphasis bg-warning-subtle">
+      {{ result.not_found_entries|length }} cache{{ result.not_found_entries|length|pluralize }} not in database
+    </div>
+    <div class="card-body py-2 small">
+      <p class="mb-2 text-muted">
+        These caches from the field note file are not yet in your GCForge database:
+      </p>
+      <ul class="mb-3 ps-3">
+        {% for entry in result.not_found_entries %}
+        <li class="font-monospace">
+          <a href="{{ entry.external_url }}" target="_blank" rel="noopener">{{ entry.cache_code }}</a>
+          <span class="text-muted">({{ entry.log_type }}, {{ entry.logged_at|date:"Y-m-d" }})</span>
+        </li>
+        {% endfor %}
+      </ul>
+      {% if result.skipped_existing %}
+      <p class="text-muted mb-2">Also skipped as already imported: {{ result.skipped_existing|length }}</p>
+      {% endif %}
+
+      <div class="d-flex flex-wrap gap-2 mt-3">
+
+        {# Option 1: Fetch from GC/OC #}
+        <button type="button" class="btn btn-sm btn-primary" id="btn-fetch-missing"
+                data-platforms='{{ not_found_by_platform_json }}'
+                data-file-path="{{ pending_file_path|escapejs }}">
+          Fetch caches from GC/OC
+        </button>
+
+        {# Option 2: Skip — import only the ones that are in the DB #}
+        <form method="post" action="{% url 'geocaches:import_fieldnotes' %}">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="import_skip_missing">
+          <input type="hidden" name="fieldnote_path" value="{{ pending_file_path }}">
+          <button type="submit" class="btn btn-sm btn-outline-secondary">Skip import</button>
+        </form>
+
+        {# Option 3: Import without fetching — creates placeholder cache records #}
+        <form method="post" action="{% url 'geocaches:import_fieldnotes' %}">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="import_with_placeholders">
+          <input type="hidden" name="fieldnote_path" value="{{ pending_file_path }}">
+          <button type="submit" class="btn btn-sm btn-outline-warning">Import without fetching</button>
+        </form>
+      </div>
+
+      {# Fetch progress area (hidden until fetch starts) #}
+      <div id="fetch-progress" class="mt-3 d-none">
+        <div class="d-flex align-items-center gap-2 mb-2">
+          <div class="spinner-border spinner-border-sm text-primary" role="status" aria-hidden="true"></div>
+          <span class="small" id="fetch-status-text">Fetching caches…</span>
+        </div>
+        <div class="progress" style="height:6px">
+          <div id="fetch-progress-bar" class="progress-bar progress-bar-striped progress-bar-animated"
+               style="width:100%"></div>
+        </div>
+      </div>
+
+      {# Re-import button (shown after fetch completes) #}
+      <form method="post" action="{% url 'geocaches:import_fieldnotes' %}" id="form-reimport" class="d-none mt-3">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="reimport">
+        <input type="hidden" name="fieldnote_path" value="{{ pending_file_path }}" id="reimport-path">
+        <button type="submit" class="btn btn-sm btn-success">Import now</button>
+        <span class="text-muted small ms-2">Caches fetched — ready to import.</span>
+      </form>
+    </div>
+  </div>
+  {% else %}
+  <div class="alert alert-{% if result.errors %}warning{% else %}success{% endif %} py-2 small mb-3">
+    <strong>{{ result.imported }}</strong> note{{ result.imported|pluralize }} imported,
+    <strong>{{ result.skipped }}</strong> skipped.
+    {% if result.skipped_existing %}
+    <div class="mt-1">Already imported (skipped):</div>
+    <ul class="mb-0 ps-3">
+      {% for s in result.skipped_existing %}<li class="font-monospace">{{ s }}</li>{% endfor %}
+    </ul>
+    {% endif %}
+    {% for e in result.errors %}<div class="text-danger">{{ e }}</div>{% endfor %}
+    {% if redirect_to_bulk %}
+    <div class="mt-1 text-muted">Redirecting to bulk logging…</div>
+    {% endif %}
+  </div>
+  {% endif %}
+  {% endif %}
+
+  <p class="text-muted small mb-3">
+    Supports the GC.com / c:geo / Locus field note format
+    (<code>GC_code, datetime, log_type, "text"</code>).
+    Both GC and OC codes in the same file are handled.
+    Imported notes appear as <em>field notes</em> on the cache detail page and
+    can be submitted as logs from there.
+  </p>
+
+  {# ---- Download from GC.com ---- #}
+  <div class="card mb-3">
+    <div class="card-header py-2 small fw-semibold">Download from geocaching.com</div>
+    <div class="card-body py-2">
+      <p class="small text-muted mb-2">
+        Downloads your pending field notes from geocaching.com, saves them to
+        <code>fieldnotes/</code> and imports them automatically.
+        Requires a stored GC password (Settings → Accounts).
+      </p>
+      <form method="post" action="{% url 'geocaches:import_fieldnotes' %}">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="download_gc">
+        <button type="submit" class="btn btn-sm btn-outline-primary">Download &amp; import from GC</button>
+      </form>
+    </div>
+  </div>
+
+  {# ---- Import from file ---- #}
+  <div class="card mb-3">
+    <div class="card-header py-2 small fw-semibold">Import from file</div>
+    <div class="card-body py-2">
+
+      {% if pending_files %}
+      <div class="mb-3">
+        <label class="form-label small fw-semibold">Files in fieldnotes/</label>
+        <div class="list-group list-group-flush">
+          {% for pf in pending_files %}
+          <a href="#" class="list-group-item list-group-item-action py-1 px-2 small font-monospace"
+             onclick="document.getElementById('fieldnote_path').value='{{ pf|escapejs }}'; return false;">
+            {{ pf }}
+          </a>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+
+      <form method="post" action="{% url 'geocaches:import_fieldnotes' %}">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="import">
+        <div class="mb-3">
+          <label class="form-label small fw-semibold">File path</label>
+          <div class="input-group input-group-sm">
+            <input type="text" name="fieldnote_path" id="fieldnote_path"
+                   class="form-control font-monospace"
+                   placeholder="C:\path\to\fieldnotes.txt">
+            <button type="button" class="btn btn-outline-secondary"
+                    onclick="fbOpen('fieldnote_path', '.txt,.csv')">Browse…</button>
+          </div>
+          <div class="form-text text-muted small">
+            After import the file is moved to <code>fieldnotes/processed/</code>.
+          </div>
+        </div>
+        <button type="submit" class="btn btn-sm btn-primary">Import field notes</button>
+      </form>
+    </div>
+  </div>
+
+</div>
+
+{% if redirect_to_bulk %}
+<script>
+setTimeout(function () {
+  window.location.href = "{% url 'geocaches:bulk_logging' %}";
+}, 1000);
+</script>
+{% endif %}
+
+{% include "geocaches/_file_browser.html" %}
+{% load static %}
+<script src="{% static 'js/file-browser.js' %}"></script>
+
+<script>
+(function () {
+  var btn = document.getElementById('btn-fetch-missing');
+  if (!btn) return;
+
+  btn.addEventListener('click', function () {
+    var platforms = JSON.parse(btn.dataset.platforms || '{}');
+    var filePath = btn.dataset.filePath;
+
+    btn.disabled = true;
+    document.getElementById('fetch-progress').classList.remove('d-none');
+
+    var syncUrl = "{% url 'geocaches:map_sync' %}";
+    var csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+    fetch(syncUrl, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json', 'X-CSRFToken': csrfToken},
+      body: JSON.stringify({platforms: platforms, log_count: 5}),
+    })
+    .then(function (r) { return r.json(); })
+    .then(function (data) {
+      var taskIds = data.task_ids || [];
+      if (!taskIds.length) {
+        document.getElementById('fetch-status-text').textContent = 'No tasks started — check platform accounts in Settings.';
+        document.getElementById('fetch-progress-bar').classList.add('bg-warning');
+        return;
+      }
+      pollTasks(taskIds, filePath);
+    })
+    .catch(function (err) {
+      document.getElementById('fetch-status-text').textContent = 'Fetch failed: ' + err;
+    });
+  });
+
+  function pollTasks(taskIds, filePath) {
+    var statusBase = "{% url 'geocaches:task_status_json' task_id='PLACEHOLDER' %}".replace('PLACEHOLDER', '');
+    var remaining = taskIds.slice();
+
+    function checkAll() {
+      var checks = remaining.map(function (id) {
+        return fetch(statusBase + id + '/').then(function (r) { return r.json(); });
+      });
+      Promise.all(checks).then(function (results) {
+        var active = results.filter(function (t) {
+          return t.state === 'running' || t.state === 'pending';
+        });
+        document.getElementById('fetch-status-text').textContent =
+          active.length ? 'Fetching caches… (' + active.length + ' task(s) running)' : 'Fetch complete.';
+        if (active.length === 0) {
+          // All done (completed/failed/cancelled/expired)
+          document.getElementById('fetch-progress-bar').classList.remove('progress-bar-animated');
+          document.getElementById('fetch-progress-bar').classList.add('bg-success');
+          document.getElementById('fetch-status-text').textContent = 'Caches fetched successfully.';
+          var reimportForm = document.getElementById('form-reimport');
+          reimportForm.classList.remove('d-none');
+        } else {
+          setTimeout(checkAll, 2000);
+        }
+      });
+    }
+    setTimeout(checkAll, 1500);
+  }
+})();
+</script>
+{% endblock %}

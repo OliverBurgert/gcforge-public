@@ -1,0 +1,28 @@
+{% load static %}
+<div class="modal" id="fileBrowserModal" tabindex="-1"
+     data-browse-url="{% url 'geocaches:file_browse' %}">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header py-2">
+        <h6 class="modal-title">Select file</h6>
+        <button type="button" class="btn-close btn-sm" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="input-group input-group-sm mb-2">
+          <input type="text" id="fb-path-input" class="form-control font-monospace"
+                 placeholder="Enter path..."
+                 onkeydown="if(event.key==='Enter'){fbNavigateFromInput(); return false;}">
+          <button class="btn btn-outline-secondary" type="button" onclick="fbNavigateFromInput()">Go</button>
+        </div>
+        <div id="fb-listing" style="max-height:400px; overflow-y:auto">
+        </div>
+      </div>
+      <div class="modal-footer py-1">
+        <span class="text-muted small me-auto" id="fb-selected-display"></span>
+        <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-sm btn-primary" id="fb-select-btn" disabled
+                onclick="fbConfirmSelection()">Select</button>
+      </div>
+    </div>
+  </div>
+</div>

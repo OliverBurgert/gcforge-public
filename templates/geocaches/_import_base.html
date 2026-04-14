@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}{% block import_title %}Import{% endblock %} — GCForge{% endblock %}
+
+{% block content %}
+<div class="px-3 py-3" style="max-width:700px">
+  <h5 class="mb-3">{% block import_heading %}Import{% endblock %}</h5>
+
+  {% include "geocaches/_import_result.html" %}
+
+  {% block help_text %}{% endblock %}
+
+  <form id="import-form" method="post" {% block form_enctype %}{% endblock %}
+        action="{% block form_action %}{% endblock %}">
+    {% csrf_token %}
+
+    {% block file_field %}{% endblock %}
+
+    {% block extra_fields %}{% endblock %}
+
+    <div class="mb-3">
+      <label class="form-label small fw-semibold">
+        Tags <span class="text-muted fw-normal">(comma-separated, optional)</span>
+      </label>
+      <input type="text" name="tags" id="import-tags-input" class="form-control form-control-sm"
+             placeholder="e.g. Kusterdingen, 2024">
+      <div id="import-tag-suggestions" class="mt-1"></div>
+    </div>
+
+    <button type="submit" class="btn btn-sm btn-primary import-btn">{% block submit_label %}Import{% endblock %}</button>
+    <span class="import-spinner ms-2 d-none">
+      <span class="spinner-border spinner-border-sm" role="status"></span>
+      <span class="ms-1 text-muted small">{% block spinner_label %}Importing…{% endblock %}</span>
+    </span>
+  </form>
+</div>
+
+{% include "geocaches/_file_browser.html" %}
+
+{% load static %}
+<script src="{% static 'js/file-browser.js' %}"></script>
+<script src="{% static 'js/import-form.js' %}"></script>
+{% block extra_js %}{% endblock %}
+<script>
+(function() {
+  var input = document.getElementById('import-tags-input');
+  var box = document.getElementById('import-tag-suggestions');
+  if (!input || !box) return;
+  fetch('{% url "geocaches:tags_json" %}')
+    .then(function(r) { return r.json(); })
+    .then(function(names) {
+      if (!names.length) return;
+      names.forEach(function(name) {
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'btn btn-sm btn-outline-secondary me-1 mb-1';
+        btn.textContent = name;
+        btn.addEventListener('click', function() {
+          var cur = input.value.split(',').map(function(s) { return s.trim(); }).filter(Boolean);
+          if (cur.indexOf(name) === -1) { cur.push(name); }
+          input.value = cur.join(', ');
+        });
+        box.appendChild(btn);
+      });
+    });
+})();
+</script>
+{% endblock %}

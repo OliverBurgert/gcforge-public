@@ -1,0 +1,267 @@
+{% comment %}
+Map container — included in base.html after #content.
+Hidden by default; shown when layout switches to split or map.
+{% endcomment %}
+
+<div class="map-divider" id="map-divider"></div>
+
+<div id="map-container">
+  <div id="map"></div>
+
+  {% comment %} Search box — top-centre {% endcomment %}
+  <div class="map-search-box" id="map-search-box">
+    <input type="text" id="map-search-input" class="form-control form-control-sm"
+           placeholder="Search location or coordinates…" autocomplete="off">
+    <div class="map-search-results" id="map-search-results" style="display:none"></div>
+  </div>
+
+  {% comment %} Layer control — top right {% endcomment %}
+  <div class="map-layer-control" id="map-layer-control">
+    <button class="map-layer-btn" id="map-layer-toggle" title="Map layers">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M12 2 L2 7 L12 12 L22 7 Z"/>
+        <path d="M2 12 L12 17 L22 12" opacity="0.6"/>
+        <path d="M2 17 L12 22 L22 17" opacity="0.3"/>
+      </svg>
+    </button>
+    <div class="map-layer-options" id="map-layer-options">
+      <label class="map-layer-option">
+        <input type="radio" name="map-style" value="street" checked onchange="gcfMapSetStyle(this.value)">
+        Street
+      </label>
+      <label class="map-layer-option">
+        <input type="radio" name="map-style" value="outdoor" onchange="gcfMapSetStyle(this.value)">
+        Topo
+      </label>
+      <label class="map-layer-option">
+        <input type="radio" name="map-style" value="aerial" onchange="gcfMapSetStyle(this.value)">
+        Aerial
+      </label>
+      <div class="map-layer-divider"></div>
+      <div class="map-layer-heading">Boundaries</div>
+      <label class="map-layer-option">
+        <input type="checkbox" id="boundary-country" onchange="gcfToggleBoundary('country', this.checked)">
+        Countries
+      </label>
+      <label class="map-layer-option">
+        <input type="checkbox" id="boundary-state" onchange="gcfToggleBoundary('state', this.checked)">
+        States
+      </label>
+      <label class="map-layer-option">
+        <input type="checkbox" id="boundary-county" onchange="gcfToggleBoundary('county', this.checked)">
+        Counties
+      </label>
+      <div id="radius-circle-section" style="display:none">
+        <div class="map-layer-divider"></div>
+        <div class="map-layer-heading">Radius filter</div>
+        <label class="map-layer-option">
+          <input type="checkbox" id="radius-circle-toggle" onchange="gcfToggleRadiusCircle(this.checked)">
+          Show circle
+        </label>
+        <label class="map-layer-option" id="radius-circle-shade-opt" style="display:none">
+          <input type="checkbox" id="radius-circle-shade" onchange="gcfToggleRadiusShade(this.checked)">
+          Shade interior
+        </label>
+      </div>
+      <div class="map-layer-divider"></div>
+      <div class="map-layer-heading">Display</div>
+      <label class="map-layer-option">
+        <input type="checkbox" id="layer-sep-circles" onchange="gcfToggleSepCircles(this.checked)">
+        {% if distance_unit == "mi" %}0.1 mi circles{% else %}161m circles{% endif %}
+      </label>
+      <label class="map-layer-option">
+        <input type="checkbox" id="layer-corrected" onchange="gcfToggleCorrectedCoords(this.checked)">
+        Orig. WP if corrected
+      </label>
+      <label class="map-layer-option">
+        <input type="checkbox" id="layer-waypoints" onchange="gcfToggleWaypoints(this.checked)">
+        Waypoints
+      </label>
+      <label class="map-layer-option">
+        <input type="checkbox" id="layer-lod" onchange="gcfToggleLodPanel(this.checked)">
+        LOD sliders
+      </label>
+      <div class="map-layer-divider"></div>
+      <div class="map-layer-heading">Labels</div>
+      <label class="map-layer-option">
+        <input type="radio" name="map-labels" value="" checked onchange="gcfToggleLabels(null)">
+        Off
+      </label>
+      <label class="map-layer-option">
+        <input type="radio" name="map-labels" value="name" onchange="gcfToggleLabels('name')">
+        Name
+      </label>
+      <label class="map-layer-option">
+        <input type="radio" name="map-labels" value="code" onchange="gcfToggleLabels('code')">
+        Code
+      </label>
+    </div>
+  </div>
+
+  {% comment %} Zoom to filtered caches — top right, below layer control {% endcomment %}
+  <div class="map-zoom-filtered-control">
+    <button class="map-layer-btn" id="map-zoom-filtered-btn" title="Zoom to filtered caches"
+            onclick="gcfZoomToFiltered()">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="10" cy="10" r="7"/>
+        <path d="M21 21l-4.35-4.35"/>
+        <path d="M7 10h6M10 7v6"/>
+      </svg>
+    </button>
+  </div>
+
+  {% comment %} Locations quick-jump — top right, below zoom-to-filtered {% endcomment %}
+  <div class="map-locations-control" id="map-locations-control">
+    <button class="map-layer-btn" id="map-locations-toggle" title="Jump to location">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/>
+        <circle cx="12" cy="9" r="2.5"/>
+      </svg>
+    </button>
+    <div class="map-locations-list" id="map-locations-list"></div>
+  </div>
+
+  {% comment %} Saved areas — top right, below locations {% endcomment %}
+  <div class="map-areas-control" id="map-areas-control">
+    <button class="map-layer-btn" id="map-areas-toggle" title="Saved area filters">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <rect x="3" y="3" width="18" height="18" rx="2"/>
+        <path d="M9 3v18M15 3v18M3 9h18M3 15h18" opacity="0.5"/>
+      </svg>
+    </button>
+    <div class="map-areas-list" id="map-areas-list"></div>
+  </div>
+
+  {% comment %} Draw toolbar — left side, below navigation controls {% endcomment %}
+  <div class="map-draw-toolbar" id="map-draw-toolbar" style="display:none">
+    <button class="map-layer-btn" id="map-draw-rect-btn" title="Draw Rectangle" onclick="gcfDrawRect()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <rect x="3" y="5" width="18" height="14" rx="1"/>
+      </svg>
+    </button>
+    <button class="map-layer-btn" id="map-draw-circle-btn" title="Draw Circle" onclick="gcfDrawCircle()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="9"/>
+      </svg>
+    </button>
+    <button class="map-layer-btn" id="map-draw-polygon-btn" title="Draw Polygon — click vertices, double-click to close" onclick="gcfDrawPolygon()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polygon points="12,3 21,9 17,20 7,20 3,9"/>
+      </svg>
+    </button>
+    <button class="map-layer-btn" id="map-draw-corridor-btn" title="Draw Corridor — click vertices, double-click to finish" onclick="gcfDrawCorridor()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polyline points="3,19 8,6 14,15 20,5"/>
+      </svg>
+    </button>
+    <button class="map-layer-btn" id="map-draw-gpx-btn" title="Import GPX track" onclick="gcfOpenGpxImport()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polyline points="3,18 7,8 12,14 17,5 21,9"/>
+        <polyline points="17,13 21,9 17,5" fill="none"/>
+      </svg>
+    </button>
+    <button class="map-layer-btn" id="map-draw-clear-btn" title="Clear All Shapes" onclick="gcfDrawClearAll()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/>
+      </svg>
+    </button>
+  </div>
+
+  {% comment %} Corridor width panel — shown only when corridor drawing is active {% endcomment %}
+  <div id="map-corridor-width-panel" class="map-corridor-panel" style="display:none">
+    <label class="mb-0" style="white-space:nowrap">Corridor width</label>
+    <input type="number" id="map-corridor-width" value="1" min="0.1" step="0.1"
+           style="width:4.5em" class="form-control form-control-sm py-0"
+           oninput="gcfSetCorridorWidth(this.value)">
+    <span>km</span>
+  </div>
+
+  {% comment %} Draw status — count badge + actions {% endcomment %}
+  <div class="map-draw-status" id="map-draw-status" style="display:none">
+    <span id="map-draw-count" class="badge bg-primary">0 caches selected</span>
+    <button class="btn btn-sm btn-warning" onclick="gcfPinAsFilter()">Pin as filter</button>
+    <button class="btn btn-sm btn-outline-secondary" onclick="gcfSaveArea()">Save area…</button>
+    <button class="btn btn-sm btn-info" id="map-fetch-preview-btn" style="display:none" onclick="gcfOpenFetchDialog()">Preview API</button>
+    <button class="btn btn-sm btn-success" id="map-fetch-sync-btn" style="display:none" onclick="gcfOpenSyncDialog()">Sync</button>
+  </div>
+
+
+  {% comment %} Cache type quick-filter bar — bottom right {% endcomment %}
+  <div class="map-type-filter" id="map-type-filter">
+    <span class="map-type-label">Show only:</span>
+    <button class="map-type-btn map-type-meta" title="Select all" onclick="gcfTypeFilterSetAll(true)">+</button>
+    <button class="map-type-btn map-type-meta" title="Clear all" onclick="gcfTypeFilterSetAll(false)">&minus;</button>
+    <span class="map-type-sep"></span>
+    <button class="map-type-btn active" data-type="T" title="Traditional" onclick="gcfTypeFilterClick(this)">T</button>
+    <button class="map-type-btn active" data-type="M" title="Multi-Cache" onclick="gcfTypeFilterClick(this)">M</button>
+    <button class="map-type-btn active" data-type="U" title="Mystery" onclick="gcfTypeFilterClick(this)">U</button>
+    <button class="map-type-btn active" data-type="E" title="Earthcache" onclick="gcfTypeFilterClick(this)">E</button>
+    <button class="map-type-btn active" data-type="V" title="Virtual" onclick="gcfTypeFilterClick(this)">V</button>
+    <button class="map-type-btn active" data-type="Ev" title="Event" onclick="gcfTypeFilterClick(this)">Ev</button>
+    <button class="map-type-btn active" data-type="L" title="Adventure Lab" onclick="gcfTypeFilterClick(this)">L</button>
+    <button class="map-type-btn active" data-type="W" title="Webcam" onclick="gcfTypeFilterClick(this)">W</button>
+    <button class="map-type-btn active" data-type="B" title="Letterbox" onclick="gcfTypeFilterClick(this)">B</button>
+    <button class="map-type-btn active" data-type="Wh" title="Wherigo" onclick="gcfTypeFilterClick(this)">Wh</button>
+  </div>
+
+  {% comment %} LOD controls — bottom left {% endcomment %}
+  <div class="map-lod-control" id="map-lod-control" style="display:none">
+    <div class="map-lod-row">
+      <label title="Zoom level at which clusters dissolve into individual markers">Uncluster</label>
+      <input type="range" id="lod-cluster" min="8" max="18" step="1" value="14"
+             oninput="gcfSetClusterZoom(+this.value)" title="Cluster max zoom">
+      <span id="lod-cluster-val" class="map-lod-val">14</span>
+    </div>
+    <div class="map-lod-row">
+      <label title="Zoom level at which waypoints and connecting lines appear">Lines</label>
+      <input type="range" id="lod-lines" min="8" max="18" step="1" value="13"
+             oninput="gcfSetLinesZoom(+this.value)" title="Waypoint/line min zoom">
+      <span id="lod-lines-val" class="map-lod-val">13</span>
+    </div>
+  </div>
+
+  {% comment %} Loading overlay — shown while markers are being fetched {% endcomment %}
+  <div class="map-loading-overlay" id="map-loading-overlay">
+    <div class="spinner-border text-primary" role="status"></div>
+    <span>Loading caches…</span>
+  </div>
+
+  {% include "geocaches/_map_fetch_dialog.html" %}
+
+  {% comment %} GPX track import dialog {% endcomment %}
+  <div class="modal fade" id="gpxImportDialog" tabindex="-1" aria-labelledby="gpxImportLabel" aria-hidden="true">
+    <div class="modal-dialog modal-sm">
+      <div class="modal-content">
+        <div class="modal-header py-2">
+          <h6 class="modal-title" id="gpxImportLabel">Import GPX Track</h6>
+          <button type="button" class="btn-close btn-close-sm" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body py-2">
+          <div class="mb-2">
+            <label class="form-label small mb-1">GPX file</label>
+            <input type="file" class="form-control form-control-sm" id="gpx-file-input"
+                   accept=".gpx" onchange="gcfGpxFileChanged(this)">
+          </div>
+          <div id="gpx-track-info" class="small text-muted mb-2" style="display:none"></div>
+          <div class="d-flex align-items-center gap-2">
+            <label class="form-label small mb-0 text-nowrap">Corridor width</label>
+            <input type="number" class="form-control form-control-sm" id="gpx-width-input"
+                   value="1" min="0.1" step="0.1" style="width:5em">
+            <span class="small text-muted">km</span>
+          </div>
+        </div>
+        <div class="modal-footer py-2">
+          <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-primary btn-sm" id="gpx-import-btn"
+                  onclick="gcfImportGpxConfirm()" disabled>Load track</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {% csrf_token %}
+  <script>
+    var _gcfLocations = {{ locations_json|safe }};
+    var _gcfMapPrefs  = {{ map_prefs_json|safe }};
+  </script>
+</div>

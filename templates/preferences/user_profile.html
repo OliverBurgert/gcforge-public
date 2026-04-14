@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+{% block title %}User Profile — GCForge{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-3" style="max-width:900px">
+  <h5 class="mb-3">User Profile</h5>
+  <p class="text-muted small mb-4">Live data fetched from platform APIs on page load.</p>
+
+  {% for card in cards %}
+  <div class="card mb-4">
+    <div class="card-header d-flex align-items-center gap-2">
+      <strong>{{ card.platform }}</strong>
+      {% if card.username %}
+        <span class="text-muted small">{{ card.username }}</span>
+      {% endif %}
+      {% if card.profile_url %}
+        <a href="{{ card.profile_url }}" target="_blank" class="ms-auto small">View profile</a>
+      {% endif %}
+    </div>
+    <div class="card-body">
+
+      {% if card.error and not card.data %}
+        <div class="text-muted">{{ card.error }}</div>
+
+      {% elif card.platform_key == "gc" and card.data %}
+        <div class="row">
+          {% if card.data.avatar_url %}
+          <div class="col-auto">
+            <img src="{{ card.data.avatar_url }}" alt="Avatar" class="rounded"
+                 style="max-width:80px;max-height:80px;">
+            <div class="text-muted small mt-1" style="max-width:150px;word-break:break-all;">{{ card.data.avatar_url }}</div>
+          </div>
+          {% endif %}
+          <div class="col">
+            <table class="table table-sm table-borderless mb-0" style="max-width:400px">
+              <tr><th class="text-muted" style="width:140px">Username</th><td>{{ card.data.username }}</td></tr>
+              <tr><th class="text-muted">Reference Code</th><td>{{ card.data.reference_code }}</td></tr>
+              <tr><th class="text-muted">Membership</th><td>{{ card.data.membership }}</td></tr>
+              <tr><th class="text-muted">Finds</th><td>{{ card.data.find_count|default_if_none:"—" }}</td></tr>
+              <tr><th class="text-muted">Hides</th><td>{{ card.data.hide_count|default_if_none:"—" }}</td></tr>
+              <tr><th class="text-muted">Favorite Points</th><td>{{ card.data.favorite_points|default_if_none:"—" }}</td></tr>
+              <tr><th class="text-muted">Joined</th><td>{{ card.data.join_date|default:"—" }}</td></tr>
+              {% if card.data.home_lat != None %}
+              <tr><th class="text-muted">Home Coordinates</th><td>{{ card.data.home_lat }}, {{ card.data.home_lon }}</td></tr>
+              {% endif %}
+            </table>
+          </div>
+        </div>
+
+        {% if card.quotas %}
+        <hr class="my-3">
+        <h6 class="mb-2">API Quota (today)</h6>
+        <table class="table table-sm table-borderless mb-0" style="max-width:400px">
+          <thead>
+            <tr><th class="text-muted">Mode</th><th class="text-muted">Used</th><th class="text-muted">Limit</th><th class="text-muted">Remaining</th></tr>
+          </thead>
+          <tbody>
+            {% for q in card.quotas %}
+            <tr>
+              <td>{{ q.mode }}</td>
+              <td>{{ q.used }}</td>
+              <td>{{ q.limit }}</td>
+              <td>{{ q.remaining }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        {% endif %}
+
+        {% if card.error %}
+        <div class="text-warning small mt-2">{{ card.error }}</div>
+        {% endif %}
+
+      {% elif card.data %}
+        {# OC platform #}
+        <div class="row">
+          <div class="col">
+            <table class="table table-sm table-borderless mb-0" style="max-width:400px">
+              <tr><th class="text-muted" style="width:140px">Username</th><td>{{ card.data.username }}</td></tr>
+              <tr><th class="text-muted">UUID</th><td class="small">{{ card.data.uuid }}</td></tr>
+              {% if card.data.profile_url %}
+              <tr><th class="text-muted">Profile</th><td><a href="{{ card.data.profile_url }}" target="_blank">{{ card.data.profile_url }}</a></td></tr>
+              {% endif %}
+              <tr><th class="text-muted">Caches Found</th><td>{{ card.data.caches_found|default_if_none:"—" }}</td></tr>
+              <tr><th class="text-muted">DNFs</th><td>{{ card.data.caches_notfound|default_if_none:"—" }}</td></tr>
+              <tr><th class="text-muted">Caches Hidden</th><td>{{ card.data.caches_hidden|default_if_none:"—" }}</td></tr>
+              <tr><th class="text-muted">Recommendations</th><td>{{ card.data.rcmds_given|default_if_none:"—" }}</td></tr>
+              {% if card.data.date_registered %}
+              <tr><th class="text-muted">Registered</th><td>{{ card.data.date_registered }}</td></tr>
+              {% endif %}
+              {% if card.data.home_lat != None %}
+              <tr><th class="text-muted">Home Coordinates</th><td>{{ card.data.home_lat }}, {{ card.data.home_lon }}</td></tr>
+              {% endif %}
+            </table>
+          </div>
+        </div>
+
+        {% if card.error %}
+        <div class="text-warning small mt-2">{{ card.error }}</div>
+        {% endif %}
+
+      {% endif %}
+
+    </div>
+  </div>
+  {% endfor %}
+
+</div>
+{% endblock %}

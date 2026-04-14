@@ -1,0 +1,639 @@
+/* ── Map container ─────────────────────────────────────────────────────────── */
+
+#map-container {
+  display: none;          /* hidden in list-only layout */
+  position: relative;
+}
+
+#map {
+  width: 100%;
+  height: 100%;
+}
+
+/* ── Layout modes ─────────────────────────────────────────────────────────── */
+
+/* Main wrapper: flex column so filter bar takes natural height and #content
+   fills the rest.  Fixed viewport height only in split/map layouts.        */
+
+/* Split view: list + divider + map side-by-side */
+body.layout-split #main-wrapper,
+body.layout-map #main-wrapper {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 48px);   /* 48px = navbar height */
+}
+
+body.layout-split #content,
+body.layout-map #content {
+  flex: 1;
+  min-height: 0;
+}
+
+body.layout-split #content {
+  display: flex;
+  flex-direction: row;
+  overflow: hidden;
+}
+
+body.layout-split #list-panel {
+  overflow-y: auto;
+  flex-shrink: 0;
+  min-width: 200px;
+}
+
+body.layout-split #map-container {
+  display: block;
+  flex: 1;
+  min-width: 200px;
+}
+
+body.layout-split .map-divider {
+  display: block;
+}
+
+/* Map-only: map fills the remaining space */
+body.layout-map #content {
+  overflow: hidden;
+}
+
+body.layout-map #list-panel {
+  display: none;
+}
+
+body.layout-map #map-container {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+body.layout-map .map-divider {
+  display: none;
+}
+
+/* ── Draggable divider ────────────────────────────────────────────────────── */
+
+.map-divider {
+  display: none;            /* only visible in split mode */
+  width: 6px;
+  background: #dee2e6;
+  cursor: col-resize;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 10;
+  transition: background 0.15s;
+}
+
+.map-divider:hover,
+.map-divider.dragging {
+  background: #6c757d;
+}
+
+/* ── Layer control ────────────────────────────────────────────────────────── */
+
+.map-layer-control {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 5;
+}
+
+.map-layer-btn {
+  width: 32px;
+  height: 32px;
+  background: #fff;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #333;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+}
+
+.map-layer-btn:hover {
+  background: #f0f0f0;
+}
+
+.map-layer-options {
+  display: none;
+  position: absolute;
+  top: 0;
+  right: 38px;
+  background: #fff;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+  padding: 6px 0;
+  min-width: 100px;
+}
+
+.map-layer-control.open .map-layer-options {
+  display: block;
+}
+
+.map-layer-option {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.map-layer-option:hover {
+  background: #f0f0f0;
+}
+
+.map-layer-divider {
+  height: 1px;
+  background: #e0e0e0;
+  margin: 4px 0;
+}
+
+.map-layer-heading {
+  padding: 2px 12px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: #888;
+  letter-spacing: 0.05em;
+}
+
+/* ── Zoom to filtered ────────────────────────────────────────────────────── */
+
+.map-zoom-filtered-control {
+  position: absolute;
+  top: 48px;
+  right: 10px;
+  z-index: 5;
+}
+
+/* ── Locations quick-jump ─────────────────────────────────────────────────── */
+
+.map-locations-control {
+  position: absolute;
+  top: 82px;
+  right: 10px;
+  z-index: 5;
+}
+
+.map-locations-list {
+  display: none;
+  position: absolute;
+  top: 0;
+  right: 38px;
+  background: #fff;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+  padding: 4px 0;
+  min-width: 140px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.map-locations-control.open .map-locations-list {
+  display: block;
+}
+
+.map-location-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  white-space: nowrap;
+  border: none;
+  background: none;
+  width: 100%;
+  text-align: left;
+}
+
+.map-location-item:hover {
+  background: #f0f0f0;
+}
+
+.map-location-home {
+  font-weight: 600;
+}
+
+/* ── Layout toggle button in navbar ───────────────────────────────────────── */
+
+.layout-toggle-btn {
+  background: none;
+  border: 1px solid rgba(255,255,255,0.3);
+  color: #fff;
+  font-size: 0.75rem;
+  padding: 2px 8px;
+  border-radius: 3px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.layout-toggle-btn:hover {
+  background: rgba(255,255,255,0.1);
+}
+
+.layout-toggle-btn.active {
+  background: rgba(255,255,255,0.2);
+  border-color: rgba(255,255,255,0.5);
+}
+
+/* ── Marker highlight on list row ─────────────────────────────────────────── */
+
+tr.map-highlight {
+  outline: 2px solid #0d6efd;
+  outline-offset: -2px;
+}
+
+/* ── Search box (top-centre) ──────────────────────────────────────────────── */
+
+.map-search-box {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 300px;
+  z-index: 5;
+}
+
+.map-search-box input {
+  box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+}
+
+.map-search-results {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: #fff;
+  border: 1px solid #ccc;
+  border-top: none;
+  border-radius: 0 0 4px 4px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 6;
+}
+
+.map-search-result-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 6px 10px;
+  font-size: 0.8rem;
+  border: none;
+  background: none;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.map-search-result-item:hover {
+  background: #f0f0f0;
+}
+
+/* ── Saved areas control ──────────────────────────────────────────────────── */
+
+.map-areas-control {
+  position: absolute;
+  top: 120px;
+  right: 10px;
+  z-index: 5;
+}
+
+.map-areas-list {
+  display: none;
+  position: absolute;
+  top: 0;
+  right: 38px;
+  background: #fff;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+  padding: 4px 0;
+  min-width: 160px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.map-areas-control.open .map-areas-list {
+  display: block;
+}
+
+.map-area-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.map-area-item:hover {
+  background: #f0f0f0;
+}
+
+.map-area-item span {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.map-area-delete-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #dc3545;
+  font-size: 1rem;
+  line-height: 1;
+  padding: 0 2px;
+  flex-shrink: 0;
+}
+
+/* ── Draw toolbar (left side) ─────────────────────────────────────────────── */
+
+.map-draw-toolbar {
+  position: absolute;
+  top: 108px;
+  left: 10px;
+  z-index: 5;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.map-draw-toolbar .map-layer-btn.active {
+  background: #cfe2ff;
+  border-color: #0d6efd;
+  color: #0d6efd;
+}
+
+/* Corridor width panel — appears below toolbar when corridor drawing is active */
+.map-corridor-panel {
+  position: absolute;
+  top: 216px;
+  left: 50px;
+  z-index: 5;
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  padding: 5px 10px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+  align-items: center;
+  gap: 6px;
+  font-size: .75rem;
+  white-space: nowrap;
+}
+
+/* ── Draw status panel (bottom-left) ─────────────────────────────────────── */
+
+.map-draw-status {
+  position: absolute;
+  bottom: 30px;
+  left: 10px;
+  z-index: 5;
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  padding: 6px 10px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+}
+
+/* ── LOD control panel (bottom-left) ────────────────────────────────────── */
+
+.map-lod-control {
+  position: absolute;
+  bottom: 30px;
+  left: 10px;
+  z-index: 4;
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  padding: 6px 10px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+  font-size: 0.75rem;
+  min-width: 180px;
+}
+.map-lod-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 2px 0;
+}
+.map-lod-row label {
+  min-width: 58px;
+  margin: 0;
+  white-space: nowrap;
+}
+.map-lod-row input[type="range"] {
+  flex: 1;
+  height: 16px;
+  cursor: pointer;
+}
+.map-lod-val {
+  min-width: 18px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Draw right-click context menu ──────────────────────────────────────── */
+
+.map-draw-context-menu {
+  display: none;
+  position: absolute;
+  z-index: 20;
+  background: #fff;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  padding: 4px 0;
+  min-width: 120px;
+}
+
+.map-draw-context-menu.open {
+  display: block;
+}
+
+.map-draw-context-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 5px 12px;
+  font-size: 0.8rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.map-draw-context-item:hover {
+  background: #f0f0f0;
+}
+
+.map-draw-context-item.danger {
+  color: #dc3545;
+}
+
+.map-ctx-separator {
+  height: 1px;
+  background: #ddd;
+  margin: 3px 0;
+}
+
+/* ── Range circle management menu ──────────────────────────────────────── */
+
+.map-range-circle-menu {
+  display: none;
+  position: absolute;
+  bottom: 65px;
+  right: 10px;
+  z-index: 5;
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  padding: 4px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+  font-size: 0.75rem;
+}
+
+.map-range-circle-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  text-align: left;
+  border: none;
+  background: none;
+  padding: 3px 8px;
+  cursor: pointer;
+  white-space: nowrap;
+  font-size: 0.75rem;
+}
+
+.map-range-circle-item:hover {
+  background: #f0f0f0;
+}
+
+.map-range-remove-all {
+  color: #dc3545;
+  border-top: 1px solid #eee;
+  margin-top: 2px;
+  padding-top: 5px;
+}
+
+.map-range-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* ── Circle radius tooltip ───────────────────────────────────────────────── */
+
+.map-draw-tooltip {
+  position: absolute;
+  background: rgba(0, 0, 0, 0.72);
+  color: #fff;
+  padding: 2px 7px;
+  border-radius: 3px;
+  font-size: 0.75rem;
+  pointer-events: none;
+  z-index: 10;
+  white-space: nowrap;
+  display: none;
+}
+
+/* ── Cache type quick-filter bar ──────────────────────────────────────── */
+
+.map-type-filter {
+  position: absolute;
+  bottom: 30px;
+  right: 10px;
+  z-index: 5;
+  display: flex;
+  gap: 2px;
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  padding: 3px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+}
+
+.map-type-btn {
+  width: 26px;
+  height: 26px;
+  border: 1px solid #ccc;
+  border-radius: 3px;
+  background: #e9ecef;
+  color: #6c757d;
+  font-size: 0.65rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  line-height: 1;
+}
+
+.map-type-btn.active {
+  background: #0d6efd;
+  color: #fff;
+  border-color: #0d6efd;
+}
+
+.map-type-btn:hover {
+  opacity: 0.85;
+}
+
+.map-type-label {
+  font-size: 0.7rem;
+  color: #6c757d;
+  align-self: center;
+  padding: 0 2px;
+  white-space: nowrap;
+}
+
+.map-type-btn.map-type-meta {
+  background: #f8f9fa;
+  color: #495057;
+  border-color: #adb5bd;
+  font-size: 0.8rem;
+}
+
+.map-type-sep {
+  width: 1px;
+  background: #ccc;
+  margin: 2px 1px;
+}
+
+/* ── Loading overlay ────────────────────────────────────────────────────── */
+
+.map-loading-overlay {
+  display: none;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.6);
+  z-index: 15;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  font-size: 0.85rem;
+  color: #333;
+}
+
+.map-loading-overlay.active {
+  display: flex;
+}

@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block title %}Misplaced OC codes — GCForge{% endblock %}
+{% block content %}
+<div class="px-3 py-3" style="max-width:900px">
+  <h5 class="mb-3">Detect misplaced OC codes</h5>
+
+  {% if messages %}
+  {% for message in messages %}
+  <div class="alert alert-{{ message.tags|default:'info' }} fade show py-1 px-3 small d-flex align-items-center" role="alert">
+    <span class="me-auto">{{ message }}</span>
+    <button type="button" class="btn-close ms-2" data-bs-dismiss="alert" style="font-size:.65rem"></button>
+  </div>
+  {% endfor %}
+  {% endif %}
+
+  {% if total == 0 %}
+  <div class="card">
+    <div class="card-body">
+      <p class="mb-2">No misplaced codes found. All OC codes are stored correctly.</p>
+      <a href="{% url 'geocaches:list' %}" class="btn btn-primary btn-sm">Back to list</a>
+    </div>
+  </div>
+  {% else %}
+  <p class="text-muted small mb-2">
+    Found {{ total }} cache{{ total|pluralize:"es" }} where an OC code is stored in the GC code field.
+    This typically happens when OC caches are imported via GSAK.
+  </p>
+
+  <form method="post" class="mb-3">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="fix_all">
+    <button type="submit" class="btn btn-primary btn-sm"
+            onclick="return confirm('Fix all {{ total }} misplaced code(s)? Records with a correct duplicate will be merged.')">
+      Fix all ({{ total }})
+    </button>
+    <a href="{% url 'geocaches:list' %}" class="btn btn-secondary btn-sm ms-1">Back to list</a>
+  </form>
+
+  <table class="table table-sm table-bordered align-middle">
+    <thead class="table-light">
+      <tr>
+        <th>Code</th>
+        <th>Name</th>
+        <th>Issue</th>
+        <th>Strategy</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in items %}
+      <tr>
+        <td class="font-monospace small">
+          <a href="{% url 'geocaches:detail' item.oc_code %}">{{ item.oc_code }}</a>
+        </td>
+        <td class="small">{{ item.cache.name }}</td>
+        <td class="small text-danger">gc_code = "{{ item.oc_code }}"</td>
+        <td class="small">
+          {% if item.strategy == "merge" %}
+            <span class="text-warning">Merge</span> — correct record exists (pk={{ item.correct_record.pk }})
+          {% else %}
+            <span class="text-success">Move</span> — no duplicate, move to oc_code
+          {% endif %}
+        </td>
+        <td>
+          <form method="post" class="d-inline">
+            {% csrf_token %}
+            <input type="hidden" name="pk" value="{{ item.cache.pk }}">
+            <input type="hidden" name="action" value="{{ item.strategy }}">
+            <button type="submit" class="btn btn-outline-primary btn-sm py-0 px-2"
+                    style="font-size:0.75rem">
+              {% if item.strategy == "merge" %}Merge{% else %}Move{% endif %}
+            </button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+</div>
+{% endblock %}

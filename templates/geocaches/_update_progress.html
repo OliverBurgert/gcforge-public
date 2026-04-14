@@ -1,0 +1,16 @@
+{% if running %}
+<div class="d-inline-flex align-items-center gap-2 ms-2"
+     hx-get="{% url 'geocaches:update_status' %}"
+     hx-trigger="every 3s"
+     hx-swap="outerHTML">
+  <div class="spinner-border spinner-border-sm text-warning" role="status"></div>
+  <small class="text-warning fw-semibold">
+    Updating: {{ completed }}/{{ total }} ({{ progress_pct }}%) — {{ phase }}
+  </small>
+  <form method="post" action="{% url 'geocaches:update_cancel' %}" class="d-inline">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-xs btn-outline-danger py-0 px-1"
+            style="font-size:.75rem">Cancel</button>
+  </form>
+</div>
+{% endif %}

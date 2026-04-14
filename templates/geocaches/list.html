@@ -1,0 +1,255 @@
+{% extends "base.html" %}
+{% load cache_tags %}
+{% block title %}Geocaches — GCForge{% endblock %}
+
+{% block filter_bar %}
+<div id="filter-bar" class="px-3 py-2">
+  <form id="filter-form"
+        hx-get="{% url 'geocaches:list' %}"
+        hx-target="#cache-table-container"
+        hx-trigger="change, keyup delay:400ms from:#id_q"
+        hx-push-url="true"
+        hx-indicator="#spinner">
+    <div class="row g-2 align-items-end">
+
+      <div class="col-auto">
+        <label class="form-label mb-0 small">Search</label>
+        <input id="id_q" type="text" name="q" value="{{ f_q }}"
+               class="form-control form-control-sm" placeholder="Code, name, owner…" style="width:200px">
+      </div>
+
+      <div class="col-auto">
+        <label class="form-label mb-0 small">Saved filter</label>
+        <div class="d-flex gap-1">
+          <select id="saved-filter-select" class="form-select form-select-sm" style="width:160px"
+                  onchange="gcfLoadSavedFilter(this)">
+            <option value="">— select —</option>
+            {% if builtin_filters %}
+            <optgroup label="Built-in">
+              {% for sf in builtin_filters %}
+              <option value="{{ sf.pk }}" data-params="{{ sf.params|tojson }}" data-builtin="1">{{ sf.name }}</option>
+              {% endfor %}
+            </optgroup>
+            {% endif %}
+            {% if user_filters %}
+            <optgroup label="My filters">
+              {% for sf in user_filters %}
+              <option value="{{ sf.pk }}" data-params="{{ sf.params|tojson }}">{{ sf.name }}</option>
+              {% endfor %}
+            </optgroup>
+            {% endif %}
+          </select>
+          <button type="button" class="btn btn-sm btn-outline-danger d-none" id="saved-filter-delete-btn"
+                  onclick="gcfDeleteSavedFilter()" title="Delete selected filter">×</button>
+        </div>
+      </div>
+
+      <div class="col-auto">
+        <label class="form-label mb-0 small">Type</label>
+        <select name="type" class="form-select form-select-sm" style="width:160px">
+          <option value="">All types</option>
+          {% for value, label in cache_types %}
+            <option value="{{ value }}" {% if f_type == value %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col-auto">
+        <label class="form-label mb-0 small">Status</label>
+        <select name="status" class="form-select form-select-sm">
+          <option value="">All</option>
+          {% for value, label in cache_statuses %}
+            <option value="{{ value }}" {% if f_status == value %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col-auto">
+        <label class="form-label mb-0 small">Size</label>
+        <select name="size" class="form-select form-select-sm">
+          <option value="">All</option>
+          {% for value, label in cache_sizes %}
+            <option value="{{ value }}" {% if f_size == value %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col-auto">
+        <label class="form-label mb-0 small">Found</label>
+        <select name="found" class="form-select form-select-sm">
+          <option value="">All</option>
+          <option value="1" {% if f_found == "1" %}selected{% endif %}>Found</option>
+          <option value="0" {% if f_found == "0" %}selected{% endif %}>Not found</option>
+        </select>
+      </div>
+
+      <div class="col-auto">
+        <label class="form-label mb-0 small">Tag</label>
+        <select name="tag" class="form-select form-select-sm" style="width:140px">
+          <option value="">All tags</option>
+          {% if has_untagged %}<option value="__none__" {% if f_tag == "__none__" %}selected{% endif %}>None</option>{% endif %}
+          {% for t in tags %}
+            <option value="{{ t.name }}" data-ref-id="{{ t.default_ref_point_id|default:'' }}" {% if f_tag == t.name %}selected{% endif %}>{{ t.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col-auto">
+        <label class="form-label mb-0 small">Elevation</label>
+        <select name="elevation" class="form-select form-select-sm" style="width:120px">
+          <option value="">All</option>
+          <option value="none"      {% if f_elevation == "none"      %}selected{% endif %}>Not set</option>
+          <option value="lt0"       {% if f_elevation == "lt0"       %}selected{% endif %}>&lt; 0 m</option>
+          <option value="eq0"       {% if f_elevation == "eq0"       %}selected{% endif %}>0 m</option>
+          <option value="0-50"      {% if f_elevation == "0-50"      %}selected{% endif %}>0 – 50 m</option>
+          <option value="50-100"    {% if f_elevation == "50-100"    %}selected{% endif %}>50 – 100 m</option>
+          <option value="100-500"   {% if f_elevation == "100-500"   %}selected{% endif %}>100 – 500 m</option>
+          <option value="500-1000"  {% if f_elevation == "500-1000"  %}selected{% endif %}>500 – 1000 m</option>
+          <option value="1000-3000" {% if f_elevation == "1000-3000" %}selected{% endif %}>1000 – 3000 m</option>
+          <option value="gt3000"    {% if f_elevation == "gt3000"    %}selected{% endif %}>&gt; 3000 m</option>
+        </select>
+      </div>
+
+      <div class="col-auto">
+        <label class="form-label mb-0 small">Country</label>
+        <select name="country" class="form-select form-select-sm" style="width:120px">
+          <option value="">All</option>
+          {% if has_no_country %}<option value="__none__" {% if f_country == "__none__" %}selected{% endif %}>None</option>{% endif %}
+          {% for c in countries %}
+            <option value="{{ c.code }}" {% if f_country == c.code %}selected{% endif %}>{{ c.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      {% if ref_points %}
+      <div class="col-auto">
+        <label class="form-label mb-0 small">Center location</label>
+        <div class="d-flex align-items-center gap-1">
+          <select name="ref" class="form-select form-select-sm" style="width:150px">
+            {% for rp in ref_points %}
+              <option value="{{ rp.pk }}" {% if f_ref == rp.pk|stringformat:"s" %}selected{% endif %}>{{ rp.name }}</option>
+            {% endfor %}
+          </select>
+          <button type="button" class="btn btn-outline-secondary btn-sm" id="btn-locate-me"
+                  onclick="gcfLocateMe()" title="Use current device location"
+                  style="padding:0.15rem 0.4rem; line-height:1;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="8"/><line x1="12" y1="2" x2="12" y2="6"/>
+              <line x1="12" y1="18" x2="12" y2="22"/><line x1="2" y1="12" x2="6" y2="12"/>
+              <line x1="18" y1="12" x2="22" y2="12"/></svg></button>
+        </div>
+      </div>
+      <div class="col-auto">
+        <label class="form-label mb-0 small">Radius ({% if distance_unit == "mi" %}mi{% else %}km{% endif %})</label>
+        <input type="number" name="radius" value="{{ f_radius }}" min="0" step="0.1"
+               class="form-control form-control-sm" placeholder="e.g. 10" style="width:100px">
+      </div>
+      {% endif %}
+
+      <div class="col-auto">
+        <label class="form-label mb-0 small">Flag</label>
+        <select name="flag" class="form-select form-select-sm" style="width:140px">
+          <option value="">All</option>
+          {% for val, label in flag_choices %}
+          <option value="{{ val }}" {% if f_flag == val %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col-auto ms-auto d-flex align-items-end gap-2">
+        <span id="spinner" class="htmx-indicator spinner-border spinner-border-sm text-secondary"></span>
+
+        <button type="button" class="btn btn-sm btn-outline-primary position-relative"
+                data-bs-toggle="modal" data-bs-target="#filterDialog">
+          Filters
+          {% if active_filter_chips %}
+          <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-primary" style="font-size:0.65em">{{ active_filter_chips|length }}</span>
+          {% endif %}
+        </button>
+
+        <a href="{% url 'geocaches:list' %}" class="btn btn-sm btn-outline-secondary"
+           onclick="sessionStorage.removeItem('gcforge_list_url')">Reset</a>
+      </div>
+
+      {% if active_filter_chips %}
+      <div id="hidden-filters-row" class="col-12 d-flex align-items-center gap-1 flex-wrap pt-1">
+        <small class="text-muted">Active filters:</small>
+        {% for params_csv, label, badge_class in active_filter_chips %}
+        <a href="#" onclick="gcfRemoveFilter('{{ params_csv }}', this); return false;"
+           class="badge {{ badge_class }} text-decoration-none">{{ label }} ×</a>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      {# pass sort state and all filters through filter form #}
+      <input type="hidden" name="sort"        value="{{ f_sort }}">
+      <input type="hidden" name="order"       value="{{ f_order }}">
+      <input type="hidden" name="state"       value="{{ fv.state }}">
+      <input type="hidden" name="county"      value="{{ fv.county }}">
+      <input type="hidden" name="missing"     value="{{ fv.missing }}">
+      <input type="hidden" name="fname"       value="{{ fv.fname }}">
+      <input type="hidden" name="fname_op"    value="{{ fv.fname_op }}">
+      <input type="hidden" name="fcode"       value="{{ fv.fcode }}">
+      <input type="hidden" name="fcode_op"    value="{{ fv.fcode_op }}">
+      <input type="hidden" name="fowner"      value="{{ fv.fowner }}">
+      <input type="hidden" name="fowner_op"   value="{{ fv.fowner_op }}">
+      <input type="hidden" name="fplacedby"   value="{{ fv.fplacedby }}">
+      <input type="hidden" name="fplacedby_op" value="{{ fv.fplacedby_op }}">
+      <input type="hidden" name="ftext"       value="{{ fv.ftext }}">
+      <input type="hidden" name="types"       value="{{ fv.types }}">
+      <input type="hidden" name="sizes"       value="{{ fv.sizes }}">
+      <input type="hidden" name="statuses"    value="{{ fv.statuses }}">
+      <input type="hidden" name="diff_min"    value="{{ fv.diff_min }}">
+      <input type="hidden" name="diff_max"    value="{{ fv.diff_max }}">
+      <input type="hidden" name="terr_min"    value="{{ fv.terr_min }}">
+      <input type="hidden" name="terr_max"    value="{{ fv.terr_max }}">
+      <input type="hidden" name="fav_min"     value="{{ fv.fav_min }}">
+      <input type="hidden" name="fav_max"     value="{{ fv.fav_max }}">
+      <input type="hidden" name="hidden_from" value="{{ fv.hidden_from }}">
+      <input type="hidden" name="hidden_to"   value="{{ fv.hidden_to }}">
+      <input type="hidden" name="lf_from"     value="{{ fv.lf_from }}">
+      <input type="hidden" name="lf_to"       value="{{ fv.lf_to }}">
+      <input type="hidden" name="fd_from"     value="{{ fv.fd_from }}">
+      <input type="hidden" name="fd_to"       value="{{ fv.fd_to }}">
+      <input type="hidden" name="flags"       value="{{ fv.flags }}">
+      <input type="hidden" name="flags_not"  value="{{ fv.flags_not }}">
+      <input type="hidden" name="attrs_yes"   value="{{ fv.attrs_yes }}">
+      <input type="hidden" name="attrs_no"    value="{{ fv.attrs_no }}">
+      <input type="hidden" name="tags_include" value="{{ fv.tags_include }}">
+      <input type="hidden" name="tags_exclude" value="{{ fv.tags_exclude }}">
+      <input type="hidden" name="country_exclude" value="{{ fv.country_exclude }}">
+      <input type="hidden" name="state_exclude"   value="{{ fv.state_exclude }}">
+      <input type="hidden" name="county_exclude"   value="{{ fv.county_exclude }}">
+      <input type="hidden" name="bearing"     value="{{ fv.bearing }}">
+      <input type="hidden" name="geo"         value="{{ fv.geo }}">
+      <input type="hidden" name="where_name"  value="{{ fv.where_name }}">
+      <input type="hidden" name="where_sql"   value="{{ fv.where_sql }}">
+    </div>
+  </form>
+</div>
+{% endblock %}
+
+{% block content %}
+<div id="list-panel">
+<div id="cache-table-container" class="px-3 pt-2">
+  {% include "geocaches/_table.html" %}
+</div>
+
+{# Hidden form used to POST saved-filter saves with proper CSRF #}
+<form id="save-filter-form" method="post" action="{% url 'geocaches:filter_save' %}" style="display:none">
+  {% csrf_token %}
+  <input type="hidden" name="name"   id="sf-name">
+  <input type="hidden" name="params" id="sf-params">
+  <input type="hidden" name="next"   id="sf-next">
+</form>
+
+{% include "geocaches/_filter_dialog.html" %}
+{% include "geocaches/_file_browser.html" %}
+</div>{# end #list-panel #}
+
+{% block extra_js %}
+{% load static %}
+<script src="{% static 'js/file-browser.js' %}"></script>
+<script src="{% static 'js/cache-list.js' %}"></script>
+{% endblock %}
+{% endblock %}

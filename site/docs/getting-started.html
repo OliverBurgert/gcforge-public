@@ -1,0 +1,142 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Getting Started — GCForge</title>
+  <meta name="description" content="Get up and running with GCForge, the open-source geocache management tool.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/styles.css">
+  <link rel="icon" href="../img/logo.svg" type="image/svg+xml">
+</head>
+<body>
+
+  <nav class="nav">
+    <div class="nav__inner">
+      <a href="../index.html" class="nav__brand">
+        <img src="../img/logo.svg" alt="" style="border-radius: 4px;">
+        <img src="../img/logo-text.png" alt="GCForge" class="nav__brand-text">
+      </a>
+      <ul class="nav__links">
+        <li><a href="../index.html#features">Features</a></li>
+        <li><a href="../index.html#screenshots">Screenshots</a></li>
+        <li><a href="../index.html#download">Download</a></li>
+        <li><a href="getting-started.html">Docs</a></li>
+        <li><a href="https://github.com/OliverBurgert/gcforge-public" class="nav__cta">GitHub</a></li>
+      </ul>
+      <button class="nav__toggle" aria-label="Toggle navigation">☰</button>
+    </div>
+  </nav>
+
+  <div class="page-header">
+    <div class="container">
+      <h1>Getting Started</h1>
+      <p>Install GCForge, import your first caches, and start managing your geocaching life.</p>
+    </div>
+  </div>
+
+  <div class="content">
+    <div class="container" style="max-width: 800px;">
+
+      <h2 id="overview">Overview</h2>
+      <p>
+        GCForge is a standalone desktop application — no Python installation required.
+        Download the installer for your platform, run it, and you're ready to go.
+      </p>
+      <p>
+        If you're coming from GSAK, see the <a href="migrating-from-gsak.html">GSAK migration guide</a>
+        for step-by-step instructions on importing your existing data.
+      </p>
+
+      <h2 id="quick-start">Quick Start</h2>
+
+      <h3>1. Download &amp; Install</h3>
+      <p>
+        Download the latest beta release for your platform from the
+        <a href="../index.html#download">download section</a> or directly from
+        <a href="https://github.com/OliverBurgert/gcforge-public/releases">GitHub Releases</a>.
+      </p>
+      <p>
+        See <a href="install.html">installation instructions</a> for platform-specific details.
+      </p>
+
+      <h3>2. Launch GCForge</h3>
+      <p>
+        After installation, launch GCForge from your Start Menu (Windows), Applications folder (macOS),
+        or application launcher (Linux). GCForge will open in your default browser.
+      </p>
+      <p>
+        The first launch creates a new SQLite database in your user data folder.
+        On Windows this is typically <code>%APPDATA%/gcforge/</code>.
+      </p>
+
+      <h3>3. Import Your First Caches</h3>
+      <p>
+        The quickest way to get started is importing a GPX file from geocaching.com:
+      </p>
+      <ol>
+        <li>Go to <strong>Import → GPX / Pocket Query</strong></li>
+        <li>Select your <code>.gpx</code> or <code>.zip</code> file</li>
+        <li>Click <strong>Import</strong> and wait for the background task to complete</li>
+      </ol>
+      <p>
+        GCForge also supports importing from:
+      </p>
+      <ul>
+        <li><strong>GSAK databases</strong> — select your <code>sqlite.db3</code> file</li>
+        <li><strong>Adventure Lab exports</strong> — GPX files from the lab2gpx tool</li>
+      </ul>
+      <p>
+        See <a href="importing.html">Importing Data</a> for full details.
+      </p>
+
+      <h3>4. Set Your Location</h3>
+      <p>
+        For distance and bearing calculations, set your home location:
+      </p>
+      <ol>
+        <li>Go to <strong>Settings → Reference Points</strong></li>
+        <li>Add a new reference point with your home coordinates</li>
+        <li>Set it as your default location</li>
+      </ol>
+      <p>
+        Distance and bearing from your location will appear in the cache list automatically.
+      </p>
+
+      <h3>5. Explore &amp; Filter</h3>
+      <p>
+        With caches imported, you can:
+      </p>
+      <ul>
+        <li><strong>Browse the list</strong> — sort by any column, click headers to configure</li>
+        <li><strong>Apply filters</strong> — by type, difficulty, terrain, size, status, tags</li>
+        <li><strong>View on map</strong> — interactive map with search area drawing</li>
+        <li><strong>Tag caches</strong> — organize with many-to-many tags (replaces GSAK databases)</li>
+      </ul>
+
+      <h2 id="next-steps">Next Steps</h2>
+      <ul>
+        <li><a href="importing.html">Importing Data</a> — GPX, GSAK, Adventure Lab details</li>
+        <li><a href="migrating-from-gsak.html">Migrating from GSAK</a> — step-by-step migration guide</li>
+        <li><a href="install.html">Installation</a> — platform-specific install instructions</li>
+        <li><a href="https://github.com/OliverBurgert/gcforge-public">GitHub Repository</a> — source code and issues</li>
+      </ul>
+
+    </div>
+  </div>
+
+  <footer class="footer">
+    <div class="container">
+      <div class="footer__bottom">
+        <span>&copy; 2026 GCForge Contributors. Open source under MIT License.</span>
+        <div class="footer__social">
+          <a href="https://github.com/OliverBurgert/gcforge-public" title="GitHub">GitHub</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+</body>
+</html>

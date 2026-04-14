@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}Tags — GCForge{% endblock %}
+
+{% block content %}
+<div class="px-3 py-3" style="max-width:700px">
+  <h5 class="mb-3">Tag management</h5>
+
+  <table class="table table-sm">
+    <thead><tr><th>Name</th><th class="text-end">Caches</th><th>Center location</th><th></th></tr></thead>
+    <tbody>
+      {% for tag in tags %}
+      <tr>
+        <td class="fw-semibold">{{ tag.name }}</td>
+        <td class="text-end text-muted small">{{ tag.cache_count }}</td>
+        <td>
+          <form method="post" class="d-inline">
+            {% csrf_token %}
+            <input type="hidden" name="_action" value="set_tag_refpoint">
+            <input type="hidden" name="tag_id" value="{{ tag.id }}">
+            <select name="rp_id" class="form-select form-select-sm"
+                    style="width:150px" onchange="this.form.submit()">
+              <option value="">— none —</option>
+              {% for rp in ref_points %}
+              <option value="{{ rp.id }}" {% if tag.default_ref_point_id == rp.id %}selected{% endif %}>{{ rp.name }}</option>
+              {% endfor %}
+            </select>
+          </form>
+        </td>
+        <td class="text-end text-nowrap">
+          <button class="btn btn-sm btn-outline-primary py-0"
+                  data-bs-toggle="collapse"
+                  data-bs-target="#rename-{{ tag.id }}">Rename / merge</button>
+          <form method="post" class="d-inline">
+            {% csrf_token %}
+            <input type="hidden" name="_action" value="delete">
+            <input type="hidden" name="tag_id" value="{{ tag.id }}">
+            <button type="submit" class="btn btn-sm btn-outline-danger py-0"
+                    onclick="return confirm('Delete tag \'{{ tag.name }}\'? Caches keep their other tags.')">Delete</button>
+          </form>
+        </td>
+      </tr>
+      <tr class="collapse" id="rename-{{ tag.id }}">
+        <td colspan="4" class="bg-light py-2 px-3">
+          <form method="post" class="d-flex gap-2 align-items-center">
+            {% csrf_token %}
+            <input type="hidden" name="_action" value="rename">
+            <input type="hidden" name="tag_id" value="{{ tag.id }}">
+            <input type="text" name="new_name" class="form-control form-control-sm"
+                   value="{{ tag.name }}" style="width:200px" required
+                   list="tag-names-list">
+            <datalist id="tag-names-list">
+              {% for t in tags %}<option value="{{ t.name }}">{% endfor %}
+            </datalist>
+            <button type="submit" class="btn btn-sm btn-primary">Save</button>
+            <small class="text-muted">If the name already exists, caches will be merged into it.</small>
+          </form>
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="4" class="text-muted text-center py-3">No tags yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

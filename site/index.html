@@ -1,0 +1,370 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GCForge — Forge Your Geocaching Workflow</title>
+  <meta name="description" content="Open-source geocache management tool. The spiritual successor to GSAK (Geocaching Swiss Army Knife), built with modern architecture.">
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Styles -->
+  <link rel="stylesheet" href="css/styles.css">
+
+  <link rel="icon" href="img/logo.svg" type="image/svg+xml">
+</head>
+<body>
+
+  <!-- Navigation -->
+  <nav class="nav">
+    <div class="nav__inner">
+      <a href="/" class="nav__brand">
+        <img src="img/logo.svg" alt="" style="border-radius: 4px;">
+        <img src="img/logo-text.png" alt="GCForge" class="nav__brand-text">
+      </a>
+      <ul class="nav__links">
+        <li><a href="#features">Features</a></li>
+        <li><a href="#screenshots">Screenshots</a></li>
+        <li><a href="#download">Download</a></li>
+        <li><a href="docs/getting-started.html">Docs</a></li>
+        <li><a href="https://github.com/OliverBurgert/gcforge-public" class="nav__cta">GitHub</a></li>
+      </ul>
+      <button class="nav__toggle" aria-label="Toggle navigation">☰</button>
+    </div>
+  </nav>
+
+  <!-- Hero Section -->
+  <section class="hero" id="top">
+    <div class="hero__cave">
+      <div class="hero__topo"></div>
+      <div class="hero__glow"></div>
+    </div>
+    <div class="hero__content">
+      <div class="hero__badge">Open Source · Beta</div>
+      <h1 class="hero__title">Forge Your<br>Geocaching Workflow</h1>
+      <p class="hero__subtitle">
+        GCForge is the modern, open-source successor to GSAK.
+        Import from GPX, GSAK databases, and Adventure Labs.
+        Filter, tag, and manage your caches with ease.
+      </p>
+      <p class="hero__subtitle">
+        BETA — not yet included: GPS device transfer, scripting, Geocaching.com API (Opencaching API is supported), and more.
+      </p>
+      <div class="hero__actions">
+        <a href="#download" class="btn btn--primary btn--lg">Download Beta</a>
+        <a href="docs/getting-started.html" class="btn btn--secondary btn--lg">Get Started</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features Section -->
+  <section class="section" id="features">
+    <div class="container">
+      <h2 style="margin-bottom: var(--space-sm);">Built for Geocachers, by Geocachers</h2>
+      <p class="text-muted">Everything you need to manage your geocaching life in one place.</p>
+
+      <div class="features__grid">
+        <div class="feature-card">
+          <div class="feature-card__icon">📥</div>
+          <h3 class="feature-card__title">Multi-Source Import</h3>
+          <p class="feature-card__desc">
+            Import from GPX files, Pocket Queries, GSAK databases, and Adventure Lab exports.
+            One unified database — no more juggling multiple files.
+          </p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-card__icon">🏷️</div>
+          <h3 class="feature-card__title">Smart Tagging</h3>
+          <p class="feature-card__desc">
+            Many-to-many tags replace GSAK's separate databases.
+            A cache can live in multiple collections simultaneously.
+          </p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-card__icon">🗺️</div>
+          <h3 class="feature-card__title">Interactive Map</h3>
+          <p class="feature-card__desc">
+            Visualize your caches on an interactive map. Draw search areas,
+            filter by distance from your location, and plan your routes.
+          </p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-card__icon">📊</div>
+          <h3 class="feature-card__title">Advanced Filtering</h3>
+          <p class="feature-card__desc">
+            Filter by type, difficulty, terrain, size, status, attributes,
+            distance, and custom tags. Save and reuse filter presets.
+          </p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-card__icon">🔄</div>
+          <h3 class="feature-card__title">GSAK Migration</h3>
+          <p class="feature-card__desc">
+            Direct import from GSAK SQLite databases. Preserves tags,
+            corrected coordinates, logs, waypoints, and user notes.
+          </p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-card__icon">🔌</div>
+          <h3 class="feature-card__title">Plugin Ready (under development)</h3>
+          <p class="feature-card__desc">
+            Python-based scripting extensibility. Write custom filters (available!),
+            automations, and integrations with your favorite tools.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Screenshots Section -->
+  <section class="section section--dark" id="screenshots">
+    <div class="container">
+      <h2 style="margin-bottom: var(--space-sm);">See It in Action</h2>
+      <p class="text-muted" style="max-width: 600px;">
+        A clean, focused interface designed for managing large cache collections.
+      </p>
+
+      <div class="screenshots__grid">
+        <div class="screenshot-card">
+          <div class="screenshot-card__image">
+            <img src="img/screenshot_gcforge_listview_2026-04-10.png" alt="Cache List View" style="width:100%;height:100%;object-fit:cover;">
+          </div>
+          <div class="screenshot-card__caption">Cache list with sorting, filtering, and tag management (large layout)</div>
+        </div>
+
+        <div class="screenshot-card">
+          <div class="screenshot-card__image">
+            <img src="img/screenshot_gcforge_split_view_2026-04-10.png" alt="Cache List View" style="width:100%;height:100%;object-fit:cover;">
+          </div>
+          <div class="screenshot-card__caption">Split view shows filtered caches on map</div>
+        </div>
+
+        <div class="screenshot-card">
+          <div class="screenshot-card__image">
+            <img src="img/screenshot_gcforge_map_view_with_oc_sync_2026-04-10.png" alt="Cache List View" style="width:100%;height:100%;object-fit:cover;">
+          </div>
+          <div class="screenshot-card__caption">Interactive map with search area drawing and preview of online OC-caches in the area ready for sync with local database</div>
+        </div>
+
+        <div class="screenshot-card">
+          <div class="screenshot-card__image">
+            <img src="img/screenshot_gcforge_cache_detail_view_2026-04-10.png" alt="Cache List View" style="width:100%;height:100%;object-fit:cover;">
+          </div>
+          <div class="screenshot-card__caption">Full cache detail with logs, waypoints, and enrichment data (incl. spoiler for a mystery, in accordance with the owner)</div>
+        </div>
+
+        <div class="screenshot-card">
+          <div class="screenshot-card__image">
+            <img src="img/screenshot_gcforge_event_calendar_and_tools_menu_2026-04-10.png" alt="Cache List View" style="width:100%;height:100%;object-fit:cover;">
+          </div>
+          <div class="screenshot-card__caption">Event calendar including option to generate ical calendar entry, and tools menu</div>
+        </div>
+
+        <div class="screenshot-card">
+          <div class="screenshot-card__image">
+            <img src="img/screenshot_gcforge_bulk_logging_view_2026-04-10.png" alt="Cache List View" style="width:100%;height:100%;object-fit:cover;">
+          </div>
+          <div class="screenshot-card__caption">Import your field notes and bulk upload your logs</div>
+        </div>
+      </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- Download Section -->
+  <section class="section" id="download">
+    <div class="container">
+      <div class="text-center">
+        <h2 style="margin-bottom: var(--space-sm);">Download GCForge</h2>
+        <p class="text-muted" style="max-width: 600px; margin: 0 auto;">
+          Available for Windows, macOS, and Linux. Currently in beta —
+          feedback and bug reports are welcome.
+        </p>
+      </div>
+
+      <div class="download__grid">
+        <div class="download-card">
+          <div class="download-card__icon">🪟</div>
+          <div class="download-card__platform">Windows</div>
+          <div class="download-card__version">v0.1.0-beta · Installer (.exe)</div>
+          <a href="https://github.com/OliverBurgert/gcforge-public/releases" class="btn btn--primary">Download</a>
+        </div>
+
+        <div class="download-card">
+          <div class="download-card__icon">🍎</div>
+          <div class="download-card__platform">macOS</div>
+          <div class="download-card__version">v0.1.0-beta · DMG</div>
+          <a href="https://github.com/OliverBurgert/gcforge-public/releases" class="btn btn--primary">Download</a>
+        </div>
+
+        <div class="download-card">
+          <div class="download-card__icon">🐧</div>
+          <div class="download-card__platform">Linux</div>
+          <div class="download-card__version">v0.1.0-beta · AppImage</div>
+          <a href="https://github.com/OliverBurgert/gcforge-public/releases" class="btn btn--primary">Download</a>
+        </div>
+      </div>
+
+      <div class="text-center" style="margin-top: var(--space-2xl);">
+        <p class="text-muted" style="font-size: 0.875rem; margin: 0 auto; text-align: center;">
+          All downloads are from <a href="https://github.com/OliverBurgert/gcforge-public/releases">GitHub Releases</a>.
+          <br>Requires no Python installation — everything is bundled.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Documentation Preview -->
+  <section class="section section--green" id="docs">
+    <div class="container">
+      <div class="text-center">
+        <h2 style="margin-bottom: var(--space-sm);">Documentation</h2>
+        <p style="opacity: 0.85; max-width: 600px; margin: 0 auto;">
+          Get up and running quickly with our getting started guides.
+        </p>
+      </div>
+
+      <div class="docs__grid">
+        <a href="docs/getting-started.html" class="doc-card">
+          <div class="doc-card__icon">🚀</div>
+          <div class="doc-card__title">Getting Started</div>
+          <div class="doc-card__desc">
+            Install GCForge, import your first caches, and set up your workflow.
+          </div>
+          <span class="doc-card__link">Read guide →</span>
+        </a>
+
+        <a href="docs/install.html" class="doc-card">
+          <div class="doc-card__icon">💿</div>
+          <div class="doc-card__title">Installation</div>
+          <div class="doc-card__desc">
+            Platform-specific install instructions for Windows, macOS, and Linux.
+          </div>
+          <span class="doc-card__link">View instructions →</span>
+        </a>
+
+        <a href="docs/importing.html" class="doc-card">
+          <div class="doc-card__icon">📥</div>
+          <div class="doc-card__title">Importing Data</div>
+          <div class="doc-card__desc">
+            How to import from GPX, GSAK databases, and Adventure Lab exports.
+          </div>
+          <span class="doc-card__link">Learn more →</span>
+        </a>
+
+        <a href="docs/migrating-from-gsak.html" class="doc-card">
+          <div class="doc-card__icon">🔄</div>
+          <div class="doc-card__title">Migrating from GSAK</div>
+          <div class="doc-card__desc">
+            Step-by-step guide to move your existing GSAK data into GCForge.
+          </div>
+          <span class="doc-card__link">Start migrating →</span>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer__inner">
+        <div class="footer__brand">
+          <a href="/" style="margin-bottom: var(--space-md); display: inline-block;">
+            <img src="img/logo.svg" alt="GCForge" height="40" style="border-radius: 6px;">
+          </a>
+          <p>
+            Open-source geocache management tool.
+            The spiritual successor to GSAK (Geocaching Swiss Army Knife),
+            built with Python and Django.
+          </p>
+        </div>
+
+        <div>
+          <div class="footer__heading">Project</div>
+          <ul class="footer__links">
+            <li><a href="https://github.com/OliverBurgert/gcforge-public">Source Code</a></li>
+            <li><a href="https://github.com/OliverBurgert/gcforge-public/releases">Releases</a></li>
+            <li><a href="https://github.com/OliverBurgert/gcforge-public/issues">Issues</a></li>
+            <li><a href="https://github.com/OliverBurgert/gcforge-public/blob/main/LICENSE">License</a></li>
+          </ul>
+        </div>
+
+        <div>
+          <div class="footer__heading">Documentation</div>
+          <ul class="footer__links">
+            <li><a href="docs/getting-started.html">Getting Started</a></li>
+            <li><a href="docs/install.html">Installation</a></li>
+            <li><a href="docs/importing.html">Importing Data</a></li>
+            <li><a href="docs/migrating-from-gsak.html">GSAK Migration</a></li>
+          </ul>
+        </div>
+
+        <div>
+          <div class="footer__heading">Community</div>
+          <ul class="footer__links">
+            <li><a href="https://github.com/OliverBurgert/gcforge-public">GitHub</a></li>
+            <li><a href="https://github.com/OliverBurgert/gcforge-public/issues/new">Report a Bug</a></li>
+            <li><a href="https://github.com/OliverBurgert/gcforge-public/discussions">Discussions</a></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="footer__bottom">
+        <span>&copy; 2026 GCForge Contributors. Open source under MIT License.</span>
+        <div class="footer__social">
+          <a href="https://github.com/OliverBurgert/gcforge-public" title="GitHub">GitHub</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Lightbox -->
+  <div id="lightbox" class="lightbox" role="dialog" aria-modal="true" aria-label="Screenshot enlarged">
+    <button class="lightbox__close" aria-label="Close">&times;</button>
+    <img class="lightbox__img" src="" alt="">
+  </div>
+
+  <script>
+    (function () {
+      const lightbox = document.getElementById('lightbox');
+      const lbImg    = lightbox.querySelector('.lightbox__img');
+      const lbClose  = lightbox.querySelector('.lightbox__close');
+
+      function open(src, alt) {
+        lbImg.src = src;
+        lbImg.alt = alt || '';
+        lightbox.classList.add('lightbox--open');
+        document.body.style.overflow = 'hidden';
+      }
+
+      function close() {
+        lightbox.classList.remove('lightbox--open');
+        document.body.style.overflow = '';
+        lbImg.src = '';
+      }
+
+      // Wire up all screenshot cards that contain an img
+      document.querySelectorAll('.screenshot-card__image').forEach(function (card) {
+        const img = card.querySelector('img');
+        if (!img) return;
+        card.style.cursor = 'zoom-in';
+        card.addEventListener('click', function () { open(img.src, img.alt); });
+      });
+
+      lbClose.addEventListener('click', close);
+      lightbox.addEventListener('click', function (e) { if (e.target === lightbox) close(); });
+      document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
+    })();
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,1130 @@
+{% extends "base.html" %}
+{% load cache_tags icon_tags %}
+{% block title %}{{ cache.display_code }} — {{ cache.name }} — GCForge{% endblock %}
+{% block extra_head %}
+<style>
+.gcf-embed #back-to-list,
+.gcf-embed [data-bs-target="#newLogModal"],
+.gcf-embed [data-bs-target="#defuseModal"],
+.gcf-embed [data-bs-target="#deleteModal"]{display:none!important}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="px-3 py-2">
+
+  {# --- Placeholder banner --- #}
+  {% if cache.is_placeholder %}
+  <div class="alert alert-warning py-2 small mb-2 d-flex align-items-center gap-3 flex-wrap">
+    <strong>{{ cache.display_code }} is not in your database yet.</strong>
+    <span class="text-muted">Field note imported without cache data.</span>
+    {% for label, url in cache.external_urls %}
+    <a href="{{ url }}" target="_blank" rel="noopener" class="btn btn-sm btn-outline-primary">&#8599; Open on {{ label }}</a>
+    {% endfor %}
+    {% for label, source in cache.refresh_sources %}
+    <form method="post" action="{% url 'geocaches:refresh' cache.display_code %}" class="d-inline">
+      {% csrf_token %}
+      <input type="hidden" name="source" value="{{ source }}">
+      <button type="submit" class="btn btn-sm btn-success">&#8635; Import from {{ label }}</button>
+    </form>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {# --- Header --- #}
+  <div class="d-flex align-items-baseline gap-3 mb-2 flex-wrap">
+    <h5 class="mb-0 font-monospace">{{ cache.display_code }}</h5>
+    <h5 class="mb-0 fw-normal">{% if cache.is_placeholder %}(not yet imported){% else %}{{ cache.name }}{% endif %}</h5>
+    {% if not cache.is_placeholder %}
+    {% for label, url in cache.external_urls %}
+    <a href="{{ url }}" target="_blank" rel="noopener"
+       class="btn btn-sm btn-outline-primary">↗ {{ label }}</a>
+    {% endfor %}
+    {% endif %}
+    {% if not cache.is_placeholder %}
+    {% for label, source in cache.refresh_sources %}
+    <form method="post" action="{% url 'geocaches:refresh' cache.display_code %}" class="d-inline">
+      {% csrf_token %}
+      <input type="hidden" name="source" value="{{ source }}">
+      <button type="submit" class="btn btn-sm btn-outline-success">&#8635; Refresh from {{ label }}</button>
+    </form>
+    {% endfor %}
+    {% endif %}
+    {% if not embed %}
+    <div class="ms-auto d-flex gap-2">
+      <a href="{% url 'geocaches:list' %}" class="btn btn-sm btn-outline-secondary"
+         id="back-to-list">&larr; Back</a>
+      {% if not cache.is_placeholder %}
+      {% if defuse_available %}
+      <button type="button" class="btn btn-sm btn-outline-warning"
+              data-bs-toggle="modal" data-bs-target="#defuseModal">De-fuse GC/OC</button>
+      {% endif %}
+      <button type="button" class="btn btn-sm btn-outline-danger"
+              data-bs-toggle="modal" data-bs-target="#deleteModal">Delete</button>
+      {% endif %}
+    </div>
+    {% endif %}
+  </div>
+
+  <div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Delete cache?</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <p>This will permanently delete <strong>{{ cache.display_code }} — {{ cache.name }}</strong> from GCForge.</p>
+          <p class="text-muted small mb-0">This cannot be undone. The cache can be re-imported from a GPX file or GSAK database.</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <form method="post" action="{% url 'geocaches:delete' cache.display_code %}">
+            {% csrf_token %}
+            <input type="hidden" name="next" id="delete-next" value="{% url 'geocaches:list' %}">
+            <button type="submit" class="btn btn-danger">Delete</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {% if cache.is_placeholder %}
+  <div class="text-muted small mt-2">
+    This cache has not been imported from GC/OC yet. Use the buttons above to import it,
+    or open it on the platform website. Log submission from the bulk logging panel will still work.
+  </div>
+  {% else %}
+  <div class="row g-3">
+
+    {# ==================== LEFT COLUMN ==================== #}
+    <div class="col-lg-7">
+
+      {# Core attributes row #}
+      <div class="card mb-2">
+        <div class="card-body py-2 px-3">
+          <div class="row row-cols-auto g-2 align-items-center small">
+
+            <div class="col">
+              <span class="text-muted">Type:</span> {% cache_type_icon cache.cache_type cache=cache %} {{ cache.cache_type }}
+            </div>
+            <div class="col">
+              <span class="text-muted">Size:</span> {{ cache.size_override|default:cache.size }}
+            </div>
+            <div class="col">
+              <span class="text-muted">D/T:</span>
+              {{ cache.difficulty|default:"—" }} / {{ cache.terrain|default:"—" }}
+            </div>
+            <div class="col">
+              {% if cache.status == "Active" %}
+                <span class="badge bg-success">Active</span>
+              {% elif cache.status == "Disabled" %}
+                <span class="badge bg-warning text-dark">Disabled</span>
+              {% elif cache.status == "Archived" %}
+                <span class="badge bg-secondary">Archived</span>
+              {% else %}
+                <span class="badge bg-light text-dark">{{ cache.status }}</span>
+              {% endif %}
+            </div>
+            {% if cache.owner %}
+            <div class="col">
+              <span class="text-muted">By:</span>
+              {% if cache.placed_by and cache.placed_by != cache.owner %}
+                {{ cache.placed_by }} <small class="text-muted">({{ cache.owner }})</small>
+              {% else %}
+                {{ cache.owner }}
+              {% endif %}
+            </div>
+            {% endif %}
+            <div class="col">
+              <span class="text-muted">Hidden:</span> {{ cache.hidden_date|date:"Y-m-d"|default:"—" }}
+            </div>
+            <div class="col">
+              <span class="text-muted">Last found:</span> {{ cache.last_found_date|date:"Y-m-d"|default:"—" }}
+            </div>
+            <div class="col">
+              <span {% if cache.user_favorited %}style="color:#0d6efd" title="You gave a favourite point"{% else %}class="text-muted"{% endif %}>♥</span> {{ cache.fav_points }}
+            </div>
+            {% if cache.iso_country_code or cache.country %}
+            <div class="col">
+              <span class="text-muted">Location:</span>
+              {% if cache.iso_country_code %}{{ cache.iso_country_code|country_name }}{% else %}{{ cache.country }}{% endif %}{% if cache.state %}, {{ cache.state }}{% endif %}{% if cache.county %}, {{ cache.county }}{% endif %}
+            </div>
+            {% endif %}
+            {% if cache.elevation_user is not None %}
+            <div class="col">
+              <span class="text-muted">Elev:</span> {{ cache.elevation_user }} m <small class="text-muted">(user)</small>
+            </div>
+            {% elif cache.elevation is not None %}
+            <div class="col">
+              <span class="text-muted">Elev:</span> {{ cache.elevation }} m
+            </div>
+            {% endif %}
+
+          </div>
+
+          {# Parent Adventure link for ALC stages #}
+          {% if cache.adventure and cache.stage_number is not None %}
+          <div class="mt-1 small">
+            <span class="text-muted">Adventure:</span>
+            <a href="{% url 'geocaches:detail' cache.adventure.code %}">{{ cache.adventure.title|default:cache.adventure.code }}</a>
+            <span class="text-muted ms-1">(Stage {{ cache.stage_number }})</span>
+          </div>
+          {% endif %}
+
+          {# Coordinates display — click to rotate DD/DMM/DMS, clipboard copy #}
+          <div class="mt-2 small">
+            <span class="text-muted">Coords:</span>
+            <span class="gcf-coords font-monospace" role="button" title="Click to change format"
+                  data-lat="{{ cache.latitude }}" data-lon="{{ cache.longitude }}"
+                  id="coords-listing">{{ lat_str }} {{ lon_str }}</span>
+            <button class="btn btn-link btn-sm p-0 ms-1" title="Copy coordinates"
+                    onclick="gcfCopyCoords('coords-listing')">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+              </svg>
+            </button>
+            {% if cache.corrected_coordinates %}
+            <span class="ms-3 text-muted">Corrected:</span>
+            <span class="gcf-coords font-monospace text-success" role="button" title="Click to change format"
+                  data-lat="{{ cache.corrected_coordinates.latitude }}" data-lon="{{ cache.corrected_coordinates.longitude }}"
+                  id="coords-corrected">{{ corr_lat_str }} {{ corr_lon_str }}</span>
+            <button class="btn btn-link btn-sm p-0 ms-1" title="Copy coordinates"
+                    onclick="gcfCopyCoords('coords-corrected')">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+              </svg>
+            </button>
+            {% if cache.corrected_coordinates.note %}
+              <span class="text-muted ms-1">— {{ cache.corrected_coordinates.note }}</span>
+            {% endif %}
+            {% endif %}
+          </div>
+
+          {# Personal flags + tags #}
+          <div class="mt-2 d-flex flex-wrap gap-1">
+            {% if cache.found %}<span class="badge bg-success">✓ Found {{ cache.found_date|date:"Y-m-d" }}</span>{% endif %}
+            {% if cache.ftf %}<span class="badge bg-warning text-dark">FTF</span>{% endif %}
+            {% if cache.dnf %}<span class="badge bg-danger">DNF {{ cache.dnf_date|date:"Y-m-d" }}</span>{% endif %}
+            {% if cache.user_flag %}<span class="badge bg-warning text-dark">🚩 Flagged</span>{% endif %}
+            {% if cache.watch %}<span class="badge bg-info text-dark">Watching</span>{% endif %}
+            {% if cache.is_premium %}<span class="badge bg-info text-dark">Premium</span>{% endif %}
+            {% if cache.has_trackable %}<span class="badge bg-secondary">Has trackable</span>{% endif %}
+            <form method="post" action="{% url 'geocaches:toggle_lock' cache.display_code %}" class="d-inline">
+              {% csrf_token %}
+              {% if cache.import_locked %}
+              <button type="submit" class="badge bg-dark border-0" title="Click to unlock">🔒 Import locked ×</button>
+              {% else %}
+              <button type="submit" class="badge bg-secondary border-0" title="Click to lock this cache against imports">🔓 Lock</button>
+              {% endif %}
+            </form>
+            {% for tag in cache.tags.all %}
+            <form method="post" action="{% url 'geocaches:tag_edit' cache.display_code %}" class="d-inline">
+              {% csrf_token %}
+              <input type="hidden" name="_action" value="remove">
+              <input type="hidden" name="tag_id" value="{{ tag.id }}">
+              <button type="submit" class="badge bg-primary border-0 text-decoration-none"
+                      title="Remove tag">{{ tag.name }} ×</button>
+            </form>
+            {% endfor %}
+            <form method="post" action="{% url 'geocaches:tag_edit' cache.display_code %}" class="d-inline">
+              {% csrf_token %}
+              <input type="hidden" name="_action" value="add">
+              <input type="text" name="tag_name" class="form-control form-control-sm d-inline-block"
+                     placeholder="Add tag…" style="width:100px" list="all-tags-list">
+              <datalist id="all-tags-list">
+                {% for tag in all_tags %}<option value="{{ tag.name }}">{% endfor %}
+              </datalist>
+              <button type="submit" class="btn btn-sm btn-outline-primary py-0">+</button>
+            </form>
+          </div>
+
+        </div>
+      </div>
+
+      {# Corrected coordinates card #}
+      <div class="card mb-2">
+        <div class="card-header py-1 small fw-semibold d-flex justify-content-between align-items-center">
+          <span>
+            Corrected coordinates
+            {% if cache.corrected_coordinates %}<span class="badge bg-success ms-1">set</span>{% endif %}
+          </span>
+          <button class="btn btn-link btn-sm p-0 small" type="button"
+                  onclick="toggleCorrectedForm()">
+            {% if cache.corrected_coordinates %}Edit / Clear{% else %}Set corrected coords{% endif %}
+          </button>
+        </div>
+
+        {# Edit form — collapsed by default, toggled via Edit/Set button #}
+        <div id="corrected-form" style="display:none">
+          <div class="card-body py-2">
+            <form method="post" action="{% url 'geocaches:corrected_save' cache.display_code %}">
+              {% csrf_token %}
+              <div class="mb-2 small text-muted">
+                Accepted formats: <code>48.30315</code> &nbsp;|&nbsp;
+                <code>N 48° 18.189'</code> &nbsp;|&nbsp;
+                <code>N 48° 18' 11.3"</code>
+              </div>
+              <div class="row g-2 align-items-end">
+                <div class="col">
+                  <label class="form-label small mb-0">Latitude</label>
+                  <input type="text" name="latitude" id="corr-lat"
+                         class="form-control form-control-sm font-monospace"
+                         data-lon-target="corr-lon"
+                         value="{% if cache.corrected_coordinates %}{{ corr_lat_str }}{% endif %}"
+                         placeholder="{{ lat_str }}"
+                         autocomplete="off">
+                </div>
+                <div class="col">
+                  <label class="form-label small mb-0">Longitude</label>
+                  <input type="text" name="longitude" id="corr-lon"
+                         class="form-control form-control-sm font-monospace"
+                         value="{% if cache.corrected_coordinates %}{{ corr_lon_str }}{% endif %}"
+                         placeholder="{{ lon_str }}"
+                         autocomplete="off">
+                </div>
+                <div class="col-12 col-md">
+                  <label class="form-label small mb-0">Note (optional)</label>
+                  <input type="text" name="note" class="form-control form-control-sm"
+                         value="{% if cache.corrected_coordinates %}{{ cache.corrected_coordinates.note }}{% endif %}"
+                         placeholder="e.g. solved 2024-01-15">
+                </div>
+              </div>
+              <div class="mt-2 d-flex gap-2">
+                <button type="submit" class="btn btn-sm btn-success">Save</button>
+                {% if cache.corrected_coordinates %}
+                <button type="submit" name="clear" value="1"
+                        class="btn btn-sm btn-outline-danger">Clear</button>
+                {% endif %}
+                <button type="button" class="btn btn-sm btn-outline-secondary"
+                        onclick="toggleCorrectedForm()">Cancel</button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        {# Display — shown when corrected coords exist and form is hidden #}
+        {% if cache.corrected_coordinates %}
+        <div id="corrected-display">
+          <div class="card-body py-2 small">
+            <span class="text-muted">Lat:</span>
+            <span class="font-monospace text-success">{{ corr_lat_str }}</span>
+            <span class="ms-3 text-muted">Lon:</span>
+            <span class="font-monospace text-success">{{ corr_lon_str }}</span>
+            {% if cache.corrected_coordinates.note %}
+            <div class="text-muted mt-1">{{ cache.corrected_coordinates.note }}</div>
+            {% endif %}
+          </div>
+        </div>
+        {% endif %}
+      </div>
+
+      {# Save as location #}
+      <div class="card mb-2">
+        <div class="card-header py-1 small fw-semibold d-flex justify-content-between align-items-center">
+          <span>Location</span>
+          <button class="btn btn-link btn-sm p-0 small" type="button"
+                  onclick="toggleRefPointForm()">Save as location</button>
+        </div>
+        <div id="refpoint-form" style="display:none">
+          <div class="card-body py-2">
+            <form method="post" action="{% url 'geocaches:set_refpoint' cache.display_code %}">
+              {% csrf_token %}
+              <div class="row g-2 align-items-end">
+                <div class="col-auto">
+                  <label class="form-label small mb-0">Name</label>
+                  <input type="text" name="name" class="form-control form-control-sm"
+                         value="{{ cache.name|truncatechars:30 }}" style="width:200px">
+                </div>
+                {% if cache.corrected_coordinates %}
+                <div class="col-auto">
+                  <div class="form-check mt-3">
+                    <input class="form-check-input" type="checkbox" name="use_corrected"
+                           value="1" id="use-corrected-ref" checked>
+                    <label class="form-check-label small" for="use-corrected-ref">
+                      Use corrected coords
+                    </label>
+                  </div>
+                </div>
+                {% endif %}
+                <div class="col-auto">
+                  <button type="submit" class="btn btn-sm btn-success">Add to locations</button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      {# GC note #}
+      {% if cache.gc_note %}
+      <div class="card mb-2 border-warning">
+        <div class="card-header py-1 small fw-semibold bg-warning-subtle">Personal note</div>
+        <div class="card-body py-2 small">{{ cache.gc_note }}</div>
+      </div>
+      {% endif %}
+
+      {# Description #}
+      {% if cache.short_description or cache.long_description %}
+      <div class="card mb-2">
+        <div class="card-header py-1 d-flex justify-content-between align-items-center">
+          <span class="small fw-semibold">Description</span>
+          <div class="d-flex gap-2 align-items-center">
+            <div class="btn-group btn-group-sm" role="group">
+              <button type="button" class="btn btn-outline-secondary active" id="btn-rendered"
+                      onclick="showRendered()">Rendered</button>
+              <button type="button" class="btn btn-outline-secondary" id="btn-source"
+                      onclick="showSource()">Source</button>
+            </div>
+            <select class="form-select form-select-sm" style="width:auto" onchange="setDescBg(this.value)" title="Background colour">
+              <option value="">Default</option>
+              <option value="#808080">Grey</option>
+              <option value="#1a3a1a">Dark green</option>
+              <option value="#000000">Black</option>
+            </select>
+          </div>
+        </div>
+        <div class="card-body py-2" id="desc-body">
+          <div id="desc-rendered">
+            {% if cache.short_description %}
+            <div class="mb-2 pb-2 border-bottom desc-html">{{ cache.short_description|safe_html }}</div>
+            {% endif %}
+            {% if cache.long_description %}
+            <div class="desc-html" style="overflow:hidden">{{ cache.long_description|safe_html }}</div>
+            {% endif %}
+          </div>
+          <div id="desc-source" style="display:none">
+            {% if cache.short_description %}
+            <pre class="small mb-2 pb-2 border-bottom" style="white-space:pre-wrap;word-break:break-all">{{ cache.short_description }}</pre>
+            {% endif %}
+            {% if cache.long_description %}
+            <pre class="small" style="white-space:pre-wrap;word-break:break-all">{{ cache.long_description }}</pre>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+      {% if cache.background_image_url %}
+      <div class="card mb-2">
+        <div class="card-header py-1">
+          <span class="small fw-semibold">Background Image</span>
+        </div>
+        <div class="card-body py-2">
+          <img src="{{ cache.background_image_url }}" alt="Background image for {{ cache.name }}">
+          <div class="mt-1">
+            <a href="{{ cache.background_image_url }}" target="_blank" class="small text-muted text-break">{{ cache.background_image_url }}</a>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+      {# OC description (collapsible) — shown when cache has both GC and OC descriptions #}
+      {% if cache.oc_extension and cache.oc_extension.long_description and cache.gc_code %}
+      <div class="card mb-2">
+        <div class="card-header py-1">
+          <a class="small fw-semibold text-decoration-none" data-bs-toggle="collapse"
+             href="#oc-desc-collapse" role="button" aria-expanded="false">
+            Opencaching description <span class="text-muted fw-normal">(click to expand)</span>
+          </a>
+        </div>
+        <div class="collapse" id="oc-desc-collapse">
+          <div class="card-body py-2">
+            {% if cache.oc_extension.short_description %}
+            <div class="mb-2 pb-2 border-bottom desc-html">{{ cache.oc_extension.short_description|safe_html }}</div>
+            {% endif %}
+            <div class="desc-html" style="overflow:hidden">{{ cache.oc_extension.long_description|safe_html }}</div>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+      {# OC attribution (mandatory per OC ToS) #}
+      {% if cache.oc_extension and cache.oc_extension.attribution_html %}
+      <div class="small text-muted mb-2 px-1">{{ cache.oc_extension.attribution_html|safe }}</div>
+      {% endif %}
+
+      {# Hint — display controlled by hint_display preference #}
+      {% if cache.hint %}
+      <div class="card mb-2">
+        {% if hint_display == "hidden" %}
+          <div class="card-header py-1 small fw-semibold d-flex justify-content-between">
+            Hint
+            <button class="btn btn-link btn-sm p-0 small" type="button"
+                    onclick="this.closest('.card').querySelector('.hint-text').classList.toggle('d-none')">
+              show / hide
+            </button>
+          </div>
+          <div class="card-body py-2 hint-text d-none font-monospace small">{{ cache.hint }}</div>
+        {% elif hint_display == "decrypted" %}
+          <div class="card-header py-1 small fw-semibold">Hint</div>
+          <div class="card-body py-2 font-monospace small">{{ cache.hint }}</div>
+        {% else %}{# encrypted: show ROT13, with decode toggle #}
+          <div class="card-header py-1 small fw-semibold d-flex justify-content-between">
+            Hint <small class="text-muted">(ROT13)</small>
+            <button class="btn btn-link btn-sm p-0 small" type="button"
+                    onclick="toggleHintDecode(this)">decode</button>
+          </div>
+          <div class="card-body py-2 font-monospace small">
+            <span class="hint-rot13">{{ cache.hint|rot13 }}</span>
+            <span class="hint-plain d-none">{{ cache.hint }}</span>
+          </div>
+        {% endif %}
+      </div>
+      {% endif %}
+
+      {# Attributes #}
+      {% with attrs=cache.attributes.all %}
+      {% if attrs %}
+      <div class="card mb-2">
+        <div class="card-header py-1 small fw-semibold">Attributes</div>
+        <div class="card-body py-2">
+          <div class="d-flex flex-wrap gap-1">
+            {% for attr in attrs %}
+              {% attribute_icon attr as attr_img %}
+              {% if attr_img %}
+                {{ attr_img }}
+              {% else %}
+                <span class="badge {% if attr.is_positive %}bg-success{% else %}bg-secondary{% endif %}">
+                  {% if not attr.is_positive %}No {% endif %}{{ attr.name }}
+                </span>
+              {% endif %}
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+      {% endif %}
+      {% endwith %}
+
+      {# Logs #}
+      {% if log_page_obj.paginator.count or log_filter != "all" %}
+      <div class="card mb-2" id="logs">
+        <div class="card-header py-1 d-flex justify-content-between align-items-center flex-wrap gap-1">
+          <div class="d-flex align-items-center gap-1">
+            <span class="small fw-semibold">Logs
+              <span class="text-muted fw-normal">({{ cache.platform_log_count }} total)</span>
+            </span>
+            {% if not embed %}
+            <button type="button" class="btn btn-sm btn-primary py-0 px-1" style="font-size:.75rem"
+                    data-bs-toggle="modal" data-bs-target="#newLogModal">New log</button>
+            {% endif %}
+            {% if cache.gc_code and not cache.al_code %}
+            {% if log_has_more %}
+            <form method="post" action="{% url 'geocaches:fetch_logs' cache.display_code %}" class="d-inline ms-1">
+              {% csrf_token %}
+              <input type="hidden" name="source" value="gc">
+              <input type="hidden" name="action" value="fetch_more">
+              <input type="hidden" name="skip" value="{{ log_skip }}">
+              <button type="submit" class="btn btn-outline-primary py-0 px-1" style="font-size:.75rem">Fetch 50 more</button>
+            </form>
+            <form method="post" action="{% url 'geocaches:fetch_logs' cache.display_code %}" class="d-inline ms-1">
+              {% csrf_token %}
+              <input type="hidden" name="source" value="gc">
+              <input type="hidden" name="action" value="fetch_all">
+              <button type="submit" class="btn btn-outline-warning py-0 px-1" style="font-size:.75rem">Fetch all logs</button>
+            </form>
+            {% else %}
+            <form method="post" action="{% url 'geocaches:fetch_logs' cache.display_code %}" class="d-inline ms-1">
+              {% csrf_token %}
+              <input type="hidden" name="source" value="gc">
+              <input type="hidden" name="action" value="fetch_recent">
+              <button type="submit" class="btn btn-outline-primary py-0 px-1" style="font-size:.75rem">Fetch recent 50 logs</button>
+            </form>
+            {% endif %}
+            {% endif %}
+            {% if cache.oc_code %}
+            <form method="post" action="{% url 'geocaches:fetch_logs' cache.display_code %}" class="d-inline ms-1">
+              {% csrf_token %}
+              <input type="hidden" name="source" value="{{ cache.oc_platform }}">
+              <input type="hidden" name="action" value="fetch_recent">
+              <input type="number" name="count" value="50" min="1" max="500" class="form-control d-inline py-0 px-1" style="width:3.5em;font-size:.75rem">
+              <button type="submit" class="btn btn-outline-success py-0 px-1" style="font-size:.75rem">Fetch OC logs</button>
+            </form>
+            {% endif %}
+          </div>
+          <div class="btn-group btn-group-sm" role="group">
+            <a href="?log_filter=all#logs" class="btn btn-outline-secondary {% if log_filter == 'all' %}active{% endif %}">All</a>
+            <a href="?log_filter=my#logs" class="btn btn-outline-secondary {% if log_filter == 'my' %}active{% endif %}">My</a>
+            <a href="?log_filter=friends#logs" class="btn btn-outline-secondary {% if log_filter == 'friends' %}active{% endif %} disabled" aria-disabled="true">Friends</a>
+            <a href="?log_filter=owner#logs" class="btn btn-outline-secondary {% if log_filter == 'owner' %}active{% endif %}">Owner</a>
+            <a href="?log_filter=reviewer#logs" class="btn btn-outline-secondary {% if log_filter == 'reviewer' %}active{% endif %}">Reviewer</a>
+          </div>
+        </div>
+        <div class="card-body py-0">
+          {% if log_page_obj.object_list %}
+          <div class="list-group list-group-flush">
+            {% for log in log_page_obj %}
+            <div class="list-group-item px-0 py-2">
+              <div class="d-flex justify-content-between align-items-baseline">
+                <span class="fw-semibold small">{{ log.user_name }}{% if multi_source_logs and log.source %}&nbsp;<span class="badge bg-light text-muted border" style="font-size:0.65em;">{% if log.source == "oc_de" %}oc.de{% else %}{{ log.source }}{% endif %}</span>{% endif %}</span>
+                <span class="text-muted small">
+                  {{ log.logged_date|date:"Y-m-d" }}
+                  <form method="post" action="{% url 'geocaches:log_delete' log.id %}" class="d-inline ms-1" onsubmit="return confirm('Delete this log entry?')">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-link btn-sm text-danger p-0" style="font-size:.7rem;" title="Remove from GCForge">&times;</button>
+                  </form>
+                </span>
+              </div>
+              <div>
+                <span class="badge
+                  {% if log.log_type == 'Found it' %}bg-success
+                  {% elif log.log_type == "Didn't find it" %}bg-danger
+                  {% elif log.log_type == 'Write note' %}bg-secondary
+                  {% else %}bg-light text-dark
+                  {% endif %} small">{{ log.log_type }}</span>
+                {% if log.text %}
+                  {% if log_truncate and log.text|length > log_truncate_length %}
+                    <span class="text-muted small ms-1 log-text-short">{{ log.text|striptags|truncatechars:log_truncate_length }}</span>
+                    <div class="text-muted small ms-1 log-text-full d-none">{{ log.text|render_log_text:log.source }}</div>
+                    <a href="#" class="small ms-1 log-expand-link" onclick="toggleLogText(this); return false;">more</a>
+                  {% else %}
+                    <div class="text-muted small ms-1 d-inline">{{ log.text|render_log_text:log.source }}</div>
+                  {% endif %}
+                {% endif %}
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+          {# Pagination #}
+          {% if log_page_obj.paginator.num_pages > 1 %}
+          {% with last=log_page_obj.paginator.num_pages lo=log_page_obj.number|add:"-3" hi=log_page_obj.number|add:"3" %}
+          <nav class="py-1">
+            <ul class="pagination pagination-sm mb-0">
+
+              {% if log_page_obj.has_previous %}
+              <li class="page-item">
+                <a class="page-link" href="?log_filter={{ log_filter }}&log_page={{ log_page_obj.previous_page_number }}#logs">«</a>
+              </li>
+              {% else %}
+              <li class="page-item disabled"><span class="page-link">«</span></li>
+              {% endif %}
+
+              {% if lo > 1 %}
+              <li class="page-item">
+                <a class="page-link" href="?log_filter={{ log_filter }}&log_page=1#logs">1</a>
+              </li>
+              {% if lo > 2 %}
+              <li class="page-item disabled"><span class="page-link">…</span></li>
+              {% endif %}
+              {% endif %}
+
+              {% for num in log_page_obj.paginator.page_range %}
+                {% if num >= lo and num <= hi %}
+                  {% if log_page_obj.number == num %}
+                  <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                  {% else %}
+                  <li class="page-item">
+                    <a class="page-link" href="?log_filter={{ log_filter }}&log_page={{ num }}#logs">{{ num }}</a>
+                  </li>
+                  {% endif %}
+                {% endif %}
+              {% endfor %}
+
+              {% if hi < last %}
+              {% if hi < last|add:"-1" %}
+              <li class="page-item disabled"><span class="page-link">…</span></li>
+              {% endif %}
+              <li class="page-item">
+                <a class="page-link" href="?log_filter={{ log_filter }}&log_page={{ last }}#logs">{{ last }}</a>
+              </li>
+              {% endif %}
+
+              {% if log_page_obj.has_next %}
+              <li class="page-item">
+                <a class="page-link" href="?log_filter={{ log_filter }}&log_page={{ log_page_obj.next_page_number }}#logs">»</a>
+              </li>
+              {% else %}
+              <li class="page-item disabled"><span class="page-link">»</span></li>
+              {% endif %}
+
+            </ul>
+          </nav>
+          {% endwith %}
+          {% endif %}
+          {% else %}
+          <p class="text-muted small py-2 mb-0">No logs match the selected filter.</p>
+          {% endif %}
+        </div>
+      </div>
+      {% endif %}
+
+    </div>
+
+    {# ==================== RIGHT COLUMN ==================== #}
+    <div class="col-lg-5">
+      <div style="position:sticky;top:0">
+
+        {# Map #}
+        <div class="card mb-2">
+          <div class="card-header py-1 d-flex justify-content-between align-items-center gap-2 flex-wrap">
+            <span class="small fw-semibold">Map</span>
+            <div class="d-flex gap-2">
+              {% if stages %}
+              <button type="button" class="btn btn-sm btn-primary" id="btn-stages"
+                      onclick="toggleStages(this)">Stages</button>
+              {% endif %}
+              {% if coord_waypoints %}
+              <button type="button" class="btn btn-sm btn-primary" id="btn-waypoints"
+                      onclick="toggleWaypoints(this)">Waypoints</button>
+              {% endif %}
+              {% if map_state %}
+              <button type="button" class="btn btn-sm btn-outline-secondary"
+                      onclick="resetMapView()">Reset view</button>
+              {% endif %}
+              <div class="btn-group btn-group-sm" role="group" id="layer-switcher">
+                <button type="button" class="btn btn-outline-secondary active" onclick="setLayer('osm', this)">OSM</button>
+                <button type="button" class="btn btn-outline-secondary" onclick="setLayer('topo', this)">Topo</button>
+                <button type="button" class="btn btn-outline-secondary" onclick="setLayer('satellite', this)">Satellite</button>
+              </div>
+            </div>
+          </div>
+          <div id="cache-map" style="height:320px"></div>
+        </div>
+
+        {# Adventure Lab stages #}
+        {% if stages %}
+        <div class="card mb-2">
+          <div class="card-header py-1 small fw-semibold">Stages</div>
+          <div class="card-body py-0">
+            <table class="table table-sm mb-0">
+              <thead><tr><th>#</th><th>Name / Question</th><th>Coords</th><th></th></tr></thead>
+              <tbody>
+                {% for s in stages %}
+                <tr>
+                  <td class="small align-top">{{ s.stage_number }}</td>
+                  <td class="small">
+                    <a href="{% url 'geocaches:detail' s.al_code %}">{{ s.name }}</a>
+                    {% if s.question_text %}<div class="text-muted mt-1" style="white-space:pre-wrap">{{ s.question_text }}</div>{% endif %}
+                  </td>
+                  <td class="small font-monospace text-nowrap align-top">
+                    {% if s.latitude is not None %}{{ s.latitude|floatformat:4 }}, {{ s.longitude|floatformat:4 }}{% else %}—{% endif %}
+                  </td>
+                  <td class="small align-top">{% if s.found %}<span class="badge bg-success">✓</span>{% endif %}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+        {% endif %}
+
+        {# Additional waypoints #}
+        <div class="card mb-2">
+          <div class="card-header py-1 d-flex justify-content-between align-items-center">
+            <span class="small fw-semibold">Additional waypoints</span>
+            <div class="d-flex gap-1 align-items-center">
+              {% if hidden_waypoint_count %}
+              <form method="post" action="{% url 'geocaches:waypoint_restore_all' cache.display_code %}" class="d-inline">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-sm btn-outline-warning py-0">Restore hidden ({{ hidden_waypoint_count }})</button>
+              </form>
+              {% endif %}
+              <button type="button" class="btn btn-sm btn-outline-secondary py-0"
+                      onclick="openWaypointModal()">+ Add waypoint</button>
+            </div>
+          </div>
+          <div class="card-body py-0">
+            {% with wpts=cache.waypoints.all %}
+            {% if wpts %}
+            <table class="table table-sm mb-0 align-middle">
+              <thead>
+                <tr>
+                  <th class="text-center ps-2" style="width:2rem" title="Completed"></th>
+                  <th>Type</th>
+                  <th>Name</th>
+                  <th>Coords</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for wpt in wpts %}
+                <tr{% if wpt.is_hidden %} class="text-muted"{% endif %}>
+                  <td class="text-center ps-2">
+                    <form method="post" action="{% url 'geocaches:waypoint_complete' cache.display_code wpt.pk %}" class="d-inline">
+                      {% csrf_token %}
+                      <button type="submit" class="btn btn-link p-0 lh-1 text-decoration-none{% if wpt.is_completed %} text-success{% else %} text-secondary{% endif %}" title="Toggle completed">{% if wpt.is_completed %}&#10003;{% else %}&#9675;{% endif %}</button>
+                    </form>
+                  </td>
+                  <td class="small">
+                    {% if wpt.is_user_created %}<span class="text-success" title="User-created">+</span>{% elif wpt.is_user_modified %}<span class="text-info" title="Modified">&#10000;</span>{% endif %}
+                    {% waypoint_type_icon wpt.waypoint_type %} {{ wpt.get_waypoint_type_display }}
+                  </td>
+                  <td class="small">
+                    {{ wpt.name|default:wpt.lookup }}
+                    {% if wpt.note %}<div class="text-muted fst-italic">{{ wpt.note }}</div>{% endif %}
+                  </td>
+                  <td class="small font-monospace">
+                    {% if wpt.latitude is not None %}
+                      {{ wpt.latitude|floatformat:4 }}, {{ wpt.longitude|floatformat:4 }}
+                    {% else %}—{% endif %}
+                  </td>
+                  <td class="text-end text-nowrap">
+                    <button type="button" class="btn btn-link btn-sm p-0 me-2"
+                            onclick="openWaypointModal({{ wpt.pk }}, '{{ wpt.waypoint_type|escapejs }}', '{{ wpt.name|escapejs }}', '{{ wpt.note|escapejs }}', {{ wpt.latitude|default:'null' }}, {{ wpt.longitude|default:'null' }})">Edit</button>
+                    {% if wpt.is_hidden %}
+                    <form method="post" action="{% url 'geocaches:waypoint_unhide' cache.display_code wpt.pk %}" class="d-inline">
+                      {% csrf_token %}
+                      <button type="submit" class="btn btn-link btn-sm p-0 text-warning">Show</button>
+                    </form>
+                    {% else %}
+                    <form method="post" action="{% url 'geocaches:waypoint_hide' cache.display_code wpt.pk %}" class="d-inline">
+                      {% csrf_token %}
+                      <button type="submit" class="btn btn-link btn-sm p-0 text-muted">Hide</button>
+                    </form>
+                    {% endif %}
+                    {% if wpt.is_user_created %}
+                    <form method="post" action="{% url 'geocaches:waypoint_delete' cache.display_code wpt.pk %}" class="d-inline">
+                      {% csrf_token %}
+                      <button type="submit" class="btn btn-link btn-sm p-0 text-danger ms-1"
+                              onclick="return confirm('Delete this waypoint?')">Del</button>
+                    </form>
+                    {% endif %}
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+            {% else %}
+            <p class="small text-muted py-2 mb-0 px-2">No waypoints. Use "+ Add waypoint" to create one.</p>
+            {% endif %}
+            {% endwith %}
+          </div>
+        </div>
+
+        {# Notes #}
+        <div class="card mb-2">
+          <div class="card-header py-1 d-flex justify-content-between align-items-center">
+            <span class="small fw-semibold">Notes</span>
+            <button class="btn btn-sm btn-outline-secondary py-0"
+                    data-bs-toggle="collapse" data-bs-target="#add-note-form">+ Add note</button>
+          </div>
+
+          {# Add-note form #}
+          <div class="collapse" id="add-note-form">
+            <div class="card-body py-2 border-bottom bg-light">
+              <form method="post" action="{% url 'geocaches:note_add' cache.display_code %}">
+                {% csrf_token %}
+                <div class="row g-2 mb-2">
+                  <div class="col-auto">
+                    <select name="note_type" class="form-select form-select-sm">
+                      <option value="note">Note</option>
+                      <option value="field_note">Field note</option>
+                    </select>
+                  </div>
+                  <div class="col-auto">
+                    <select name="format" class="form-select form-select-sm">
+                      <option value="plain">Plain text</option>
+                      <option value="html">HTML</option>
+                      <option value="md">Markdown</option>
+                    </select>
+                  </div>
+                  <div class="col-auto">
+                    <input type="datetime-local" name="logged_at" class="form-control form-control-sm"
+                           title="Optional date / time">
+                  </div>
+                </div>
+                <textarea name="body" class="form-control form-control-sm mb-2" rows="3" placeholder="Note text…"></textarea>
+                <button type="submit" class="btn btn-sm btn-primary">Save</button>
+                <button type="button" class="btn btn-sm btn-outline-secondary ms-1"
+                        data-bs-toggle="collapse" data-bs-target="#add-note-form">Cancel</button>
+              </form>
+            </div>
+          </div>
+
+          {# Note list #}
+          {% if notes %}
+          <div class="card-body py-0">
+            {% for note in notes %}
+            <div class="py-2 {% if not forloop.last %}border-bottom{% endif %}">
+
+              {# Header row #}
+              <div class="d-flex justify-content-between align-items-center mb-1">
+                <div>
+                  {% if note.note_type == "field_note" %}
+                    <span class="badge bg-info text-dark">Field note</span>
+                    {% if note.log_type %}
+                    <span class="badge bg-primary note-log-type-chip" data-note-id="{{ note.pk }}">{{ note.log_type }}</span>
+                    {% endif %}
+                  {% else %}
+                    <span class="badge bg-secondary">Note</span>
+                  {% endif %}
+                  {% if note.format != "plain" %}
+                    <span class="badge bg-light text-muted border ms-1">{% if note.format == "html" %}HTML{% elif note.format == "md" %}Markdown{% endif %}</span>
+                  {% endif %}
+                  {% with ref=note.logged_at|default:note.updated_at|default:note.created_at %}
+                    {% if ref %}<small class="text-muted ms-1">{{ ref|date:"Y-m-d H:i" }}</small>{% endif %}
+                  {% endwith %}
+                </div>
+                <div class="d-flex gap-1">
+                  <button class="btn btn-sm btn-outline-secondary py-0"
+                          data-bs-toggle="collapse"
+                          data-bs-target="#edit-note-{{ note.pk }}">Edit</button>
+                  <form method="post" action="{% url 'geocaches:note_delete' note.pk %}"
+                        onsubmit="return confirm('Delete this note?')">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-sm btn-outline-danger py-0">Delete</button>
+                  </form>
+                </div>
+              </div>
+
+              {# Body #}
+              <div class="small" style="white-space:pre-wrap">{{ note.body }}</div>
+
+              {# Inline edit form #}
+              <div class="collapse mt-2" id="edit-note-{{ note.pk }}">
+                <form method="post" action="{% url 'geocaches:note_update' note.pk %}"
+                      class="border rounded p-2 bg-light">
+                  {% csrf_token %}
+                  <div class="row g-2 mb-2">
+                    <div class="col-auto">
+                      <select name="note_type" class="form-select form-select-sm">
+                        <option value="note" {% if note.note_type == "note" %}selected{% endif %}>Note</option>
+                        <option value="field_note" {% if note.note_type == "field_note" %}selected{% endif %}>Field note</option>
+                      </select>
+                    </div>
+                    <div class="col-auto">
+                      <select name="format" class="form-select form-select-sm">
+                        <option value="plain" {% if note.format == "plain" %}selected{% endif %}>Plain text</option>
+                        <option value="html" {% if note.format == "html" %}selected{% endif %}>HTML</option>
+                        <option value="md" {% if note.format == "md" %}selected{% endif %}>Markdown</option>
+                      </select>
+                    </div>
+                    <div class="col-auto">
+                      <input type="datetime-local" name="logged_at" class="form-control form-control-sm"
+                             value="{% if note.logged_at %}{{ note.logged_at|date:'Y-m-d\TH:i' }}{% endif %}"
+                             title="Optional date / time">
+                    </div>
+                  </div>
+                  <textarea name="body" class="form-control form-control-sm mb-2" rows="3">{{ note.body }}</textarea>
+                  <button type="submit" class="btn btn-sm btn-primary">Save</button>
+                  <button type="button" class="btn btn-sm btn-outline-secondary ms-1"
+                          data-bs-toggle="collapse" data-bs-target="#edit-note-{{ note.pk }}">Cancel</button>
+                </form>
+              </div>
+
+            </div>
+            {% endfor %}
+          </div>
+          {% endif %}
+        </div>
+
+        {# Custom fields #}
+        {% with fields=cache.custom_fields.all %}
+        {% if fields %}
+        <div class="card mb-2">
+          <div class="card-header py-1 small fw-semibold">Custom fields</div>
+          <div class="card-body py-0">
+            <table class="table table-sm mb-0">
+              <tbody>
+                {% for cf in fields %}
+                <tr>
+                  <td class="small text-muted">{{ cf.key }}</td>
+                  <td class="small">{{ cf.value }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+        {% endif %}
+        {% endwith %}
+
+        {# OC extension data #}
+        {% if cache.oc_extension %}
+        <div class="card mb-2">
+          <div class="card-header py-1 small fw-semibold">Opencaching data</div>
+          <div class="card-body py-2">
+            {% with oc=cache.oc_extension %}
+            <div class="row g-2 small">
+              {% if oc.rating is not None %}<div class="col-6"><span class="text-muted">Rating</span> {{ oc.rating }}</div>{% endif %}
+              {% if oc.recommendations %}<div class="col-6"><span class="text-muted">Recommendations</span> {% if oc.user_recommended %}<span style="color:#fd7e14" title="You recommended this cache">★</span>{% endif %}{{ oc.recommendations }}</div>{% endif %}
+              {% if oc.trip_time %}<div class="col-6"><span class="text-muted">Trip time</span> {{ oc.trip_time }} h</div>{% endif %}
+              {% if oc.trip_distance %}<div class="col-6"><span class="text-muted">Trip distance</span> {{ oc.trip_distance }} km</div>{% endif %}
+              {% if oc.needs_maintenance %}<div class="col-12"><span class="badge bg-warning text-dark">Needs maintenance</span></div>{% endif %}
+              {% if oc.req_passwd %}<div class="col-12"><span class="badge bg-danger">Passphrase required</span></div>{% endif %}
+              <div class="col-12">
+                <form method="post" action="{% url 'geocaches:oc_passphrase_save' cache.display_code %}" class="d-flex gap-1 align-items-center mt-1">
+                  {% csrf_token %}
+                  <label class="small text-muted me-1 mb-0">Passphrase</label>
+                  <input type="text" name="passphrase" class="form-control form-control-sm"
+                         style="max-width:180px" value="{{ oc.passphrase }}"
+                         placeholder="(none)" autocomplete="off">
+                  <button type="submit" class="btn btn-sm btn-outline-secondary">Save</button>
+                </form>
+              </div>
+            </div>
+            {% endwith %}
+          </div>
+        </div>
+        {% endif %}
+
+        {# Import info #}
+        <div class="card mb-2">
+          <div class="card-header py-1 small fw-semibold">Import info</div>
+          <div class="card-body py-2 small">
+            <span class="text-muted">Imported</span> {{ cache.imported_at|date:"Y-m-d H:i" }}<br>
+            <span class="text-muted">Updated</span> {{ cache.updated_at|date:"Y-m-d H:i" }}
+            {% if cache.last_gpx_date %}
+            <br><span class="text-muted">Last GPX</span> {{ cache.last_gpx_date|date:"Y-m-d H:i" }}
+            {% endif %}
+            {% if cache.oc_code %}
+            <br><span class="text-muted">OC code</span> <span class="font-monospace">{{ cache.oc_code }}</span>
+            {% endif %}
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+  {% endif %}{# end is_placeholder #}
+</div>
+
+<div id="cache-detail-config"
+     data-cache-lat="{{ cache.latitude }}"
+     data-cache-lon="{{ cache.longitude }}"
+     data-cache-code="{{ cache.display_code|escapejs }}"
+     data-cache-name="{{ cache.name|escapejs }}"
+     data-cache-type="{{ cache.cache_type }}"
+     data-platform="{% if cache.oc_code and not cache.gc_code %}oc{% else %}gc{% endif %}"
+     data-icon-set="{{ icon_set }}"
+     data-csrf-token="{{ csrf_token }}"
+     data-save-map-url="{% url 'geocaches:save_map_state' cache.display_code %}"
+     data-reset-map-url="{% url 'geocaches:reset_map_state' cache.display_code %}"
+     {% if cache.corrected_coordinates %}
+     data-corr-lat="{{ cache.corrected_coordinates.latitude }}"
+     data-corr-lon="{{ cache.corrected_coordinates.longitude }}"
+     {% endif %}
+     {% if map_state %}
+     data-map-state='{"lat":{{ map_state.lat }},"lon":{{ map_state.lon }},"zoom":{{ map_state.zoom }}}'
+     {% endif %}
+     data-stages='[{% for s in stages %}{% if s.latitude is not None %}{% if not forloop.first %},{% endif %}{"lat":{{ s.latitude }},"lon":{{ s.longitude }},"found":{% if s.found %}true{% else %}false{% endif %},"num":{{ s.stage_number }},"name":"{{ s.name|escapejs }}"}{% endif %}{% endfor %}]'
+     data-wp-add-url="{% url 'geocaches:waypoint_add' cache.display_code %}"
+     style="display:none"></div>
+{{ map_waypoints|json_script:"cache-map-waypoints" }}
+{{ coord_waypoints|json_script:"cache-coord-waypoints" }}
+{% include "geocaches/_log_submit_modal.html" %}
+{% if defuse_available %}{% include "geocaches/_defuse_modal.html" %}{% endif %}
+
+{# Waypoint add/edit modal #}
+<div class="modal fade" id="waypointModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+    <form method="post" id="waypointForm" action="{% url 'geocaches:waypoint_add' cache.display_code %}">
+      {% csrf_token %}
+      <input type="hidden" name="wp_id" id="wpId" value="">
+      <div class="modal-header py-2">
+        <h6 class="modal-title mb-0" id="waypointModalTitle">Add waypoint</h6>
+        <button type="button" class="btn-close btn-sm" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body pb-2">
+        <div class="row g-2 mb-3">
+          <div class="col-sm-4">
+            <label class="form-label form-label-sm mb-1">Type</label>
+            <select name="waypoint_type" id="wpType" class="form-select form-select-sm">
+              <option value="Parking">Parking Area</option>
+              <option value="Stage">Stage of a Multi-Cache</option>
+              <option value="Question">Question to Answer</option>
+              <option value="Final">Final Location</option>
+              <option value="Trailhead">Trailhead</option>
+              <option value="Reference">Reference Point</option>
+              <option value="Other" selected>Other</option>
+            </select>
+          </div>
+          <div class="col-sm-8">
+            <label class="form-label form-label-sm mb-1">Name</label>
+            <input type="text" name="name" id="wpName" class="form-control form-control-sm" maxlength="255">
+          </div>
+          <div class="col-12">
+            <label class="form-label form-label-sm mb-1">Note</label>
+            <textarea name="note" id="wpNote" class="form-control form-control-sm" rows="2"></textarea>
+          </div>
+        </div>
+
+        <div class="mb-2">
+          <div class="d-flex gap-3 mb-2">
+            <div class="form-check form-check-inline">
+              <input class="form-check-input" type="radio" name="coord_method" id="cmManual" value="manual" checked onchange="wpCoordMethodChange()">
+              <label class="form-check-label small" for="cmManual">Manual entry</label>
+            </div>
+            <div class="form-check form-check-inline">
+              <input class="form-check-input" type="radio" name="coord_method" id="cmMap" value="map" onchange="wpCoordMethodChange()">
+              <label class="form-check-label small" for="cmMap">Pick on map</label>
+            </div>
+            <div class="form-check form-check-inline">
+              <input class="form-check-input" type="radio" name="coord_method" id="cmProject" value="project" onchange="wpCoordMethodChange()">
+              <label class="form-check-label small" for="cmProject">Project waypoint</label>
+            </div>
+          </div>
+
+          {# Manual coords #}
+          <div id="wpCoordManual" class="row g-2">
+            <div class="col-sm-6">
+              <label class="form-label form-label-sm mb-1">Latitude</label>
+              <input type="text" name="latitude" id="wpLat" class="form-control form-control-sm font-monospace" placeholder="e.g. N 48° 18.189 or 48.30315" data-lon-target="wpLon">
+            </div>
+            <div class="col-sm-6">
+              <label class="form-label form-label-sm mb-1">Longitude</label>
+              <input type="text" name="longitude" id="wpLon" class="form-control form-control-sm font-monospace" placeholder="e.g. E 8° 58.876 or 8.98127">
+            </div>
+          </div>
+
+          {# Map pick #}
+          <div id="wpCoordMap" class="d-none">
+            <div id="wpPickMap" style="height:240px; border:1px solid #dee2e6; border-radius:4px;"></div>
+            <p class="small text-muted mt-1 mb-0">Click the map to place a waypoint marker.</p>
+          </div>
+
+          {# Project #}
+          <div id="wpCoordProject" class="d-none">
+            <div class="row g-2 align-items-end">
+              <div class="col-sm-5">
+                <label class="form-label form-label-sm mb-1">Basis</label>
+                <select id="wpProjBasis" class="form-select form-select-sm" onchange="wpProjectUpdate()">
+                  <option value="cache">Cache coordinates</option>
+                </select>
+              </div>
+              <div class="col-sm-3">
+                <label class="form-label form-label-sm mb-1">Bearing (&deg; from N)</label>
+                <input type="number" id="wpProjBearing" class="form-control form-control-sm" min="0" max="360" step="0.1" oninput="wpProjectUpdate()">
+              </div>
+              <div class="col-sm-2">
+                <label class="form-label form-label-sm mb-1">Distance</label>
+                <input type="number" id="wpProjDist" class="form-control form-control-sm" min="0" step="0.1" oninput="wpProjectUpdate()">
+              </div>
+              <div class="col-sm-2">
+                <label class="form-label form-label-sm mb-1">Unit</label>
+                <select id="wpProjUnit" class="form-select form-select-sm" onchange="wpProjectUpdate()">
+                  <option value="m">m</option>
+                  <option value="ft">ft</option>
+                  <option value="km">km</option>
+                  <option value="mi">mi</option>
+                </select>
+              </div>
+            </div>
+            <div class="mt-2 small text-muted" id="wpProjResult">Enter bearing and distance above.</div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer py-2">
+        <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="submit" class="btn btn-sm btn-primary" id="wpSaveBtn">Save</button>
+      </div>
+    </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{% load static %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+  .desc-html img { max-width: 100%; height: auto; }
+  .desc-html table { max-width: 100%; border-collapse: collapse; }
+  .desc-html td, .desc-html th { padding: 2px 6px; border: 1px solid #dee2e6; }
+  #cache-map { z-index: 0; }
+</style>
+<script src="{% static 'js/cache-detail.js' %}"></script>
+{% endblock %}

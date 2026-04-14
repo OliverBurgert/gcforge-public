@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}Event Calendar — GCForge{% endblock %}
+{% block content %}
+<div class="px-3 py-3" style="max-width:1100px">
+  <h5 class="mb-1">Upcoming Events</h5>
+  {% if ref %}
+  <p class="text-muted small mb-3">Distance from <strong>{{ ref.name }}</strong></p>
+  {% else %}
+  <p class="text-muted small mb-3">No reference point configured — distance unavailable.</p>
+  {% endif %}
+
+  {% if not rows %}
+  <div class="card">
+    <div class="card-body text-muted small">No upcoming events found in the database.</div>
+  </div>
+  {% else %}
+  <table class="table table-sm table-hover align-middle">
+    <thead class="table-light">
+      <tr>
+        <th class="text-nowrap">Date</th>
+        <th>Name</th>
+        <th>Type</th>
+        <th class="text-nowrap">Distance</th>
+        <th>Tags</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in rows %}
+      <tr>
+        <td class="text-nowrap small font-monospace">{{ row.cache.hidden_date|date:"Y-m-d" }}</td>
+        <td class="small">
+          <a href="{% url 'geocaches:detail' row.cache.display_code %}">{{ row.cache.name }}</a>
+        </td>
+        <td class="small text-muted text-nowrap">{{ row.cache.cache_type }}</td>
+        <td class="small text-nowrap">{{ row.distance }}</td>
+        <td class="small">
+          {% for tag in row.cache.tags.all %}
+          <span class="badge bg-secondary fw-normal">{{ tag.name }}</span>
+          {% endfor %}
+        </td>
+        <td class="text-nowrap">
+          <a href="{% url 'geocaches:tools_event_ical' row.cache.pk %}"
+             class="btn btn-outline-secondary btn-sm py-0 px-2"
+             style="font-size:0.75rem"
+             title="Download iCal entry">Add to calendar</a>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <p class="text-muted small">{{ rows|length }} event{{ rows|length|pluralize }} found. Time shown in iCal is extracted from the cache description where possible; otherwise an all-day event is created.</p>
+  {% endif %}
+
+  <a href="{% url 'geocaches:list' %}" class="btn btn-secondary btn-sm mt-2">Back to list</a>
+</div>
+{% endblock %}

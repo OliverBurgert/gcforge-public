@@ -1,0 +1,69 @@
+/* GCForge icon system styles */
+
+.gcf-icon {
+  display: inline-block;
+  vertical-align: middle;
+}
+
+/* Cache type icon: white SVG on a colored shape (border-radius set inline) */
+.gcf-type-icon-wrap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  vertical-align: middle;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.gcf-type-icon-wrap .gcf-icon-type {
+  flex: 0 0 140%;
+  width: 140%;
+  height: 140%;
+}
+
+.gcf-icon-wpt {
+  width: 16px;
+  height: 16px;
+}
+
+.gcf-icon-attr {
+  width: 28px;
+  height: 28px;
+}
+
+/* Attribute icon wrapper — positions the negative overlay */
+.gcf-attr-icon-wrap {
+  display: inline-block;
+  position: relative;
+  border-radius: 4px;
+  padding: 2px;
+  background: #2e7d32;  /* green background for positive */
+}
+
+.gcf-attr-icon-wrap.gcf-attr-negative {
+  background: #616161;  /* grey background for negative */
+}
+
+.gcf-attr-icon-wrap.gcf-attr-negative::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: 4px;
+  background: linear-gradient(
+    to bottom right,
+    transparent 42%,
+    rgba(220, 53, 69, 0.8) 42%,
+    rgba(220, 53, 69, 0.8) 58%,
+    transparent 58%
+  );
+  pointer-events: none;
+}
+
+/* Small icon variant for list/table views */
+.gcf-icon-sm {
+  width: 16px;
+  height: 16px;
+}

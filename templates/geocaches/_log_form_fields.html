@@ -1,0 +1,166 @@
+{% load cache_tags %}
+<div class="mb-2">
+  <label class="form-label small mb-0">Log type</label>
+  <select name="log_type" class="form-select form-select-sm">
+    {% for value, label in log_type_choices %}
+    <option value="{{ value }}" {% if value == selected_log_type %}selected{% endif %}>{{ label }}</option>
+    {% endfor %}
+  </select>
+</div>
+
+<div class="mb-2">
+  <label class="form-label small mb-0">Date / Time <span class="text-muted">({{ cache_tz_name }})</span></label>
+  <input type="datetime-local" name="logged_at" class="form-control form-control-sm"
+         value="{{ logged_at_value }}">
+</div>
+
+<div class="mb-2">
+  <label class="form-label small mb-0">Log text</label>
+  <textarea name="text" id="logFormText" class="form-control form-control-sm" rows="4"
+            placeholder="TFTC!">{{ log_text_value }}</textarea>
+  {% if pending_field_notes %}
+  <div class="mt-1 d-flex flex-wrap gap-1">
+    {% for fn in pending_field_notes %}
+    <button type="button" class="btn btn-outline-secondary btn-sm py-0"
+            style="font-size:.75rem"
+            onclick="gcfInsertFieldNote({{ fn.body|tojson }}, {{ fn.log_type|tojson }}, {{ fn.local_dt|tojson }})"
+            title="{{ fn.body|truncatechars:120 }}">
+      {{ fn.label }}{% if fn.date_label %} ({{ fn.date_label }}){% endif %}
+    </button>
+    {% endfor %}
+  </div>
+  {% endif %}
+</div>
+
+{% if requires_passphrase %}
+<div class="mb-2">
+  <label class="form-label small mb-0">
+    Passphrase <span class="badge bg-warning text-dark" style="font-size:.65rem">required</span>
+  </label>
+  <input type="text" name="passphrase" id="logFormPassphrase" class="form-control form-control-sm"
+         value="{{ stored_passphrase }}" autocomplete="off" placeholder="Enter cache passphrase">
+  {% if pending_field_notes %}
+  <div class="mt-1 d-flex flex-wrap gap-1">
+    {% for fn in pending_field_notes %}
+    <button type="button" class="btn btn-outline-secondary btn-sm py-0"
+            style="font-size:.75rem"
+            onclick="gcfInsertPassphrase({{ fn.body|tojson }})"
+            title="{{ fn.body|truncatechars:120 }}">
+      {{ fn.label }}{% if fn.date_label %} ({{ fn.date_label }}){% endif %}
+    </button>
+    {% endfor %}
+  </div>
+  {% endif %}
+</div>
+{% endif %}
+
+{% if submit_platforms %}
+<div class="mb-2">
+  <label class="form-label small mb-0">Submit to</label>
+  {% for p in submit_platforms %}
+  <div class="form-check">
+    <input class="form-check-input" type="checkbox" name="platforms" value="{{ p.id }}"
+           id="logPlat_{{ p.id }}" {% if p.checked %}checked{% endif %} {% if not p.enabled %}disabled{% endif %}>
+    <label class="form-check-label small" for="logPlat_{{ p.id }}">
+      {{ p.label }}
+      {% if not p.enabled %}<span class="text-muted">(no credentials)</span>{% endif %}
+    </label>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<div class="mb-0">
+  <label class="form-label small mb-0">Find # <span class="text-muted">(optional)</span></label>
+  <input type="number" name="sequence_number" class="form-control form-control-sm" style="width:6em"
+         {% if sequence_number_value %}value="{{ sequence_number_value }}"{% endif %}
+         min="1" placeholder="">
+</div>
+
+{% if can_give_fav or can_recommend %}
+<div class="mb-0 mt-2 d-flex gap-3 flex-wrap" id="fav-rec-section">
+  {% if can_give_fav %}
+  <div class="form-check" id="fav-check-wrap" style="display:none!important">
+    <input class="form-check-input" type="checkbox" name="give_favourite" id="logGiveFav" value="1">
+    <label class="form-check-label small" for="logGiveFav">Give ♥ favourite point</label>
+  </div>
+  {% endif %}
+  {% if can_recommend %}
+  <div class="form-check" id="rec-check-wrap" style="display:none!important">
+    <input class="form-check-input" type="checkbox" name="recommend" id="logRecommend" value="1">
+    <label class="form-check-label small" for="logRecommend">Recommend ★</label>
+  </div>
+  {% endif %}
+</div>
+{% endif %}
+
+{% if submit_platforms %}
+{# Image slots — hidden file inputs injected here by JS #}
+<div data-role="image-slots"></div>
+{# Image list display #}
+<div data-role="image-list" class="mb-1"></div>
+{% endif %}
+
+<script>
+(function () {
+  // Favourite / Recommend visibility logic
+  var _FAV_TYPES = ['Found it', 'Attended', 'Webcam Photo Taken'];
+  var _REC_TYPES = ['Found it'];
+
+  function _gcfUpdateFavRec() {
+    var form = document.querySelector('#fav-rec-section') && document.querySelector('#fav-rec-section').closest('form');
+    if (!form) return;
+    var logTypeSel = form.querySelector('select[name="log_type"]');
+    var logType = logTypeSel ? logTypeSel.value : '';
+    var gcChecked = !!form.querySelector('input[name="platforms"][value="gc"]:checked');
+    var ocChecked = Array.prototype.some.call(
+      form.querySelectorAll('input[name="platforms"]'),
+      function (el) { return el.value.indexOf('oc_') === 0 && el.checked; }
+    );
+    var favWrap = document.getElementById('fav-check-wrap');
+    var recWrap = document.getElementById('rec-check-wrap');
+    if (favWrap) {
+      var show = gcChecked && _FAV_TYPES.indexOf(logType) >= 0;
+      favWrap.style.setProperty('display', show ? 'block' : 'none', 'important');
+      if (!show) { var cb = favWrap.querySelector('input'); if (cb) cb.checked = false; }
+    }
+    if (recWrap) {
+      var showR = ocChecked && _REC_TYPES.indexOf(logType) >= 0;
+      recWrap.style.setProperty('display', showR ? 'block' : 'none', 'important');
+      if (!showR) { var cbR = recWrap.querySelector('input'); if (cbR) cbR.checked = false; }
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', function () {
+    _gcfUpdateFavRec();
+    document.querySelectorAll('select[name="log_type"], input[name="platforms"]').forEach(function (el) {
+      el.addEventListener('change', _gcfUpdateFavRec);
+    });
+  });
+})();
+
+function gcfInsertPassphrase(text) {
+  var inp = document.getElementById('logFormPassphrase');
+  if (inp) { inp.value = text; inp.focus(); }
+}
+function gcfInsertFieldNote(text, logType, localDt) {
+  var ta = document.getElementById('logFormText');
+  var start = (typeof ta.selectionStart === 'number') ? ta.selectionStart : 0;
+  var end   = (typeof ta.selectionEnd   === 'number') ? ta.selectionEnd   : 0;
+  ta.value = ta.value.substring(0, start) + text + ta.value.substring(end);
+  ta.selectionStart = ta.selectionEnd = start + text.length;
+  ta.focus();
+  if (logType) {
+    var sel = ta.closest('form').querySelector('select[name="log_type"]');
+    if (sel) {
+      for (var i = 0; i < sel.options.length; i++) {
+        if (sel.options[i].value === logType) { sel.selectedIndex = i; break; }
+      }
+    }
+  }
+  if (localDt) {
+    var dtInput = ta.closest('form').querySelector('input[name="logged_at"]');
+    if (dtInput) dtInput.value = localDt;
+  }
+}
+</script>

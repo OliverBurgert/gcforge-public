@@ -1,0 +1,56 @@
+{% extends "geocaches/_import_base.html" %}
+{% load static %}
+{% block import_title %}Import GSAK{% endblock %}
+{% block import_heading %}Import GSAK database{% endblock %}
+{% block form_action %}{% url 'geocaches:import_gsak' %}{% endblock %}
+{% block form_enctype %}{% endblock %}
+
+{% block help_text %}
+<p class="text-muted small mb-3">
+  Import an existing GSAK <code>sqlite.db3</code> file. Each database maps to a tag
+  by default; override below. Large databases may take a minute or two.
+</p>
+{% endblock %}
+
+{% block extra_fields %}
+{% if gsak_dbs %}
+<div class="mb-3">
+  <label class="form-label small fw-semibold">Detected GSAK databases</label>
+  <div class="d-flex flex-column gap-1">
+    {% for db in gsak_dbs %}
+    <div class="form-check">
+      <input class="form-check-input" type="radio" name="gsak_path"
+             value="{{ db }}\sqlite.db3" id="gsak_{{ forloop.counter }}"
+             {% if forloop.first %}checked{% endif %}>
+      <label class="form-check-label small" for="gsak_{{ forloop.counter }}">
+        <strong>{{ db.name }}</strong>
+        <span class="text-muted font-monospace">{{ db }}\sqlite.db3</span>
+      </label>
+    </div>
+    {% endfor %}
+    <div class="form-check">
+      <input class="form-check-input" type="radio" name="gsak_path"
+             value="" id="gsak_custom">
+      <label class="form-check-label small" for="gsak_custom">Custom path…</label>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<div class="mb-3">
+  <label class="form-label small fw-semibold">
+    {% if gsak_dbs %}Custom path <span class="text-muted fw-normal">(if "Custom path…" selected above)</span>
+    {% else %}Path to sqlite.db3{% endif %}
+  </label>
+  <input type="text" name="gsak_custom_path" id="gsak_custom_path_input"
+         class="form-control form-control-sm font-monospace"
+         placeholder="C:\Users\…\AppData\Roaming\gsak\data\MyDB\sqlite.db3">
+</div>
+{% endblock %}
+
+{% block submit_label %}Import GSAK database{% endblock %}
+{% block spinner_label %}Importing… this may take a minute or two for large databases.{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/import-gsak.js' %}"></script>
+{% endblock %}

@@ -1,0 +1,1607 @@
+{% extends "base.html" %}
+{% block title %}Settings — GCForge{% endblock %}
+
+{% block content %}
+<div class="px-3 py-3" id="settings-wrapper" style="max-width:900px">
+  <h5 class="mb-3">Settings</h5>
+
+  <ul class="nav nav-tabs mb-4" id="settingsTabs">
+    <li class="nav-item"><a class="nav-link" href="#general"           data-bs-toggle="tab">General</a></li>
+    <li class="nav-item"><a class="nav-link" href="#cache-detail-view" data-bs-toggle="tab">Cache Details View</a></li>
+    <li class="nav-item"><a class="nav-link" href="#enrichment"        data-bs-toggle="tab">Enrichment</a></li>
+    <li class="nav-item"><a class="nav-link" href="#columns"           data-bs-toggle="tab">Columns</a></li>
+    <li class="nav-item"><a class="nav-link" href="#platforms"         data-bs-toggle="tab">Platforms</a></li>
+    <li class="nav-item"><a class="nav-link" href="#accounts"          data-bs-toggle="tab">Accounts</a></li>
+    <li class="nav-item"><a class="nav-link" href="#reference-points"  data-bs-toggle="tab">Locations</a></li>
+    <li class="nav-item"><a class="nav-link" href="#map"              data-bs-toggle="tab">Map</a></li>
+    <li class="nav-item"><a class="nav-link" href="#gpx-export" data-bs-toggle="tab">GPX Export</a></li>
+    <li class="nav-item"><a class="nav-link" href="#database" data-bs-toggle="tab">Database</a></li>
+  </ul>
+
+  <div class="tab-content">
+
+    {# ===== GENERAL ===== #}
+    <div class="tab-pane" id="general">
+      <div class="card">
+        <div class="card-body">
+          <form method="post" action="{% url 'preferences:save_prefs' %}">
+            {% csrf_token %}
+
+            <div class="row g-4">
+
+              <div class="col-md-6">
+                <h6>Coordinate format</h6>
+                <div class="d-flex flex-column gap-2">
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" name="coord_format" id="coord_dd"
+                           value="dd" {% if coord_format == "dd" %}checked{% endif %}>
+                    <label class="form-check-label font-monospace" for="coord_dd">DD &nbsp;&nbsp;48.303150 &nbsp; 8.981267</label>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" name="coord_format" id="coord_dmm"
+                           value="dmm" {% if coord_format == "dmm" %}checked{% endif %}>
+                    <label class="form-check-label font-monospace" for="coord_dmm">DMM &nbsp;N 48° 18.189' &nbsp; E 8° 58.876'</label>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" name="coord_format" id="coord_dms"
+                           value="dms" {% if coord_format == "dms" %}checked{% endif %}>
+                    <label class="form-check-label font-monospace" for="coord_dms">DMS &nbsp;N 48° 18' 11.3" &nbsp; E 8° 58' 52.6"</label>
+                  </div>
+                </div>
+                <p class="text-muted small mt-2 mb-0">
+                  Coordinate input always accepts DD, DMM, and DMS regardless of this setting.
+                </p>
+              </div>
+
+              <div class="col-md-6">
+                <h6>Distance unit</h6>
+                <div class="d-flex flex-column gap-2">
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" name="distance_unit" id="unit_km"
+                           value="km" {% if distance_unit == "km" %}checked{% endif %}>
+                    <label class="form-check-label" for="unit_km">Kilometres (km)</label>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" name="distance_unit" id="unit_mi"
+                           value="mi" {% if distance_unit == "mi" %}checked{% endif %}>
+                    <label class="form-check-label" for="unit_mi">Miles (mi)</label>
+                  </div>
+                </div>
+              </div>
+
+              <div class="col-md-6">
+                <h6>Geocaching username</h6>
+                <input type="text" name="gc_username" class="form-control form-control-sm"
+                       style="max-width:260px" placeholder="e.g. YourGCName"
+                       value="{{ gc_username }}">
+                <p class="text-muted small mt-1 mb-0">
+                  Used to identify your logs in GPX exports (your logs appear first).
+                </p>
+              </div>
+
+              <div class="col-md-6">
+                <h6>Page size</h6>
+                <input type="number" name="page_size" class="form-control form-control-sm"
+                       style="max-width:120px" min="10" max="500" value="{{ page_size }}">
+                <p class="text-muted small mt-1 mb-0">Caches per page in the list view (10–500).</p>
+              </div>
+
+              <div class="col-md-6">
+                <h6>Default map layout</h6>
+                <select name="map_layout" class="form-select form-select-sm" style="max-width:160px">
+                  <option value="list" {% if map_layout == "list" %}selected{% endif %}>List only</option>
+                  <option value="split" {% if map_layout == "split" %}selected{% endif %}>Split view</option>
+                  <option value="map" {% if map_layout == "map" %}selected{% endif %}>Map only</option>
+                </select>
+                <p class="text-muted small mt-1 mb-0">Layout shown when opening the cache list.</p>
+              </div>
+
+              <div class="col-md-6">
+                <h6>Split view divider position</h6>
+                <div class="d-flex align-items-center gap-2">
+                  <input type="range" name="map_split_pct" class="form-range"
+                         style="max-width:200px" min="20" max="80" step="5"
+                         value="{{ map_split_pct }}"
+                         oninput="document.getElementById('split-pct-label').textContent = this.value + '%'">
+                  <span id="split-pct-label" class="small text-muted">{{ map_split_pct }}%</span>
+                </div>
+                <p class="text-muted small mt-1 mb-0">Width of the list panel in split view (20–80%).</p>
+              </div>
+
+              <div class="col-md-6">
+                <h6>Default sort order</h6>
+                <div class="d-flex gap-2 align-items-center">
+                  <select name="default_sort" class="form-select form-select-sm" style="max-width:180px">
+                    <option value="gc_code" {% if default_sort == "gc_code" %}selected{% endif %}>Code</option>
+                    <option value="name" {% if default_sort == "name" %}selected{% endif %}>Name</option>
+                    <option value="cache_type" {% if default_sort == "cache_type" %}selected{% endif %}>Type</option>
+                    <option value="size" {% if default_sort == "size" %}selected{% endif %}>Size</option>
+                    <option value="difficulty" {% if default_sort == "difficulty" %}selected{% endif %}>Difficulty</option>
+                    <option value="terrain" {% if default_sort == "terrain" %}selected{% endif %}>Terrain</option>
+                    <option value="status" {% if default_sort == "status" %}selected{% endif %}>Status</option>
+                    <option value="hidden_date" {% if default_sort == "hidden_date" %}selected{% endif %}>Hidden date</option>
+                    <option value="last_found_date" {% if default_sort == "last_found_date" %}selected{% endif %}>Last found</option>
+                    <option value="found_date" {% if default_sort == "found_date" %}selected{% endif %}>Found date</option>
+                    <option value="fav_points" {% if default_sort == "fav_points" %}selected{% endif %}>Favourites</option>
+                    <option value="distance_km" {% if default_sort == "distance_km" %}selected{% endif %}>Distance</option>
+                    <option value="bearing_deg" {% if default_sort == "bearing_deg" %}selected{% endif %}>Bearing</option>
+                  </select>
+                  <select name="default_order" class="form-select form-select-sm" style="max-width:120px">
+                    <option value="asc" {% if default_order == "asc" %}selected{% endif %}>Ascending</option>
+                    <option value="desc" {% if default_order == "desc" %}selected{% endif %}>Descending</option>
+                  </select>
+                </div>
+                <p class="text-muted small mt-1 mb-0">Sort order used when opening the cache list without explicit sort params.</p>
+              </div>
+
+              <div class="col-md-6">
+                <h6>Icon set</h6>
+                <select name="icon_set" class="form-select form-select-sm" style="max-width:200px">
+                  <option value="text" {% if icon_set == "text" %}selected{% endif %}>Text (no icons)</option>
+                  <option value="cgeo" {% if icon_set == "cgeo" %}selected{% endif %}>c:geo icons</option>
+                </select>
+                <p class="text-muted small mt-1 mb-0">
+                  Icon set for cache types, waypoints, and attributes.
+                  See <a href="{% url 'preferences:about' %}">About</a> for license info.
+                </p>
+              </div>
+
+            </div>
+
+            <hr class="my-3">
+            <h6 class="small fw-semibold text-muted">Import</h6>
+            <div class="form-check mb-2">
+              <input type="checkbox" class="form-check-input" name="delete_after_import"
+                     id="pref-delete-after-import" {% if delete_after_import %}checked{% endif %}>
+              <label class="form-check-label small" for="pref-delete-after-import">
+                Delete GPX files after successful import
+              </label>
+            </div>
+
+            <hr class="my-3">
+            <h6 class="small fw-semibold text-muted">Log image upload</h6>
+            <div class="row g-3">
+              <div class="col-auto">
+                <label class="form-label small mb-1">Default max size</label>
+                <select name="log_image_max_px" class="form-select form-select-sm" style="width:auto">
+                  <option value="512"  {% if log_image_max_px == 512  %}selected{% endif %}>512 px</option>
+                  <option value="1024" {% if log_image_max_px == 1024 %}selected{% endif %}>1024 px</option>
+                  <option value="1600" {% if log_image_max_px == 1600 %}selected{% endif %}>1600 px</option>
+                  <option value="2048" {% if log_image_max_px == 2048 %}selected{% endif %}>2048 px</option>
+                  <option value="0"    {% if log_image_max_px == 0    %}selected{% endif %}>Original (no resize)</option>
+                </select>
+              </div>
+              <div class="col-auto d-flex align-items-end pb-1">
+                <div class="form-check mb-0">
+                  <input type="checkbox" class="form-check-input" name="log_image_strip_exif"
+                         id="pref-strip-exif" {% if log_image_strip_exif %}checked{% endif %}>
+                  <label class="form-check-label small" for="pref-strip-exif">
+                    Strip EXIF by default (recommended for privacy)
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <button type="submit" class="btn btn-sm btn-primary mt-3">Save</button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    {# ===== CACHE DETAILS VIEW ===== #}
+    <div class="tab-pane" id="cache-detail-view">
+      <div class="card">
+        <div class="card-body">
+          <form method="post" action="{% url 'preferences:save_cache_detail' %}">
+            {% csrf_token %}
+
+            <div class="row g-4">
+
+              <div class="col-md-6">
+                <h6>Hint display</h6>
+                <div class="d-flex flex-column gap-2">
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" name="hint_display" id="hint_hidden"
+                           value="hidden" {% if hint_display == "hidden" %}checked{% endif %}>
+                    <label class="form-check-label" for="hint_hidden">
+                      <strong>Hidden</strong> — collapsed; click to reveal
+                    </label>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" name="hint_display" id="hint_decrypted"
+                           value="decrypted" {% if hint_display == "decrypted" %}checked{% endif %}>
+                    <label class="form-check-label" for="hint_decrypted">
+                      <strong>Shown decrypted</strong> — always visible in plain text
+                    </label>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" name="hint_display" id="hint_encrypted"
+                           value="encrypted" {% if hint_display == "encrypted" %}checked{% endif %}>
+                    <label class="form-check-label" for="hint_encrypted">
+                      <strong>Shown encrypted (ROT13)</strong> — shown as ROT13; click to decode
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              <div class="col-md-6">
+                <h6>Log text truncation</h6>
+                <div class="form-check mb-2">
+                  <input class="form-check-input" type="checkbox" name="log_truncate" value="1"
+                         id="log_truncate" {% if log_truncate %}checked{% endif %}>
+                  <label class="form-check-label" for="log_truncate">
+                    <strong>Truncate long log texts</strong>
+                    <span class="text-muted small ms-1">— show "more" link to expand</span>
+                  </label>
+                </div>
+                <div class="ms-4 d-flex align-items-center gap-2" id="log-truncate-length-row"
+                     {% if not log_truncate %}style="opacity:.5;pointer-events:none"{% endif %}>
+                  <label class="form-label small mb-0" for="log_truncate_length">Max characters:</label>
+                  <input type="number" name="log_truncate_length" id="log_truncate_length"
+                         class="form-control form-control-sm" style="width:90px"
+                         min="50" max="5000" value="{{ log_truncate_length }}">
+                </div>
+                <p class="text-muted small mt-2 mb-0 ms-4">Uncheck to always show full log text.</p>
+              </div>
+
+            </div>
+
+            <button type="submit" class="btn btn-sm btn-primary mt-3">Save</button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    {# ===== ENRICHMENT ===== #}
+    <div class="tab-pane" id="enrichment">
+      <div class="card">
+        <div class="card-body">
+          <p class="text-muted small mb-3">
+            Fills fields not provided by import sources.
+            <strong>Elevation</strong> uses offline SRTM tiles (downloaded once, then no internet required).
+            <strong>Location</strong> (country, state, county) uses
+            <a href="https://nominatim.openstreetmap.org/" target="_blank" rel="noopener">OpenStreetMap Nominatim</a>
+            (requires internet; 1 request/s rate limit).
+            Only blank fields are ever filled — existing values are never overwritten.
+          </p>
+          <form method="post" action="{% url 'preferences:save_enrich' %}">
+            {% csrf_token %}
+            <div class="d-flex flex-column gap-2 mb-3">
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="enrich_auto" value="1"
+                       id="enrich_auto" {% if enrich_auto %}checked{% endif %}>
+                <label class="form-check-label" for="enrich_auto">
+                  <strong>Auto-enrich after import</strong>
+                  <span class="text-muted small ms-1">— run enrichment automatically when new caches are imported</span>
+                </label>
+              </div>
+              <div class="ms-4 d-flex flex-column gap-1">
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" name="enrich_elevation" value="1"
+                         id="enrich_elevation" {% if enrich_elevation %}checked{% endif %}>
+                  <label class="form-check-label small" for="enrich_elevation">Fill elevation from SRTM</label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" name="enrich_location" value="1"
+                         id="enrich_location" {% if enrich_location %}checked{% endif %}>
+                  <label class="form-check-label small" for="enrich_location">Fill country / state / county from OpenStreetMap</label>
+                </div>
+              </div>
+            </div>
+            <hr class="my-3">
+            <h6 class="mb-2">Import behaviour</h6>
+            <div class="form-check mb-2">
+              <input class="form-check-input" type="checkbox" name="drop_zero_waypoints" value="1"
+                     id="drop_zero_waypoints" {% if drop_zero_waypoints %}checked{% endif %}>
+              <label class="form-check-label small" for="drop_zero_waypoints">
+                <strong>Drop lat/lon 0°/0° waypoints during import</strong>
+                <span class="text-muted ms-1">— some CO use 0,0 as a placeholder; these break the map</span>
+              </label>
+            </div>
+            <button type="submit" class="btn btn-sm btn-primary">Save</button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    {# ===== COLUMNS ===== #}
+    <div class="tab-pane" id="columns">
+      <div class="card">
+        <div class="card-body">
+          <p class="text-muted small mb-3">
+            Active preset is selected per-session via the <strong>Columns</strong> dropdown in the list view.
+            Built-in presets cannot be deleted.
+          </p>
+
+          <table class="table table-sm mb-4">
+            <thead><tr><th>Name</th><th>Columns</th><th></th></tr></thead>
+            <tbody>
+              {% for preset in presets %}
+              <tr {% if preset.name == active_preset_name %}class="table-primary"{% endif %}>
+                <td class="small fw-semibold">
+                  {{ preset.name }}
+                  {% if preset.name == active_preset_name %}<span class="badge bg-primary ms-1">active</span>{% endif %}
+                </td>
+                <td class="small text-muted">{{ preset.columns|join:", " }}</td>
+                <td class="text-end">
+                  {% if not preset.is_builtin %}
+                  <form method="post" action="{% url 'preferences:delete_preset' %}" class="d-inline">
+                    {% csrf_token %}
+                    <input type="hidden" name="preset_id" value="{{ preset.id }}">
+                    <button type="submit" class="btn btn-sm btn-outline-danger py-0"
+                            onclick="return confirm('Delete preset \'{{ preset.name }}\'?')">Delete</button>
+                  </form>
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+
+          <details class="border rounded p-3 bg-light">
+            <summary class="fw-semibold small">Create custom preset</summary>
+            <form method="post" action="{% url 'preferences:add_preset' %}" class="mt-3">
+              {% csrf_token %}
+              <div class="mb-2">
+                <input type="text" name="preset_name" class="form-control form-control-sm"
+                       placeholder="Preset name" style="max-width:200px" required>
+              </div>
+              <div class="d-flex flex-wrap gap-3 mb-3">
+                {% for col in available_columns %}
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" name="columns"
+                         value="{{ col.key }}" id="col_{{ col.key }}">
+                  <label class="form-check-label small" for="col_{{ col.key }}">{{ col.label }}</label>
+                </div>
+                {% endfor %}
+              </div>
+              <button type="submit" class="btn btn-sm btn-success">Create preset</button>
+            </form>
+          </details>
+        </div>
+      </div>
+    </div>
+
+    {# ===== ACCOUNTS ===== #}
+    <div class="tab-pane" id="accounts">
+      <div class="card">
+        <div class="card-body">
+          <p class="text-muted small mb-3">
+            Accounts identify you on geocaching platforms.
+            GCForge uses them to detect caches you own and logs you wrote.
+            Use the Authorize button to grant API access (needed for found status, log submission, etc.).
+          </p>
+
+          {% if account_msg %}
+          <div class="alert alert-{% if account_msg.ok %}success{% else %}danger{% endif %} alert-dismissible fade show py-2" role="alert">
+            {{ account_msg.text }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+          </div>
+          {% endif %}
+
+          {% if user_accounts %}
+          <table class="table table-sm table-bordered mb-4" style="min-width:700px">
+            <thead class="table-light">
+              <tr>
+                <th>Platform</th>
+                <th>Username</th>
+                <th>OAuth</th>
+                <th>Password</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for row in user_accounts %}{% with acct=row.acct %}
+              <tr>
+                <td>{{ acct.get_platform_display }}</td>
+                <td>
+                  {{ acct.username }}
+                  {% if acct.is_default %}
+                    <span class="text-warning" title="Default account">★</span>
+                  {% else %}
+                    <form method="post" action="{% url 'accounts:set_default_account' %}" class="d-inline">{% csrf_token %}
+                      <input type="hidden" name="acct_id" value="{{ acct.pk }}">
+                      <button class="btn btn-link p-0 text-secondary border-0"
+                              style="font-size:1em;vertical-align:baseline;"
+                              title="Set as default">★</button>
+                    </form>
+                  {% endif %}
+                  {% if acct.user_id %}<br><small class="text-muted font-monospace">{{ acct.user_id }}</small>{% endif %}
+                </td>
+
+                {# OAuth / API token status #}
+                <td class="small">
+                  {% if acct.platform == 'gc' and row.has_gc_api %}
+                  {% if row.gc_api_verified %}
+                  <span id="gc-api-status" class="text-success small">&#10003; Verified</span>
+                  {% else %}
+                  <span id="gc-api-status" class="text-warning small">Token file present — not verified</span>
+                  {% endif %}
+                  <button class="btn btn-xs btn-outline-secondary py-0 px-1 ms-1"
+                          hx-post="{% url 'accounts:account_validate_gc' %}"
+                          hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
+                          hx-target="#gc-api-status"
+                          hx-swap="outerHTML"
+                          title="Validate GC API token by calling /users/me">Validate</button>
+                  {% elif acct.platform == 'gc' %}
+                  <span class="text-muted">No API tokens</span>
+                  {% elif row.has_oauth %}
+                  <span id="oauth-status-{{ acct.pk }}" class="text-success">Active</span>
+                  <button class="btn btn-xs btn-outline-secondary py-0 px-1 ms-1"
+                          hx-post="{% url 'accounts:account_validate_oauth' %}"
+                          hx-vals='{"acct_id": "{{ acct.pk }}"}'
+                          hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
+                          hx-target="#oauth-status-{{ acct.pk }}"
+                          hx-swap="outerHTML"
+                          title="Check if token is still valid">Validate</button>
+                  {% else %}
+                  <form method="post" action="{% url 'accounts:oauth_start' %}" class="d-inline">
+                    {% csrf_token %}
+                    <input type="hidden" name="acct_id" value="{{ acct.pk }}">
+                    <button class="btn btn-sm btn-outline-warning py-0">Inactive — Authorize</button>
+                  </form>
+                  {% endif %}
+                </td>
+
+                {# Password status #}
+                <td class="small">
+                  {% if row.has_password %}
+                  <span class="text-muted">Stored in keyring</span>
+                  <span id="pw-result-{{ acct.pk }}"></span>
+                  <button class="btn btn-xs btn-outline-secondary py-0 px-1 ms-1"
+                          hx-post="{% url 'accounts:account_test_password' %}"
+                          hx-vals='{"acct_id": "{{ acct.pk }}"}'
+                          hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
+                          hx-target="#pw-result-{{ acct.pk }}"
+                          hx-swap="innerHTML"
+                          title="Test credentials against the platform">Test</button>
+                  {% else %}
+                  <span class="text-muted">Not stored</span>
+                  {% endif %}
+                </td>
+
+                {# Actions #}
+                <td class="text-nowrap">
+                  <button type="button" class="btn btn-sm btn-outline-primary py-0"
+                          data-bs-toggle="collapse" data-bs-target="#edit-acct-{{ acct.pk }}">Edit</button>
+                  {% if acct.platform != 'gc' and row.has_oauth %}
+                  <form method="post" action="{% url 'accounts:oauth_start' %}" class="d-inline">
+                    {% csrf_token %}
+                    <input type="hidden" name="acct_id" value="{{ acct.pk }}">
+                    <button class="btn btn-sm btn-outline-success py-0" title="Re-authorize">Re-auth</button>
+                  </form>
+                  {% endif %}
+                  <form method="post" action="{% url 'accounts:delete_account' %}" class="d-inline">{% csrf_token %}
+                    <input type="hidden" name="acct_id" value="{{ acct.pk }}">
+                    <button class="btn btn-sm btn-outline-danger py-0"
+                            onclick="return confirm('Delete account {{ acct.get_label }}?')">Delete</button>
+                  </form>
+                </td>
+              </tr>
+              <tr class="collapse" id="edit-acct-{{ acct.pk }}">
+                <td colspan="5" class="bg-light py-2 px-3">
+                  <form method="post" action="{% url 'accounts:edit_account' %}" class="row g-2 align-items-end flex-wrap">
+                    {% csrf_token %}
+                    <input type="hidden" name="acct_id" value="{{ acct.pk }}">
+                    <div class="col-auto">
+                      <label class="form-label small mb-0">Platform</label>
+                      <select name="acct_platform" class="form-select form-select-sm">
+                        {% for val, label in acct.PLATFORM_CHOICES %}
+                        <option value="{{ val }}" {% if acct.platform == val %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                      </select>
+                    </div>
+                    <div class="col-auto">
+                      <label class="form-label small mb-0">User ID</label>
+                      <input type="text" name="acct_user_id" class="form-control form-control-sm"
+                             value="{{ acct.user_id }}" style="max-width:120px">
+                    </div>
+                    <div class="col-auto">
+                      <label class="form-label small mb-0">Username</label>
+                      <input type="text" name="acct_username" class="form-control form-control-sm"
+                             value="{{ acct.username }}" style="max-width:180px" required>
+                    </div>
+                    <div class="col-auto">
+                      <label class="form-label small mb-0">Label</label>
+                      <input type="text" name="acct_label" class="form-control form-control-sm"
+                             value="{{ acct.label }}" style="max-width:180px">
+                    </div>
+                    <div class="col-auto">
+                      <label class="form-label small mb-0">Profile URL</label>
+                      <input type="url" name="acct_profile_url" class="form-control form-control-sm"
+                             value="{{ acct.profile_url }}" style="max-width:240px">
+                    </div>
+                    <div class="col-auto">
+                      <label class="form-label small mb-0">Notes</label>
+                      <input type="text" name="acct_notes" class="form-control form-control-sm"
+                             value="{{ acct.notes }}" style="max-width:200px">
+                    </div>
+                    <div class="w-100 mt-2"><small class="text-muted">Password</small></div>
+                    <div class="col-auto">
+                      <label class="form-label small mb-0">New password</label>
+                      <input type="password" name="acct_new_password" class="form-control form-control-sm"
+                             style="max-width:200px" autocomplete="new-password"
+                             placeholder="leave blank to keep current">
+                    </div>
+                    <div class="col-auto align-self-end pb-1">
+                      <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="acct_store_password" value="1"
+                               id="store-pw-{{ acct.pk }}">
+                        <label class="form-check-label small" for="store-pw-{{ acct.pk }}">Store in keystore</label>
+                      </div>
+                    </div>
+                    {% if row.has_oauth %}
+                    <div class="col-12">
+                      <small class="text-muted">Entering a new password will trigger re-authorization.</small>
+                    </div>
+                    {% endif %}
+                    {% if acct.platform != 'gc' %}
+                    <div class="w-100 mt-1"><small class="text-muted">OKAPI credentials (opencaching only)</small></div>
+                    <div class="col-auto">
+                      <label class="form-label small mb-0">Consumer key</label>
+                      <input type="text" name="acct_consumer_key" class="form-control form-control-sm font-monospace"
+                             value="{{ acct.consumer_key }}" style="max-width:280px" autocomplete="off">
+                    </div>
+                    <div class="col-auto">
+                      <small class="text-muted">OAuth tokens stored securely in OS keyring</small>
+                    </div>
+                    {% endif %}
+                    <div class="col-auto">
+                      <button type="submit" class="btn btn-sm btn-primary">Save</button>
+                      <button type="button" class="btn btn-sm btn-outline-secondary ms-1"
+                              data-bs-toggle="collapse" data-bs-target="#edit-acct-{{ acct.pk }}">Cancel</button>
+                    </div>
+                  </form>
+                </td>
+              </tr>
+              {% endwith %}{% endfor %}
+            </tbody>
+          </table>
+          {% else %}
+          <p class="text-muted small">No accounts configured yet.</p>
+          {% endif %}
+
+          {# ---- Add account ---- #}
+          <h6 class="mt-3 mb-1">Provide user information for a geocaching platform</h6>
+          {% if registered_platforms|length >= 6 %}
+          <p class="text-muted small">All platforms are already registered. Use the edit button above to update an account.</p>
+          {% else %}
+          <p class="text-muted small mb-2">
+            For OpenCaching platforms, looks up your user ID and profile URL from the platform API.
+            For geocaching.com, enter your username and password. Use the Authorize button afterwards to grant API access (OC only).
+          </p>
+          <form method="post" action="{% url 'accounts:login_account' %}" class="row g-2 align-items-end flex-wrap">
+            {% csrf_token %}
+            <div class="col-auto">
+              <label class="form-label form-label-sm mb-1">Platform</label>
+              <select name="login_platform" class="form-select form-select-sm">
+                {% if "gc"    not in registered_platforms %}<option value="gc">geocaching.com</option>{% endif %}
+                {% if "oc_de" not in registered_platforms %}<option value="oc_de">opencaching.de</option>{% endif %}
+                {% if "oc_pl" not in registered_platforms %}<option value="oc_pl">opencaching.pl</option>{% endif %}
+                {% if "oc_uk" not in registered_platforms %}<option value="oc_uk">opencaching.uk</option>{% endif %}
+                {% if "oc_nl" not in registered_platforms %}<option value="oc_nl">opencaching.nl</option>{% endif %}
+                {% if "oc_us" not in registered_platforms %}<option value="oc_us">opencaching.us</option>{% endif %}
+              </select>
+            </div>
+            <div class="col-auto">
+              <label class="form-label form-label-sm mb-1">Username</label>
+              <input type="text" name="login_username" class="form-control form-control-sm"
+                     style="max-width:200px" placeholder="Your username" required>
+            </div>
+            <div class="col-auto">
+              <label class="form-label form-label-sm mb-1">Password</label>
+              <input type="password" name="login_password" class="form-control form-control-sm"
+                     style="max-width:200px" autocomplete="new-password">
+            </div>
+            <div class="col-auto align-self-end pb-1">
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="login_store_password" value="1"
+                       id="login-store-pw" checked>
+                <label class="form-check-label small" for="login-store-pw">Store in keystore</label>
+              </div>
+            </div>
+            <div class="col-12">
+              <details class="mt-1">
+                <summary class="text-muted small" style="cursor:pointer"
+                         title="Not needed for most users">Custom consumer key (advanced, OC only)</summary>
+                <div class="row g-2 mt-1">
+                  <div class="col-auto">
+                    <input type="text" name="login_consumer_key" class="form-control form-control-sm font-monospace"
+                           style="max-width:280px" placeholder="overrides platform default" autocomplete="off">
+                  </div>
+                </div>
+              </details>
+            </div>
+            <div class="col-auto">
+              <button type="submit" class="btn btn-sm btn-primary">Add</button>
+            </div>
+          </form>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    {# ===== PLATFORMS ===== #}
+    <div class="tab-pane" id="platforms">
+      <div class="card">
+        <div class="card-body">
+          <p class="text-muted small mb-3">
+            Application-level API keys for OpenCaching platforms. These are registered once per installation of GCForge
+            and shared by all user accounts on a given platform.<br>
+            GCForge ships with a built-in key for <strong>opencaching.de</strong>; other nodes need a key registered at
+            <code>&lt;node&gt;/okapi/signup.html</code>. Leave a field blank to use the built-in default.
+          </p>
+
+          <form method="post" action="{% url 'accounts:save_platform_keys' %}">
+            {% csrf_token %}
+
+            <table class="table table-sm table-bordered align-middle mb-3">
+              <thead class="table-light">
+                <tr>
+                  <th>Platform</th>
+                  <th>Consumer key</th>
+                  <th>Consumer secret</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for pk in platform_keys %}
+                <tr>
+                  <td class="fw-semibold">{{ pk.label }}<br><small class="text-muted fw-normal">{{ pk.node_url }}</small></td>
+                  <td>
+                    <input type="text" name="okapi_key_{{ pk.platform }}"
+                           class="form-control form-control-sm font-monospace"
+                           value="{{ pk.custom_key }}"
+                           placeholder="{% if pk.has_bundled %}built-in default{% else %}none — register at signup page{% endif %}"
+                           autocomplete="off">
+                  </td>
+                  <td>
+                    <input type="password" name="okapi_secret_{{ pk.platform }}"
+                           class="form-control form-control-sm font-monospace"
+                           value="{{ pk.custom_secret }}"
+                           placeholder="{% if pk.has_bundled %}built-in default{% else %}—{% endif %}"
+                           autocomplete="off">
+                  </td>
+                  <td class="small">
+                    {% if pk.custom_key %}
+                      <span class="badge bg-info text-dark">custom key</span>
+                    {% elif pk.has_bundled %}
+                      <span class="badge bg-success">built-in</span>
+                    {% else %}
+                      <span class="badge bg-secondary">no key</span>
+                      <a href="{{ pk.signup_url }}" target="_blank" rel="noopener" class="ms-1 small">register</a>
+                    {% endif %}
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+
+            <button type="submit" class="btn btn-sm btn-primary">Save</button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    {# ===== REFERENCE POINTS ===== #}
+    <div class="tab-pane" id="reference-points">
+      <div class="d-flex gap-3 align-items-start">
+
+        {# Left: table + add form — fixed at 900px, matching other tabs #}
+        <div style="flex: 0 0 900px; overflow-x: auto;">
+          <div class="card">
+            <div class="card-body">
+              <p class="text-muted small mb-3">
+                Named locations used for distance and bearing calculations. Multiple entries with the same name
+                (e.g. several <em>Home</em> records with different <em>Valid from</em> dates)
+                enable temporal distance statistics — useful when your home location has changed over time.
+                You can also save a cache's coordinates as a location from its detail page.
+              </p>
+
+              {% if reference_points %}
+              <table class="table table-sm mb-4">
+                <thead>
+                  <tr>
+                    <th style="width:2rem">
+                      <input type="checkbox" id="rp-check-all" class="form-check-input" checked>
+                    </th>
+                    <th>Name</th><th>Latitude</th><th>Longitude</th><th>Valid from</th><th>Note</th><th>Home</th><th>Default</th><th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for rp in reference_points %}
+                  <tr>
+                    <td>
+                      <input type="checkbox" id="rp-cb-{{ rp.id }}" class="form-check-input rp-check"
+                             data-rp-id="{{ rp.id }}" {% if rp.is_home %}checked{% endif %}>
+                    </td>
+                    <td class="small fw-semibold">{{ rp.name }}</td>
+                    <td class="small font-monospace">{{ rp.latitude|floatformat:5 }}</td>
+                    <td class="small font-monospace">{{ rp.longitude|floatformat:5 }}</td>
+                    <td class="small">{{ rp.valid_from|date:"Y-m-d"|default:"—" }}</td>
+                    <td class="small text-muted">{{ rp.note }}</td>
+                    <td class="text-center">{% if rp.is_home %}<span class="badge bg-success">home</span>{% endif %}</td>
+                    <td class="text-center">
+                      {% if rp.is_default %}
+                        <span class="badge bg-primary">default</span>
+                      {% else %}
+                        <form method="post" action="{% url 'preferences:set_default_refpoint' %}" class="d-inline">
+                          {% csrf_token %}
+                          <input type="hidden" name="rp_id" value="{{ rp.id }}">
+                          <button type="submit" class="btn btn-sm btn-outline-secondary py-0">Set default</button>
+                        </form>
+                      {% endif %}
+                    </td>
+                    <td class="text-nowrap">
+                      <button type="button" class="btn btn-sm btn-outline-primary py-0"
+                              data-bs-toggle="collapse" data-bs-target="#edit-rp-{{ rp.id }}">Edit</button>
+                      <form method="post" action="{% url 'preferences:delete_refpoint' %}" class="d-inline">
+                        {% csrf_token %}
+                        <input type="hidden" name="rp_id" value="{{ rp.id }}">
+                        <button type="submit" class="btn btn-sm btn-outline-danger py-0"
+                                onclick="return confirm('Delete \'{{ rp.name }}\'?')">Delete</button>
+                      </form>
+                    </td>
+                  </tr>
+                  <tr class="collapse" id="edit-rp-{{ rp.id }}">
+                    <td colspan="9" class="bg-light py-2 px-3">
+                      <div id="finetune-hint-{{ rp.id }}"
+                           class="d-none alert alert-info py-1 px-2 small mb-2">
+                        Map active: drag the marker or click on the map to set position.
+                      </div>
+                      <form method="post" action="{% url 'preferences:edit_refpoint' %}" class="row g-2 align-items-end flex-wrap">
+                        {% csrf_token %}
+                        <input type="hidden" name="rp_id" value="{{ rp.id }}">
+                        <div class="col-auto">
+                          <label class="form-label small mb-0">Name</label>
+                          <input type="text" name="rp_name" class="form-control form-control-sm"
+                                 value="{{ rp.name }}" style="width:140px" required>
+                        </div>
+                        <div class="col-auto">
+                          <label class="form-label small mb-0">Latitude</label>
+                          <input type="text" name="rp_lat" id="rp-lat-{{ rp.id }}"
+                                 class="form-control form-control-sm font-monospace"
+                                 data-lon-target="rp-lon-{{ rp.id }}"
+                                 value="{{ rp.latitude|floatformat:6 }}" style="width:120px" required>
+                        </div>
+                        <div class="col-auto">
+                          <label class="form-label small mb-0">Longitude</label>
+                          <input type="text" name="rp_lon" id="rp-lon-{{ rp.id }}"
+                                 class="form-control form-control-sm font-monospace"
+                                 value="{{ rp.longitude|floatformat:6 }}" style="width:120px" required>
+                        </div>
+                        <div class="col-auto">
+                          <label class="form-label small mb-0">Valid from <span class="text-muted">(optional)</span></label>
+                          <input type="date" name="rp_valid_from" class="form-control form-control-sm"
+                                 value="{{ rp.valid_from|date:'Y-m-d'|default:'' }}" style="width:140px">
+                        </div>
+                        <div class="col-auto">
+                          <label class="form-label small mb-0">Note <span class="text-muted">(optional)</span></label>
+                          <input type="text" name="rp_note" class="form-control form-control-sm"
+                                 value="{{ rp.note }}" style="width:140px">
+                        </div>
+                        <div class="col-auto">
+                          <div class="form-check mt-3">
+                            <input class="form-check-input" type="checkbox" name="rp_home" value="1"
+                                   id="rp_home_{{ rp.id }}" {% if rp.is_home %}checked{% endif %}>
+                            <label class="form-check-label small" for="rp_home_{{ rp.id }}">Home</label>
+                          </div>
+                        </div>
+                        <div class="col-auto">
+                          <button type="submit" class="btn btn-sm btn-primary">Save</button>
+                          <button type="button" class="btn btn-sm btn-outline-secondary ms-1"
+                                  data-bs-toggle="collapse" data-bs-target="#edit-rp-{{ rp.id }}">Cancel</button>
+                        </div>
+                      </form>
+                    </td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+              {% else %}
+              <p class="text-muted small">No locations defined yet.</p>
+              {% endif %}
+
+              <details class="border rounded p-3 bg-light" id="add-location-details">
+                <summary class="fw-semibold small">Add location</summary>
+                <div class="alert alert-info py-1 px-2 small mt-2 mb-2">
+                  Click on the map to set position, or type coordinates directly.
+                </div>
+                <form method="post" action="{% url 'preferences:add_refpoint' %}" class="mt-2">
+                  {% csrf_token %}
+                  <div class="row g-2 align-items-end flex-wrap">
+                    <div class="col-auto">
+                      <label class="form-label small mb-0">Name</label>
+                      <input type="text" name="rp_name" class="form-control form-control-sm"
+                             placeholder="e.g. Home" style="width:140px" required>
+                    </div>
+                    <div class="col-auto">
+                      <label class="form-label small mb-0">Latitude</label>
+                      <input type="text" name="rp_lat" id="rp-lat-new"
+                             class="form-control form-control-sm font-monospace"
+                             data-lon-target="rp-lon-new"
+                             placeholder="N 48° 18.189'" style="width:160px" required>
+                    </div>
+                    <div class="col-auto">
+                      <label class="form-label small mb-0">Longitude</label>
+                      <input type="text" name="rp_lon" id="rp-lon-new"
+                             class="form-control form-control-sm font-monospace"
+                             placeholder="E 8° 58.876'" style="width:160px" required>
+                    </div>
+                    <div class="col-auto">
+                      <label class="form-label small mb-0">Valid from <span class="text-muted">(optional)</span></label>
+                      <input type="date" name="rp_valid_from" class="form-control form-control-sm" style="width:140px">
+                    </div>
+                    <div class="col-auto">
+                      <label class="form-label small mb-0">Note <span class="text-muted">(optional)</span></label>
+                      <input type="text" name="rp_note" class="form-control form-control-sm"
+                             placeholder="e.g. moved house" style="width:160px">
+                    </div>
+                    <div class="col-auto">
+                      <div class="form-check mt-3">
+                        <input class="form-check-input" type="checkbox" name="rp_home" value="1" id="rp_home_new">
+                        <label class="form-check-label small" for="rp_home_new">Home</label>
+                      </div>
+                    </div>
+                    <div class="col-auto">
+                      <div class="form-check mt-3">
+                        <input class="form-check-input" type="checkbox" name="rp_default" value="1" id="rp_default_new">
+                        <label class="form-check-label small" for="rp_default_new">Set as default</label>
+                      </div>
+                    </div>
+                    <div class="col-auto">
+                      <button type="submit" class="btn btn-sm btn-success">Add</button>
+                    </div>
+                  </div>
+                </form>
+              </details>
+            </div>
+          </div>
+        </div>{# end left column #}
+
+        {# Right: map #}
+        <div style="flex: 0 0 360px; position: sticky; top: 1rem;">
+          <div id="rp-map" style="height: 420px; border-radius: .375rem; border: 1px solid #dee2e6;"></div>
+          <p class="text-muted small mt-1 mb-0" id="rp-map-status"></p>
+        </div>
+
+      </div>{# end d-flex #}
+    </div>
+
+    {# ===== MAP ===== #}
+    <div class="tab-pane" id="map">
+
+      {% if map_display_msg %}
+      <div class="alert alert-{% if map_display_msg.ok %}success{% else %}danger{% endif %} alert-dismissible small py-2 mb-3">
+        {{ map_display_msg.text }}
+        <button type="button" class="btn-close btn-close-sm" data-bs-dismiss="alert"></button>
+      </div>
+      {% endif %}
+
+      <div class="card">
+        <div class="card-body">
+          <form method="post" action="{% url 'preferences:save_map_display' %}">
+            {% csrf_token %}
+
+            <div class="row g-4">
+
+              <div class="col-md-6">
+                <h6>Default map style</h6>
+                <select name="map_style" class="form-select form-select-sm" style="max-width:200px">
+                  <option value="street"  {% if map_style == "street" %}selected{% endif %}>OpenFreeMap (Street)</option>
+                  <option value="outdoor" {% if map_style == "outdoor" %}selected{% endif %}>OpenTopoMap (Topo)</option>
+                  <option value="aerial"  {% if map_style == "aerial" %}selected{% endif %}>Esri Aerial</option>
+                </select>
+                <p class="text-muted small mt-1 mb-0">
+                  Map style used when opening the map for the first time. Switching styles during a session is remembered until the browser is closed.
+                </p>
+              </div>
+
+              <div class="col-md-6">
+                <h6>Default boundary overlays</h6>
+                <div class="d-flex flex-column gap-1">
+                  <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="map_boundary_country" value="1"
+                           id="pref_boundary_country" {% if map_boundary_country %}checked{% endif %}>
+                    <label class="form-check-label" for="pref_boundary_country">Countries</label>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="map_boundary_state" value="1"
+                           id="pref_boundary_state" {% if map_boundary_state %}checked{% endif %}>
+                    <label class="form-check-label" for="pref_boundary_state">States</label>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="map_boundary_county" value="1"
+                           id="pref_boundary_county" {% if map_boundary_county %}checked{% endif %}>
+                    <label class="form-check-label" for="pref_boundary_county">Counties</label>
+                  </div>
+                </div>
+                <p class="text-muted small mt-1 mb-0">
+                  Boundary layers shown when the map loads. Only available with the Street style.
+                </p>
+              </div>
+
+              <div class="col-md-6">
+                <h6>Radius filter circle</h6>
+                <div class="d-flex flex-column gap-1">
+                  <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="map_radius_circle" value="1"
+                           id="pref_radius_circle" {% if map_radius_circle %}checked{% endif %}>
+                    <label class="form-check-label" for="pref_radius_circle">Show radius circle on map</label>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="map_radius_shade" value="1"
+                           id="pref_radius_shade" {% if map_radius_shade %}checked{% endif %}>
+                    <label class="form-check-label" for="pref_radius_shade">Shade circle interior</label>
+                  </div>
+                </div>
+                <p class="text-muted small mt-1 mb-0">
+                  When a radius filter is active, show a dashed circle on the map indicating the filter area.
+                </p>
+              </div>
+
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label fw-bold">Display layers</label>
+              <div class="ms-2">
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" name="map_layer_sep_circles" value="1"
+                         id="pref_layer_sep_circles" {% if map_layer_sep_circles %}checked{% endif %}>
+                  <label class="form-check-label" for="pref_layer_sep_circles">{% if distance_unit == "mi" %}0.1 mi{% else %}161m{% endif %} separation circles</label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" name="map_layer_corrected" value="1"
+                         id="pref_layer_corrected" {% if map_layer_corrected %}checked{% endif %}>
+                  <label class="form-check-label" for="pref_layer_corrected">Show original WP if corrected coords exist</label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" name="map_layer_waypoints" value="1"
+                         id="pref_layer_waypoints" {% if map_layer_waypoints %}checked{% endif %}>
+                  <label class="form-check-label" for="pref_layer_waypoints">Child waypoints</label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" name="map_layer_lod" value="1"
+                         id="pref_layer_lod" {% if map_layer_lod %}checked{% endif %}>
+                  <label class="form-check-label" for="pref_layer_lod">LOD sliders</label>
+                </div>
+              </div>
+              <p class="text-muted small mt-1 mb-0">
+                Default on/off state for display layers when the map is first opened.
+              </p>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label fw-bold">Text labels</label>
+              <div class="ms-2">
+                <div class="form-check">
+                  <input class="form-check-input" type="radio" name="map_layer_labels" value=""
+                         id="pref_labels_off" {% if not map_layer_labels %}checked{% endif %}>
+                  <label class="form-check-label" for="pref_labels_off">Off</label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input" type="radio" name="map_layer_labels" value="name"
+                         id="pref_labels_name" {% if map_layer_labels == "name" %}checked{% endif %}>
+                  <label class="form-check-label" for="pref_labels_name">Cache name</label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input" type="radio" name="map_layer_labels" value="code"
+                         id="pref_labels_code" {% if map_layer_labels == "code" %}checked{% endif %}>
+                  <label class="form-check-label" for="pref_labels_code">Cache code</label>
+                </div>
+              </div>
+            </div>
+
+            <hr>
+            <button type="submit" class="btn btn-sm btn-primary">Save</button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    {# ===== DATABASE ===== #}
+    <div class="tab-pane" id="database">
+
+      {% if db_switch_msg %}
+      <div class="alert alert-{% if db_switch_msg.ok %}success{% else %}danger{% endif %} alert-dismissible small py-2 mb-3">
+        {{ db_switch_msg.text }}
+        <button type="button" class="btn-close btn-sm" data-bs-dismiss="alert"></button>
+      </div>
+      {% endif %}
+
+      {% if backup_msg %}
+      <div class="alert alert-{% if backup_msg.ok %}success{% else %}danger{% endif %} alert-dismissible small py-2 mb-3">
+        {{ backup_msg.text }}
+        <button type="button" class="btn-close btn-sm" data-bs-dismiss="alert"></button>
+      </div>
+      {% endif %}
+
+      {# ----- Active Database ----- #}
+      <div class="card mb-3">
+        <div class="card-header py-1 small fw-semibold">Active Database</div>
+        <div class="card-body py-2">
+
+          {% for db in available_databases %}
+            {% if db.active %}
+            <p class="small mb-2">
+              <strong>Current:</strong>
+              <span class="font-monospace">{{ db.name }}</span>
+              <span class="text-muted">{{ db.location }}</span>
+              {% if db.exists %}&mdash; {{ db.size|filesizeformat }}{% endif %}
+              <span class="badge bg-success ms-1">Active</span>
+            </p>
+            {% endif %}
+          {% endfor %}
+
+          <h6 class="small fw-semibold text-muted text-uppercase mb-2" style="font-size:.7rem;letter-spacing:.05em">Available databases</h6>
+          <table class="table table-sm table-bordered mb-3">
+            <thead class="table-light">
+              <tr>
+                <th>Name</th>
+                <th>Location</th>
+                <th>Size</th>
+                <th style="width:10rem"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for db in available_databases %}
+              <tr>
+                <td class="small font-monospace">
+                  {% if db.active %}<strong>{{ db.name }}</strong>{% else %}{{ db.name }}{% endif %}
+                </td>
+                <td class="small text-muted">{{ db.location }}</td>
+                <td class="small text-muted text-end text-nowrap">
+                  {% if db.exists %}{{ db.size|filesizeformat }}{% else %}<em>will be created on first use</em>{% endif %}
+                </td>
+                <td class="text-nowrap">
+                  {% if db.active %}
+                    <span class="badge bg-success">Active</span>
+                  {% else %}
+                    <form method="post" action="{% url 'preferences:switch_database' %}" class="d-inline">
+                      {% csrf_token %}
+                      <input type="hidden" name="db_path" value="{{ db.path }}">
+                      <button type="submit" class="btn btn-sm btn-outline-primary py-0"
+                              onclick="return confirm('Switch to {{ db.name }}?\n\nYou will need to restart the server after switching.')">
+                        Switch
+                      </button>
+                    </form>
+                    {% if db.is_backup %}
+                    <span class="text-warning ms-1" title="This is a backup file. Switching will use it as the active database — changes will modify the backup file directly.">&#9888;</span>
+                    {% endif %}
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+
+          <hr class="my-3">
+
+          <h6 class="small fw-semibold text-muted text-uppercase mb-2" style="font-size:.7rem;letter-spacing:.05em">Create new database</h6>
+          <form method="post" action="{% url 'preferences:create_database' %}">
+            {% csrf_token %}
+            <div class="row g-2 align-items-end">
+              <div class="col-md-4">
+                <label class="form-label small mb-0">Database name</label>
+                <div class="input-group input-group-sm">
+                  <input type="text" name="db_name" class="form-control form-control-sm"
+                         placeholder="e.g. test" pattern="[a-zA-Z0-9_-]+" title="Letters, numbers, dashes, and underscores only">
+                  <span class="input-group-text">.sqlite3</span>
+                </div>
+              </div>
+              <div class="col-auto">
+                <button type="submit" class="btn btn-sm btn-success"
+                        onclick="return confirm('Create a new empty database and switch to it?\n\nYou will need to restart the server after creation.')">
+                  Create
+                </button>
+              </div>
+            </div>
+            <p class="text-muted small mt-1 mb-0">
+              Creates a new empty database in <code>databases/</code> and runs migrations on it.
+            </p>
+          </form>
+
+          <div class="mt-3 small text-muted">
+            <strong>&#9888; Switching databases requires a server restart.</strong>
+            After clicking Switch or Create, restart the Django server.
+          </div>
+          {% if has_backup_databases %}
+          <p class="small text-muted mt-1 mb-0">
+            <strong>&#9888; Backup files:</strong> switching to a backup makes it the active database.
+            Changes will modify the backup file directly.
+          </p>
+          {% endif %}
+
+        </div>
+      </div>
+
+      {# ----- Database information ----- #}
+      <div class="card mb-3">
+        <div class="card-header py-1 small fw-semibold">Database information</div>
+        <div class="card-body py-2">
+          <div class="row g-2 small">
+            <div class="col-md-6">
+              <table class="table table-sm table-borderless mb-0">
+                <tbody>
+                  <tr>
+                    <td class="text-muted pe-3" style="width:10rem">Geocaches</td>
+                    <td><strong>{{ db_stats.geocache_count }}</strong>
+                      <span class="text-muted ms-1">({{ db_stats.found_count }} found)</span></td>
+                  </tr>
+                  <tr>
+                    <td class="text-muted">Logs</td>
+                    <td><strong>{{ db_stats.log_count }}</strong></td>
+                  </tr>
+                  <tr>
+                    <td class="text-muted">Waypoints</td>
+                    <td><strong>{{ db_stats.waypoint_count }}</strong></td>
+                  </tr>
+                  <tr>
+                    <td class="text-muted">Tags</td>
+                    <td><strong>{{ db_stats.tag_count }}</strong></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="col-md-6">
+              <table class="table table-sm table-borderless mb-0">
+                <tbody>
+                  <tr>
+                    <td class="text-muted pe-3" style="width:10rem">File size on disk</td>
+                    <td><strong>{{ db_stats.file_size|filesizeformat }}</strong></td>
+                  </tr>
+                  <tr>
+                    <td class="text-muted">Reclaimable (free pages)</td>
+                    <td>
+                      {% if frag.fragmentation_pct >= 10 %}
+                        <strong class="text-warning">{{ frag.free_bytes|filesizeformat }} ({{ frag.fragmentation_pct|floatformat:0 }}%)</strong>
+                      {% else %}
+                        <strong>{{ frag.free_bytes|filesizeformat }} ({{ frag.fragmentation_pct|floatformat:0 }}%)</strong>
+                      {% endif %}
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="text-muted">SQLite version</td>
+                    <td><strong class="font-monospace">{{ db_stats.sqlite_version }}</strong></td>
+                  </tr>
+                  <tr>
+                    <td class="text-muted">File location</td>
+                    <td class="font-monospace text-muted" style="word-break:break-all">{{ db_stats.db_path }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {# ----- Database Backup and Restore ----- #}
+      <div class="card mb-3">
+        <div class="card-header py-1 small fw-semibold">Database Backup and Restore</div>
+        <div class="card-body py-2">
+
+          {# Auto-backup settings #}
+          <h6 class="small fw-semibold text-muted text-uppercase mb-2" style="font-size:.7rem;letter-spacing:.05em">Automatic daily backup</h6>
+          <p class="text-muted small mb-2">
+            A backup is created automatically once per day when the server starts.
+            Auto-backups are named <code>auto_rotate_gcforge_backup_YYYY-MM-DD.sqlite3</code> and are
+            subject to the rotation limit below — the oldest ones are deleted when the limit is exceeded.
+            Files without the <code>auto_rotate_</code> prefix are never deleted automatically.
+          </p>
+          <form method="post" action="{% url 'preferences:save_backup_prefs' %}" class="mb-4">
+            {% csrf_token %}
+            <div class="row g-3 align-items-end">
+              <div class="col-12">
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" name="backup_auto_enabled" value="1"
+                         id="backup_auto_enabled" {% if backup_auto_enabled %}checked{% endif %}>
+                  <label class="form-check-label" for="backup_auto_enabled">
+                    <strong>Enable automatic daily backup</strong>
+                  </label>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label small mb-0">Backup folder</label>
+                <input type="text" name="backup_dir" class="form-control form-control-sm font-monospace"
+                       value="{{ backup_dir }}" placeholder="{{ backup_dir_effective }}">
+                <div class="text-muted small mt-1">
+                  Leave blank to use default: <code>{{ backup_dir_effective }}</code>
+                </div>
+              </div>
+              <div class="col-auto">
+                <label class="form-label small mb-0">Auto-backups to keep</label>
+                <input type="number" name="backup_rotate_count" class="form-control form-control-sm"
+                       style="width:90px" min="1" max="50" value="{{ backup_rotate_count }}">
+              </div>
+              <div class="col-auto">
+                <button type="submit" class="btn btn-sm btn-primary">Save</button>
+              </div>
+            </div>
+          </form>
+
+          <hr class="my-3">
+
+          {# Manual backup #}
+          <h6 class="small fw-semibold text-muted text-uppercase mb-2" style="font-size:.7rem;letter-spacing:.05em">Create backup now</h6>
+          <p class="text-muted small mb-2">
+            Creates a backup immediately. Leave the fields blank to use the default location and a
+            timestamped filename. Manual backups are kept permanently — prefix the filename with
+            <code>auto_rotate_</code> to include it in the rotation limit.
+          </p>
+          <form method="post" action="{% url 'preferences:backup_now' %}" class="mb-4">
+            {% csrf_token %}
+            <div class="row g-2 align-items-end">
+              <div class="col-md-5">
+                <label class="form-label small mb-0">Folder <span class="text-muted">(optional)</span></label>
+                <input type="text" name="manual_backup_dir" class="form-control form-control-sm font-monospace"
+                       placeholder="{{ backup_dir_effective }}">
+              </div>
+              <div class="col-md-4">
+                <label class="form-label small mb-0">Filename <span class="text-muted">(optional)</span></label>
+                <input type="text" name="manual_backup_name" class="form-control form-control-sm"
+                       placeholder="gcforge_backup_…">
+              </div>
+              <div class="col-auto">
+                <button type="submit" class="btn btn-sm btn-success">Backup now</button>
+              </div>
+            </div>
+          </form>
+
+          <hr class="my-3">
+
+          {# Existing backups #}
+          <h6 class="small fw-semibold text-muted text-uppercase mb-2" style="font-size:.7rem;letter-spacing:.05em">Existing backups</h6>
+          {% if backups %}
+          <table class="table table-sm table-bordered mb-3">
+            <thead class="table-light">
+              <tr><th>Filename</th><th>Size</th><th>Date</th><th>Retention</th><th></th></tr>
+            </thead>
+            <tbody>
+              {% for b in backups %}
+              <tr>
+                <td class="small font-monospace">{{ b.name }}</td>
+                <td class="small text-muted text-end text-nowrap" style="width:6rem">{{ b.size|filesizeformat }}</td>
+                <td class="small text-muted text-nowrap" style="width:11rem">{{ b.mtime|date:"Y-m-d H:i" }}</td>
+                <td class="text-nowrap" style="width:8rem">
+                  {% if b.auto_rotate %}
+                    <span class="badge bg-secondary" title="Deleted automatically when the rotation limit is exceeded">Auto-rotate</span>
+                  {% else %}
+                    <span class="badge bg-success" title="Never deleted automatically">Permanent</span>
+                  {% endif %}
+                </td>
+                <td class="text-nowrap" style="width:16rem">
+                  <a href="{% url 'preferences:backup_download' b.name %}"
+                     class="btn btn-sm btn-outline-secondary py-0">Download</a>
+                  <form method="post" action="{% url 'preferences:backup_restore' %}" class="d-inline">
+                    {% csrf_token %}
+                    <input type="hidden" name="backup_name" value="{{ b.name }}">
+                    <button type="submit" class="btn btn-sm btn-outline-warning py-0"
+                            onclick="return confirm('Restore from {{ b.name }}?\n\nA safety backup of the current database will be created first.')">
+                      Restore
+                    </button>
+                  </form>
+                  <form method="post" action="{% url 'preferences:backup_delete' %}" class="d-inline">
+                    {% csrf_token %}
+                    <input type="hidden" name="backup_name" value="{{ b.name }}">
+                    <button type="submit" class="btn btn-sm btn-outline-danger py-0"
+                            onclick="return confirm('Delete {{ b.name }}?\n\nThis cannot be undone.')">
+                      Delete
+                    </button>
+                  </form>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+          {% else %}
+          <p class="text-muted small">No backups found in <code>{{ backup_dir_effective }}</code>.</p>
+          {% endif %}
+
+          <hr class="my-3">
+
+          {# Restore from file #}
+          <h6 class="small fw-semibold text-muted text-uppercase mb-2" style="font-size:.7rem;letter-spacing:.05em">Restore from file</h6>
+          <p class="text-muted small mb-2">
+            Upload a <code>.sqlite3</code> backup file to restore from. A safety backup of the
+            current database is created automatically before restoring.
+          </p>
+          <form method="post" action="{% url 'preferences:backup_restore' %}" enctype="multipart/form-data">
+            {% csrf_token %}
+            <div class="row g-2 align-items-end">
+              <div class="col-auto">
+                <input type="file" name="restore_file" accept=".sqlite3"
+                       class="form-control form-control-sm" required>
+              </div>
+              <div class="col-auto">
+                <button type="submit" class="btn btn-sm btn-warning"
+                        onclick="return confirm('Restore from the selected file?\n\nA safety backup of the current database will be created first.')">
+                  Restore from file
+                </button>
+              </div>
+            </div>
+          </form>
+
+        </div>
+      </div>
+
+      {# ----- Database Maintenance ----- #}
+      <div class="card mb-3">
+        <div class="card-header py-1 small fw-semibold">Database Maintenance</div>
+        <div class="card-body py-2">
+          <p class="text-muted small mb-2">
+            VACUUM rewrites the database file, reclaiming space left by deleted and updated rows.
+            It is safe to run at any time — if interrupted, the original database is untouched.
+            While running, other database operations are queued (typically a few seconds to a minute).
+            GCForge runs this automatically at startup when free space exceeds 10% of total size and 50 MB.
+          </p>
+          <div class="mb-3 small">
+            <span class="text-muted">Free space reclaimable:</span>
+            {% if frag.fragmentation_pct >= 10 %}
+              <strong class="text-warning">{{ frag.free_bytes|filesizeformat }} ({{ frag.fragmentation_pct|floatformat:0 }}%)</strong>
+              {% if frag.free_bytes >= 52428800 %}
+              <span class="badge bg-warning text-dark ms-1">Vacuum recommended</span>
+              {% endif %}
+            {% else %}
+              <strong class="text-success">{{ frag.free_bytes|filesizeformat }} ({{ frag.fragmentation_pct|floatformat:0 }}%)</strong>
+              <span class="text-muted ms-1">— no action needed</span>
+            {% endif %}
+          </div>
+          <form method="post" action="{% url 'preferences:vacuum_now' %}">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-sm btn-outline-secondary"
+                    onclick="return confirm('Run VACUUM now?\n\nThis rewrites the database to reclaim free space. The server remains responsive but database operations may queue briefly.')">
+              Run VACUUM now
+            </button>
+          </form>
+        </div>
+      </div>
+
+    </div>
+
+    {# ===== GPX EXPORT ===== #}
+    <div class="tab-pane" id="gpx-export">
+      <div class="card mb-3">
+        <div class="card-body">
+
+          {# Presets toolbar #}
+          <div class="d-flex flex-wrap align-items-center gap-2 mb-3 pb-3 border-bottom">
+            <span class="small fw-semibold me-1">Presets:</span>
+            {% if gpx_export_presets %}
+            {% for preset in gpx_export_presets %}
+            <form method="post" action="{% url 'preferences:load_gpx_export_preset' %}" class="d-inline">
+              {% csrf_token %}<input type="hidden" name="preset_id" value="{{ preset.pk }}">
+              <button type="submit" class="btn btn-outline-secondary btn-sm py-0">{{ preset.name }}</button>
+            </form>
+            <form method="post" action="{% url 'preferences:delete_gpx_export_preset' %}" class="d-inline"
+                  onsubmit="return confirm('Delete preset \'{{ preset.name }}\'?')">
+              {% csrf_token %}<input type="hidden" name="preset_id" value="{{ preset.pk }}">
+              <button type="submit" class="btn btn-outline-danger btn-sm py-0 px-1" title="Delete preset">×</button>
+            </form>
+            {% endfor %}
+            <span class="text-muted small">|</span>
+            {% endif %}
+            <form method="post" action="{% url 'preferences:add_gpx_export_preset' %}" class="d-inline d-flex gap-1">
+              {% csrf_token %}
+              <input type="text" name="preset_name" class="form-control form-control-sm" style="width:140px" placeholder="New preset name…" required>
+              <button type="submit" class="btn btn-outline-primary btn-sm py-0">Save as preset</button>
+            </form>
+            <form method="post" action="{% url 'preferences:reset_gpx_export' %}" class="d-inline ms-auto"
+                  onsubmit="return confirm('Reset all GPX export settings to defaults?')">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-outline-secondary btn-sm py-0">Reset to defaults</button>
+            </form>
+          </div>
+
+          <form method="post" action="{% url 'preferences:save_gpx_export' %}">
+            {% csrf_token %}
+
+            {# Notes section #}
+            <h6 class="mb-2">Include notes as user notes in logs section</h6>
+            <div class="mb-2 ps-2">
+              <div class="form-check mb-1">
+                <input class="form-check-input" type="checkbox" name="notes_gcforge" id="gpx_notes_gcforge"
+                       {% if gpx_export.notes_gcforge %}checked{% endif %}>
+                <label class="form-check-label small" for="gpx_notes_gcforge">
+                  Add GCForge user notes
+                  <span class="text-muted">(plain text, heading: "Note from [date]:")</span>
+                </label>
+              </div>
+              <div class="form-check mb-1">
+                <input class="form-check-input" type="checkbox" name="notes_gc_user" id="gpx_notes_gc_user"
+                       {% if gpx_export.notes_gc_user %}checked{% endif %}>
+                <label class="form-check-label small" for="gpx_notes_gc_user">
+                  Add user notes from geocaching.com
+                  <span class="text-muted">(personal note stored on the cache)</span>
+                </label>
+              </div>
+              <div class="form-check mb-1">
+                <input class="form-check-input" type="checkbox" name="notes_field_notes" id="gpx_notes_field_notes"
+                       {% if gpx_export.notes_field_notes %}checked{% endif %}>
+                <label class="form-check-label small" for="gpx_notes_field_notes">
+                  Add field notes
+                  <span class="text-muted">(heading: "Field note from [date]:")</span>
+                </label>
+              </div>
+              <div class="form-check mb-3">
+                <input class="form-check-input" type="checkbox" name="notes_corrected" id="gpx_notes_corrected"
+                       {% if gpx_export.notes_corrected %}checked{% endif %}>
+                <label class="form-check-label small" for="gpx_notes_corrected">
+                  Add corrected coordinates comment
+                  <span class="text-muted">(lat/lon, note, updated at)</span>
+                </label>
+              </div>
+              <div class="d-flex gap-4">
+                <div class="form-check">
+                  <input class="form-check-input" type="radio" name="notes_fuse" id="gpx_notes_fuse_yes"
+                         value="fuse" {% if gpx_export.notes_fuse %}checked{% endif %}>
+                  <label class="form-check-label small" for="gpx_notes_fuse_yes">Fuse to one note</label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input" type="radio" name="notes_fuse" id="gpx_notes_fuse_no"
+                         value="separate" {% if not gpx_export.notes_fuse %}checked{% endif %}>
+                  <label class="form-check-label small" for="gpx_notes_fuse_no">Export as separate notes</label>
+                </div>
+              </div>
+            </div>
+
+            <hr class="my-3">
+
+            {# Child Waypoints #}
+            <h6 class="mb-2">Child Waypoints</h6>
+            <div class="mb-2 ps-2">
+              <div class="form-check mb-1">
+                <input class="form-check-input" type="checkbox" name="wp_hidden" id="gpx_wp_hidden"
+                       {% if gpx_export.wp_hidden %}checked{% endif %}>
+                <label class="form-check-label small" for="gpx_wp_hidden"
+                       title="Exports child waypoints even if marked as hidden">
+                  Export hidden waypoints
+                </label>
+              </div>
+              <div class="form-check mb-1">
+                <input class="form-check-input" type="checkbox" name="wp_completed" id="gpx_wp_completed"
+                       {% if gpx_export.wp_completed %}checked{% endif %}
+                       onchange="document.getElementById('gpx_wp_completed_opts').style.display=this.checked?'':'none'">
+                <label class="form-check-label small" for="gpx_wp_completed">Export solved/completed waypoints</label>
+              </div>
+              <div id="gpx_wp_completed_opts" class="ps-4 mb-1"
+                   style="{% if not gpx_export.wp_completed %}display:none{% endif %}">
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" name="wp_completed_as_hidden" id="gpx_wp_completed_as_hidden"
+                         {% if gpx_export.wp_completed_as_hidden %}checked{% endif %}>
+                  <label class="form-check-label small text-muted" for="gpx_wp_completed_as_hidden">
+                    Export completed waypoints as hidden
+                    <span class="badge bg-secondary fw-normal" style="font-size:.7rem">not yet implemented</span>
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <hr class="my-3">
+
+            {# Corrected Coordinates #}
+            <h6 class="mb-2">Corrected Coordinates</h6>
+            <div class="mb-2 ps-2">
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="cc_original_as_wp" id="gpx_cc_original_as_wp"
+                       {% if gpx_export.cc_original_as_wp %}checked{% endif %}>
+                <label class="form-check-label small" for="gpx_cc_original_as_wp">
+                  Add original coordinates as child waypoint
+                  <span class="text-muted">(prefix OW, type Reference Point)</span>
+                </label>
+              </div>
+            </div>
+
+            <hr class="my-3">
+
+            {# Logs #}
+            <h6 class="mb-2">Logs</h6>
+            <div class="mb-2 ps-2">
+              <div class="d-flex align-items-center gap-2 mb-2">
+                <label class="form-label small mb-0" for="gpx_logs_max">Maximum number of logs to export</label>
+                <input type="number" name="logs_max" id="gpx_logs_max" min="0"
+                       class="form-control form-control-sm" style="width:90px"
+                       value="{{ gpx_export.logs_max }}" placeholder="All">
+                <span class="text-muted small">(blank = all; does not count note entries)</span>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="logs_my_on_top" id="gpx_logs_my_on_top"
+                       {% if gpx_export.logs_my_on_top %}checked{% endif %}>
+                <label class="form-check-label small" for="gpx_logs_my_on_top">Put my logs on top (below notes)</label>
+              </div>
+            </div>
+
+            <hr class="my-3">
+
+            {# Adventure Labs #}
+            <h6 class="mb-2">Adventure Labs</h6>
+            <div class="mb-2 ps-2">
+              <p class="small fw-semibold mb-1">Export stages as child waypoints in parent cache:</p>
+              <div class="d-flex flex-column gap-1 mb-3">
+                <div class="form-check">
+                  <input class="form-check-input" type="radio" name="alc_stages" id="gpx_alc_child_only"
+                         value="child_only" {% if gpx_export.alc_stages == "child_only" %}checked{% endif %}>
+                  <label class="form-check-label small" for="gpx_alc_child_only">
+                    Only as child waypoints — stages are not exported as separate cache records
+                  </label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input" type="radio" name="alc_stages" id="gpx_alc_child_and_export"
+                         value="child_and_export" {% if gpx_export.alc_stages == "child_and_export" %}checked{% endif %}>
+                  <label class="form-check-label small" for="gpx_alc_child_and_export">
+                    As child waypoints and export stages as individual cache records
+                  </label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input" type="radio" name="alc_stages" id="gpx_alc_dont_export"
+                         value="dont_export" {% if gpx_export.alc_stages == "dont_export" %}checked{% endif %}>
+                  <label class="form-check-label small" for="gpx_alc_dont_export">Don't export ALC stages</label>
+                </div>
+              </div>
+
+              <p class="small fw-semibold mb-1">Completed stages:</p>
+              <div class="d-flex flex-column gap-1">
+                <div class="form-check">
+                  <input class="form-check-input" type="radio" name="alc_completed" id="gpx_alc_found_invisible"
+                         value="found_invisible" {% if gpx_export.alc_completed == "found_invisible" %}checked{% endif %}>
+                  <label class="form-check-label small" for="gpx_alc_found_invisible">
+                    Export as "found" and invisible
+                    <span class="badge bg-secondary fw-normal" style="font-size:.7rem">not yet implemented</span>
+                  </label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input" type="radio" name="alc_completed" id="gpx_alc_found_visible"
+                         value="found_visible" {% if gpx_export.alc_completed == "found_visible" %}checked{% endif %}>
+                  <label class="form-check-label small" for="gpx_alc_found_visible">Export as "found" and visible</label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input" type="radio" name="alc_completed" id="gpx_alc_completed_skip"
+                         value="dont_export" {% if gpx_export.alc_completed == "dont_export" %}checked{% endif %}>
+                  <label class="form-check-label small" for="gpx_alc_completed_skip">Don't export separately</label>
+                </div>
+              </div>
+            </div>
+
+            <hr class="my-3">
+
+            {# Events #}
+            <h6 class="mb-2">Events</h6>
+            <div class="mb-2 ps-2">
+              <div class="form-check mb-2">
+                <input class="form-check-input" type="checkbox" name="events_exclude_past" id="gpx_events_exclude_past"
+                       {% if gpx_export.events_exclude_past %}checked{% endif %}>
+                <label class="form-check-label small" for="gpx_events_exclude_past">
+                  Exclude past events
+                  <span class="text-muted">(skip events whose date is before today)</span>
+                </label>
+              </div>
+              <div class="d-flex align-items-center gap-2">
+                <label class="form-label small mb-0" for="gpx_events_days_ahead">Export events for the next</label>
+                <input type="number" name="events_days_ahead" id="gpx_events_days_ahead" min="1"
+                       class="form-control form-control-sm" style="width:90px"
+                       value="{{ gpx_export.events_days_ahead }}" placeholder="All">
+                <span class="text-muted small">days only (blank = no limit)</span>
+              </div>
+            </div>
+
+            <hr class="my-3">
+            <button type="submit" class="btn btn-primary btn-sm">Save GPX export settings</button>
+
+          </form>
+        </div>
+      </div>
+    </div>{# end gpx-export #}
+
+  </div>{# end tab-content #}
+</div>
+
+<div id="settings-config"
+     data-rp-list="{{ rp_list_json }}"
+     style="display:none"></div>
+
+{% block extra_js %}
+{% load static %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="{% static 'js/settings.js' %}"></script>
+{% endblock %}
+{% endblock %}

@@ -1,0 +1,81 @@
+﻿name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            artifact: GCForge-windows.zip
+          - os: ubuntu-latest
+            artifact: GCForge-linux.tar.gz
+          - os: macos-latest
+            artifact: GCForge-macos.zip
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Install dependencies
+        run: uv sync --frozen
+
+      - name: Install PyInstaller
+        run: uv pip install pyinstaller
+
+      - name: Build with PyInstaller
+        run: uv run pyinstaller gcforge.spec --noconfirm
+
+      - name: Package (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: Compress-Archive -Path dist/GCForge -DestinationPath GCForge-windows.zip
+
+      - name: Package (Linux)
+        if: runner.os == 'Linux'
+        run: tar -czf GCForge-linux.tar.gz -C dist GCForge
+
+      - name: Package (macOS)
+        if: runner.os == 'macOS'
+        run: cd dist && zip -r ../GCForge-macos.zip GCForge
+
+      - name: Upload to Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ matrix.artifact }}
+          draft: true
+          generate_release_notes: false
+          name: "GCForge ${{ github.ref_name }}"
+          body: |
+            ## GCForge ${{ github.ref_name }} — Beta
+
+            Early beta release for testing. Expect rough edges.
+
+            ### Install
+            - **Windows:** extract the zip, run `GCForge.exe`
+            - **Linux:** extract the tar.gz, run `./GCForge`
+            - **macOS:** extract the zip, run `./GCForge`
+
+            The app starts a local server and opens your browser automatically.
+            Your data is stored in `~/.gcforge/`.
+
+            ### Feedback
+            Please report issues and share feedback in [Discussions](https://github.com/OliverBurgert/gcforge-public/discussions).
