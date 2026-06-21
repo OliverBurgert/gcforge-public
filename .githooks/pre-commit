@@ -1,0 +1,85 @@
+#!/usr/bin/env bash
+# Pre-commit hook for GCForge.
+# Runs ruff, Django config check, and JS smoke tests on every commit.
+#
+# Enable this hook once per clone:
+#     git config core.hooksPath .githooks
+#
+# Bypass for an emergency (use sparingly):
+#     git commit --no-verify
+
+set -euo pipefail
+
+ROOT="$(git rev-parse --show-toplevel)"
+cd "$ROOT"
+
+PY_STAGED=$(git diff --cached --name-only --diff-filter=ACMR -- '*.py' || true)
+JS_STAGED=$(git diff --cached --name-only --diff-filter=ACMR -- '*.js' '*.json' || true)
+I18N_STAGED=$(git diff --cached --name-only --diff-filter=ACMR -- 'templates/*.html' '*.py' 'static/js/*.js' 'locale/*.po' || true)
+HTML_STAGED=$(git diff --cached --name-only --diff-filter=ACMR -- '*.html' || true)
+
+fail() {
+    echo
+    echo "  pre-commit hook failed: $1"
+    echo "  fix the issue and re-stage, or skip with: git commit --no-verify"
+    exit 1
+}
+
+# ---------------------------------------------------------------------------
+# 1. ruff lint (with --fix) on staged Python files
+# ---------------------------------------------------------------------------
+if [ -n "$PY_STAGED" ]; then
+    echo "[pre-commit] ruff check --fix"
+    if ! uv run --no-sync ruff check --fix $PY_STAGED; then
+        fail "ruff check"
+    fi
+    # Re-stage anything ruff auto-fixed
+    git add $PY_STAGED
+fi
+
+# ---------------------------------------------------------------------------
+# 2. Django configuration check (only when Python files changed)
+# ---------------------------------------------------------------------------
+if [ -n "$PY_STAGED" ]; then
+    echo "[pre-commit] python manage.py check"
+    if ! uv run --no-sync python manage.py check >/dev/null; then
+        fail "Django check"
+    fi
+fi
+
+# ---------------------------------------------------------------------------
+# 3. JS smoke tests (only when JS/JSON changed)
+# ---------------------------------------------------------------------------
+if [ -n "$JS_STAGED" ]; then
+    echo "[pre-commit] npm run test:js"
+    if ! npm run --silent test:js; then
+        fail "vitest"
+    fi
+fi
+
+# ---------------------------------------------------------------------------
+# 4. i18n: extraction freshness + German translation coverage.
+#    Slow on extraction (runs makemessages, ~5s), so only fires when a file
+#    that might contain a wrapped string changed. The script always restores
+#    the .po files to their committed state.
+# ---------------------------------------------------------------------------
+if [ -n "$I18N_STAGED" ]; then
+    echo "[pre-commit] python scripts/check_i18n.py"
+    if ! uv run --no-sync python scripts/check_i18n.py; then
+        fail "i18n check"
+    fi
+fi
+
+# ---------------------------------------------------------------------------
+# 5. Django template comments: Django's {# ... #} is single-line only.
+#    A multi-line variant leaks the opener and content into the rendered page,
+#    silently. Catch any staged .html that contains an unclosed {# on a line.
+# ---------------------------------------------------------------------------
+if [ -n "$HTML_STAGED" ]; then
+    echo "[pre-commit] python scripts/check_django_template_comments.py"
+    if ! uv run --no-sync python scripts/check_django_template_comments.py $HTML_STAGED; then
+        fail "Django template comments — use {% comment %}...{% endcomment %} for multi-line"
+    fi
+fi
+
+echo "[pre-commit] OK"

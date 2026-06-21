@@ -1,0 +1,30 @@
+{% load i18n %}
+{% load l10n %}
+
+{# Shared coords block for OC.us neighbourhood forms. Caller passes ``n``. #}
+<div class="row g-2 mb-3">
+  <div class="col-md-5">
+    <label class="form-label small">{% trans "Reference location" %}</label>
+    <select name="location_id" class="form-select form-select-sm">
+      <option value="">{% trans "— use coordinates below —" %}</option>
+      {% for loc in locations %}
+        <option value="{{ loc.id }}"
+                data-lat="{{ loc.latitude|unlocalize }}"
+                data-lon="{{ loc.longitude|unlocalize }}"
+                {% if n.location_id == loc.id %}selected{% endif %}>
+          {{ loc.name }}
+        </option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="col-md-3">
+    <label class="form-label small">{% trans "Latitude" %}</label>
+    <input type="text" name="latitude" class="form-control form-control-sm"
+           value="{{ n.latitude|unlocalize }}">
+  </div>
+  <div class="col-md-3">
+    <label class="form-label small">{% trans "Longitude" %}</label>
+    <input type="text" name="longitude" class="form-control form-control-sm"
+           value="{{ n.longitude|unlocalize }}">
+  </div>
+</div>

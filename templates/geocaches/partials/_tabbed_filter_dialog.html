@@ -1,0 +1,393 @@
+{% load i18n icon_tags %}
+{{ current_tree_dict|json_script:"tfd-current-tree" }}
+{{ saved_filter_trees|json_script:"tfd-saved-trees" }}
+{% comment %}
+4d-i: Tabbed filter dialog — builds a v2 filter-expression tree from form
+widgets across multiple tabs.  Coexists with the legacy "Filters" dialog and
+the JSON-textarea "{ } Custom" modal.  Each Apply produces the same ?fx=
+payload as the JSON modal; nested groups (depth >1) need the JSON modal.
+
+The form has no <form action="…">.  gcfTabbedFilterApply (JS) reads
+the inputs, builds a Group/Condition tree as a JSON literal, then POSTs
+that to the existing /filters/tree/apply/ endpoint — exact same path as
+the JSON modal.  Save uses /filters/tree/save/ the same way.
+{% endcomment %}
+
+<div class="modal fade" id="tabbedFilterDialog" tabindex="-1" aria-labelledby="tabbedFilterDialogLabel" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-scrollable">
+    <div class="modal-content">
+
+      <div class="modal-header">
+        <h5 class="modal-title" id="tabbedFilterDialogLabel">
+          {% trans "Custom filter" %} <small class="text-muted">{% trans "(tabs)" %}</small>
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{% trans 'Close' %}"></button>
+      </div>
+
+      <div class="modal-body">
+        {% if fv.where_sql or fv.where_name %}
+        <div class="alert alert-secondary py-1 px-2 mb-2 small d-flex align-items-center gap-2">
+          <span class="badge text-bg-warning">SQL</span>
+          <span class="text-truncate flex-grow-1">{{ fv.where_name|default:fv.where_sql|truncatechars:60 }}</span>
+          <span class="text-muted text-nowrap">{% trans "(AND-joined, edit via SQL button)" %}</span>
+        </div>
+        {% endif %}
+        <div class="d-flex align-items-center gap-2 mb-3">
+          <label class="form-label small mb-0">{% trans "Combine all conditions with" %}</label>
+          <select id="tab-root-op" class="form-select form-select-sm" style="width:90px">
+            <option value="and" selected>AND</option>
+            <option value="or">OR</option>
+          </select>
+          <small class="text-muted">{% trans "For nested logic (AND/OR groups inside groups) use the { } JSON modal." %}</small>
+        </div>
+
+        <form id="tabbed-filter-form">
+          {% csrf_token %}
+          <input type="hidden" id="tfd-passthrough" value="">
+
+          <ul class="nav nav-tabs" role="tablist">
+            <li class="nav-item"><a class="nav-link active" data-bs-toggle="tab" href="#ftab-general">{% trans "General" %}<span id="ftab-badge-general" class="badge rounded-pill text-bg-secondary ms-1 d-none">0</span></a></li>
+            <li class="nav-item"><a class="nav-link"        data-bs-toggle="tab" href="#ftab-tss">{% trans "Type/Size/Status" %}<span id="ftab-badge-tss" class="badge rounded-pill text-bg-secondary ms-1 d-none">0</span></a></li>
+            <li class="nav-item"><a class="nav-link"        data-bs-toggle="tab" href="#ftab-dates">{% trans "Dates" %}<span id="ftab-badge-dates" class="badge rounded-pill text-bg-secondary ms-1 d-none">0</span></a></li>
+            <li class="nav-item"><a class="nav-link"        data-bs-toggle="tab" href="#ftab-location">{% trans "Location" %}<span id="ftab-badge-location" class="badge rounded-pill text-bg-secondary ms-1 d-none">0</span></a></li>
+            <li class="nav-item"><a class="nav-link"        data-bs-toggle="tab" href="#ftab-tagsattrs">{% trans "Tags & Attrs" %}<span id="ftab-badge-tagsattrs" class="badge rounded-pill text-bg-secondary ms-1 d-none">0</span></a></li>
+            <li class="nav-item"><a class="nav-link"        data-bs-toggle="tab" href="#ftab-logs">{% trans "Logs" %}<span id="ftab-badge-logs" class="badge rounded-pill text-bg-secondary ms-1 d-none">0</span></a></li>
+            <li class="nav-item"><a class="nav-link"        data-bs-toggle="tab" href="#ftab-adv">{% trans "Adventures" %}<span id="ftab-badge-adv" class="badge rounded-pill text-bg-secondary ms-1 d-none">0</span></a></li>
+          </ul>
+
+          <div class="tab-content pt-3">
+
+            {# ──────────── General ──────────── #}
+            <div id="ftab-general" class="tab-pane fade show active">
+              <div class="row g-3">
+                {% for prefix, label in tabbed_text_fields %}
+                <div class="col-md-6">
+                  <label class="form-label small mb-1">{{ label }}</label>
+                  <div class="input-group input-group-sm">
+                    <select name="{{ prefix }}_op" class="form-select" style="max-width:130px">
+                      <option value="contains">{% trans "contains" %}</option>
+                      <option value="not_contains">{% trans "not contains" %}</option>
+                      <option value="equals">{% trans "equals" %}</option>
+                      <option value="starts_with">{% trans "starts with" %}</option>
+                      <option value="in_list">{% trans "in list (;)" %}</option>
+                      <option value="not_in_list">{% trans "not in list (;)" %}</option>
+                    </select>
+                    <input type="text" name="{{ prefix }}_text" class="form-control" placeholder="{% trans 'value' %}">
+                  </div>
+                </div>
+                {% endfor %}
+
+                <div class="col-md-4">
+                  <label class="form-label small mb-1">{% trans "Difficulty" %} <span class="text-muted">{% trans "between" %}</span></label>
+                  <div class="d-flex gap-1">
+                    <input type="number" step="0.5" min="1" max="5" name="difficulty_min" class="form-control form-control-sm" placeholder="{% trans 'min' %}">
+                    <input type="number" step="0.5" min="1" max="5" name="difficulty_max" class="form-control form-control-sm" placeholder="{% trans 'max' %}">
+                  </div>
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label small mb-1">{% trans "Terrain" %} <span class="text-muted">{% trans "between" %}</span></label>
+                  <div class="d-flex gap-1">
+                    <input type="number" step="0.5" min="1" max="5" name="terrain_min" class="form-control form-control-sm" placeholder="{% trans 'min' %}">
+                    <input type="number" step="0.5" min="1" max="5" name="terrain_max" class="form-control form-control-sm" placeholder="{% trans 'max' %}">
+                  </div>
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label small mb-1">{% trans "Favorite points" %} <span class="text-muted">{% trans "between" %}</span></label>
+                  <div class="d-flex gap-1">
+                    <input type="number" min="0" name="fav_points_min" class="form-control form-control-sm" placeholder="{% trans 'min' %}">
+                    <input type="number" min="0" name="fav_points_max" class="form-control form-control-sm" placeholder="{% trans 'max' %}">
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {# ──────────── Type / Size / Status ──────────── #}
+            <div id="ftab-tss" class="tab-pane fade">
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <label class="form-label fw-semibold small mb-2">{% trans "Cache type" %}</label>
+                  <div class="row row-cols-2 g-1">
+                    {% for value, label in cache_types %}
+                    <div class="col">
+                      <label class="d-flex align-items-center gap-1 small mb-0" style="cursor:pointer">
+                        <input class="form-check-input m-0 flex-shrink-0" type="checkbox" name="cache_type" value="{{ value }}">
+                        <span class="d-inline-flex flex-shrink-0" style="width:20px;justify-content:center">{% cache_type_icon value size="18" %}</span>
+                        <span class="text-truncate">{{ label }}</span>
+                      </label>
+                    </div>
+                    {% endfor %}
+                  </div>
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label fw-semibold small mb-2">{% trans "Size" %}</label>
+                  {% for value, label in cache_sizes %}
+                  <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="size" value="{{ value }}" id="ftss-s-{{ forloop.counter }}">
+                    <label class="form-check-label small" for="ftss-s-{{ forloop.counter }}">{{ label }}</label>
+                  </div>
+                  {% endfor %}
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label fw-semibold small mb-2">{% trans "Status" %}</label>
+                  {% for value, label in cache_statuses %}
+                  <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="status" value="{{ value }}" id="ftss-st-{{ forloop.counter }}">
+                    <label class="form-check-label small" for="ftss-st-{{ forloop.counter }}">{{ label }}</label>
+                  </div>
+                  {% endfor %}
+                </div>
+              </div>
+              <hr>
+              <label class="form-label fw-semibold small mb-2">{% trans "Boolean flags" %}</label>
+              <div class="d-flex flex-wrap gap-3">
+                {% for fname, flabel in tabbed_bool_fields %}
+                <div class="d-flex gap-1 align-items-center">
+                  <label class="small mb-0">{{ flabel }}:</label>
+                  <select name="bool_{{ fname }}" class="form-select form-select-sm" style="width:80px">
+                    <option value="">—</option>
+                    <option value="true">{% trans "Yes" %}</option>
+                    <option value="false">{% trans "No" %}</option>
+                  </select>
+                </div>
+                {% endfor %}
+              </div>
+            </div>
+
+            {# ──────────── Dates ──────────── #}
+            <div id="ftab-dates" class="tab-pane fade">
+              {% for prefix, label in tabbed_date_fields %}
+              <fieldset class="border rounded p-2 mb-2">
+                <legend class="float-none w-auto px-2 small fw-semibold">{{ label }}</legend>
+                <div class="row g-2 align-items-end">
+                  <div class="col-md-3">
+                    <label class="form-label small mb-1">{% trans "Mode" %}</label>
+                    <select name="{{ prefix }}_mode" class="form-select form-select-sm">
+                      <option value="">—</option>
+                      <option value="between">{% trans "between dates" %}</option>
+                      <option value="last_n_days">{% trans "last N days" %}</option>
+                      <option value="in_past">{% trans "in the past" %}</option>
+                      <option value="in_future">{% trans "in the future" %}</option>
+                      <option value="this_week">{% trans "this week" %}</option>
+                      <option value="this_month">{% trans "this month" %}</option>
+                      <option value="this_year">{% trans "this year" %}</option>
+                    </select>
+                  </div>
+                  <div class="col-md-2">
+                    <label class="form-label small mb-1">{% trans "From" %}</label>
+                    <input type="date" name="{{ prefix }}_from" class="form-control form-control-sm">
+                  </div>
+                  <div class="col-md-2">
+                    <label class="form-label small mb-1">{% trans "To" %}</label>
+                    <input type="date" name="{{ prefix }}_to" class="form-control form-control-sm">
+                  </div>
+                  <div class="col-md-2">
+                    <label class="form-label small mb-1">{% trans "N (days)" %}</label>
+                    <input type="number" min="1" name="{{ prefix }}_n_days" class="form-control form-control-sm">
+                  </div>
+                  <div class="col-md-3 d-flex align-items-end">
+                    <div class="form-check">
+                      <input class="form-check-input" type="checkbox" name="{{ prefix }}_negate" id="fd-{{ prefix }}-negate">
+                      <label class="form-check-label small" for="fd-{{ prefix }}-negate">{% trans "Negate" %}</label>
+                    </div>
+                  </div>
+                </div>
+              </fieldset>
+              {% endfor %}
+            </div>
+
+            {# ──────────── Location ──────────── #}
+            <div id="ftab-location" class="tab-pane fade">
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <label class="form-label small mb-1">{% trans "Country" %}</label>
+                  <select name="country" class="form-select form-select-sm" multiple size="6">
+                    {% for c in countries %}
+                    <option value="{{ c.code }}">{{ c.name }}</option>
+                    {% endfor %}
+                  </select>
+                  <small class="text-muted">{% trans "Ctrl/Cmd-click to multi-select" %}</small>
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label small mb-1">{% trans "State (exact)" %}</label>
+                  <input type="text" name="state_text" class="form-control form-control-sm">
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label small mb-1">{% trans "County (exact)" %}</label>
+                  <input type="text" name="county_text" class="form-control form-control-sm">
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label small mb-1">{% trans "Distance (km) min" %}</label>
+                  <input type="number" step="0.1" min="0" name="distance_min" class="form-control form-control-sm">
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label small mb-1">{% trans "Distance (km) max" %}</label>
+                  <input type="number" step="0.1" min="0" name="distance_max" class="form-control form-control-sm">
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label small mb-1">{% trans "Bearing direction" %}</label>
+                  <div class="d-flex flex-wrap gap-2">
+                    {% for d in bearing_dirs %}
+                    <div class="form-check form-check-inline m-0">
+                      <input class="form-check-input" type="checkbox" name="bearing" value="{{ d }}" id="ftl-b-{{ forloop.counter }}">
+                      <label class="form-check-label small" for="ftl-b-{{ forloop.counter }}">{{ d }}</label>
+                    </div>
+                    {% endfor %}
+                  </div>
+                  <small class="text-muted">{% trans "Requires an active reference point" %}</small>
+                </div>
+              </div>
+            </div>
+
+            {# ──────────── Tags & Attributes ──────────── #}
+            <div id="ftab-tagsattrs" class="tab-pane fade">
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <label class="form-label fw-semibold small mb-2">{% trans "Include tags" %}</label>
+                  <select name="tags_include" class="form-select form-select-sm" multiple size="8">
+                    {% for tag in tags %}<option value="{{ tag.name }}">{{ tag.name }}</option>{% endfor %}
+                  </select>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label fw-semibold small mb-2">{% trans "Exclude tags" %}</label>
+                  <select name="tags_exclude" class="form-select form-select-sm" multiple size="8">
+                    {% for tag in tags %}<option value="{{ tag.name }}">{{ tag.name }}</option>{% endfor %}
+                  </select>
+                </div>
+                {% if attrs_by_source %}
+                <div class="col-12">
+                  <label class="form-label fw-semibold small mb-2">{% trans "Attributes" %}</label>
+                  {% for source, attrs in attrs_by_source.items %}
+                  <div class="border rounded p-2 mb-2">
+                    <div class="small fw-semibold mb-1">{{ source|upper }}</div>
+                    <div class="d-flex flex-wrap gap-3">
+                      {% for a in attrs %}
+                      <div class="d-flex flex-column align-items-center" style="min-width:90px">
+                        <span class="d-inline-flex align-items-center justify-content-center" style="height:28px">{% attribute_icon a %}</span>
+                        <small class="text-muted text-center" style="max-width:90px">{{ a.name }}{% if not a.is_positive %} ✗{% endif %}</small>
+                        <select name="attr_{{ a.id }}" class="form-select form-select-sm" style="width:80px">
+                          <option value="">—</option>
+                          <option value="yes">{% trans "Yes" %}</option>
+                          <option value="no">{% trans "No" %}</option>
+                        </select>
+                      </div>
+                      {% endfor %}
+                    </div>
+                  </div>
+                  {% endfor %}
+                </div>
+                {% endif %}
+              </div>
+            </div>
+
+            {# ──────────── Logs ──────────── #}
+            <div id="ftab-logs" class="tab-pane fade">
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <label class="form-label small mb-1">{% trans "Last log is one of" %}</label>
+                  <select name="last_log_type" class="form-select form-select-sm" multiple size="6">
+                    {% for value, label in log_types %}<option value="{{ value }}">{{ label }}</option>{% endfor %}
+                  </select>
+                </div>
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    <label class="form-label small mb-1">{% trans "Last N finder logs are all DNF" %}</label>
+                    <input type="number" min="1" name="last_n_are_dnf" class="form-control form-control-sm" style="width:120px">
+                  </div>
+                  <div class="mb-3">
+                    <label class="form-label small mb-1">{% trans "Found by user (substring)" %}</label>
+                    <input type="text" name="logs_found_by_user" class="form-control form-control-sm">
+                  </div>
+                  <div>
+                    <label class="form-label small mb-1">{% trans "Total log count ≥" %}</label>
+                    <input type="number" min="0" name="log_count_gte" class="form-control form-control-sm" style="width:120px">
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {# ──────────── Adventures ──────────── #}
+            <div id="ftab-adv" class="tab-pane fade">
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <label class="form-label fw-semibold small mb-2">{% trans "ALC shape" %}</label>
+                  {% for fname, flabel in tabbed_alc_bool_fields %}
+                  <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="alc_bool_{{ fname }}" id="falc-{{ fname }}">
+                    <label class="form-check-label small" for="falc-{{ fname }}">{{ flabel }}</label>
+                  </div>
+                  {% endfor %}
+                </div>
+                <div class="col-md-6">
+                  <div class="mb-2">
+                    <label class="form-label small mb-1">{% trans "Stages remaining ≥" %}</label>
+                    <input type="number" min="0" name="alc_stages_remaining_gte" class="form-control form-control-sm" style="width:120px">
+                  </div>
+                  <div class="mb-2">
+                    <label class="form-label small mb-1">{% trans "Stages total" %} <span class="text-muted">{% trans "between" %}</span></label>
+                    <div class="d-flex gap-1">
+                      <input type="number" min="0" name="alc_stages_total_min" class="form-control form-control-sm" placeholder="{% trans 'min' %}">
+                      <input type="number" min="0" name="alc_stages_total_max" class="form-control form-control-sm" placeholder="{% trans 'max' %}">
+                    </div>
+                  </div>
+                  <div class="mb-2">
+                    <label class="form-label small mb-1">{% trans "Geofence radius (m)" %} <span class="text-muted">{% trans "between" %}</span></label>
+                    <div class="d-flex gap-1">
+                      <input type="number" min="0" name="alc_geofence_min" class="form-control form-control-sm" placeholder="{% trans 'min' %}">
+                      <input type="number" min="0" name="alc_geofence_max" class="form-control form-control-sm" placeholder="{% trans 'max' %}">
+                    </div>
+                  </div>
+                  <div class="mb-2">
+                    <label class="form-label small mb-1">{% trans "Geofence contains point (lat, lon)" %}</label>
+                    <div class="d-flex gap-1">
+                      <input type="number" step="0.000001" name="alc_geofence_lat" class="form-control form-control-sm" placeholder="{% trans 'lat' %}">
+                      <input type="number" step="0.000001" name="alc_geofence_lon" class="form-control form-control-sm" placeholder="{% trans 'lon' %}">
+                    </div>
+                  </div>
+                  <div>
+                    <label class="form-label small mb-1">{% trans "Adventure owner (contains)" %}</label>
+                    <input type="text" name="alc_adventure_owner" class="form-control form-control-sm">
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>{# /tab-content #}
+        </form>
+
+        <div id="tabbed-tree-error" class="text-danger small mt-2 d-none"></div>
+      </div>
+
+      <div class="modal-footer flex-wrap gap-1">
+        <div class="d-flex flex-wrap gap-1 me-auto">
+          <input type="text" id="tabbed-save-name" class="form-control form-control-sm"
+                 placeholder="{% trans 'Save as…' %}" style="width:140px">
+          <button type="button" class="btn btn-sm btn-outline-success"
+                  onclick="gcfTabbedFilterSave()">{% trans "Save" %}</button>
+          <div class="vr mx-1 d-none d-md-block"></div>
+          <select id="tabbed-load-select" class="form-select form-select-sm"
+                  style="width:150px" onchange="gcfTabbedLoadSelectChanged()">
+            <option value="">{% trans "Saved filters…" %}</option>
+            {% for sf in tree_saved_filters %}
+            <option value="{{ sf.name }}"
+                    data-pk="{{ sf.pk }}"
+                    data-builtin="{% if sf.is_builtin %}true{% endif %}">{{ sf.name }}{% if sf.is_builtin %} ({% trans "built-in" %}){% endif %}</option>
+            {% endfor %}
+          </select>
+          <button type="button" class="btn btn-sm btn-outline-secondary"
+                  onclick="gcfTabbedFilterLoadSelected()">{% trans "Apply saved" %}</button>
+          <button type="button" id="tabbed-add-btn" class="btn btn-sm btn-outline-primary" disabled
+                  onclick="gcfTabbedFilterAddToCurrent()">{% trans "Add to current" %}</button>
+          <button type="button" id="tabbed-delete-btn" class="btn btn-sm btn-outline-danger" disabled
+                  onclick="gcfTabbedFilterDeleteSelected()">{% trans "Delete" %}</button>
+        </div>
+        <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">{% trans "Cancel" %}</button>
+        <button type="button" class="btn btn-sm btn-outline-secondary"
+                onclick="gcfTabbedFilterResetTab()">{% trans "Reset tab" %}</button>
+        <button type="button" class="btn btn-sm btn-outline-warning"
+                onclick="gcfTabbedFilterResetAll()">{% trans "Reset all" %}</button>
+        <button type="button" class="btn btn-sm btn-primary" onclick="gcfTabbedFilterApply()">{% trans "Apply" %}</button>
+      </div>
+
+    </div>
+  </div>
+</div>

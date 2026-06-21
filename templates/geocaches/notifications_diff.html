@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% load l10n %}
+{% block title %}{% trans "Notification sync" %} — GCForge{% endblock %}
+
+{% block content %}
+<div class="px-3 py-3" style="max-width:1200px">
+  <h5 class="mb-3">{% trans "Sync results — your decisions are needed" %}</h5>
+
+  <div class="alert alert-info py-2">
+    {% blocktrans with c=summary.auto_created u=summary.auto_updated m=summary.matched %}
+      Auto-imported from server: <strong>{{ c }}</strong> created,
+      <strong>{{ u }}</strong> updated, <strong>{{ m }}</strong> already in sync.
+    {% endblocktrans %}
+  </div>
+
+  <form method="post" action="{% url 'geocaches:notifications_apply_diff' %}">
+    {% csrf_token %}
+
+    {% if local_only %}
+      <div class="card mb-3">
+        <div class="card-header py-2">
+          <strong>{% trans "Local-only notifications" %}</strong>
+          <span class="text-muted small">— {% blocktrans %}you have these locally, but they don't exist on the server.{% endblocktrans %}</span>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-sm mb-0 align-middle">
+            <thead class="table-light">
+              <tr>
+                <th>{% trans "Name" %}</th>
+                <th>{% trans "Cache type" %}</th>
+                <th class="text-end">{% trans "Radius" %}</th>
+                <th>{% trans "Coords" %}</th>
+                <th>{% trans "Action" %}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for n in local_only %}
+                <tr>
+                  <td>{{ n.name }}</td>
+                  <td>{% for tid, tname in notify_cache_types.items %}{% if tid == n.cache_type_id %}{{ tname }}{% endif %}{% endfor %}</td>
+                  <td class="text-end">{{ n.radius_km }} km</td>
+                  <td class="small">{{ n.latitude|unlocalize|floatformat:5 }}, {{ n.longitude|unlocalize|floatformat:5 }}</td>
+                  <td>
+                    <div class="btn-group btn-group-sm" role="group">
+                      <input type="radio" class="btn-check" name="local_only_{{ n.id }}" id="lo{{ n.id }}_create" value="create_on_server" checked>
+                      <label class="btn btn-outline-success" for="lo{{ n.id }}_create">{% trans "Create on server" %}</label>
+
+                      <input type="radio" class="btn-check" name="local_only_{{ n.id }}" id="lo{{ n.id }}_delete" value="delete_locally">
+                      <label class="btn btn-outline-danger" for="lo{{ n.id }}_delete">{% trans "Delete locally" %}</label>
+
+                      <input type="radio" class="btn-check" name="local_only_{{ n.id }}" id="lo{{ n.id }}_discard" value="discard">
+                      <label class="btn btn-outline-secondary" for="lo{{ n.id }}_discard">{% trans "Discard" %}</label>
+                    </div>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    {% endif %}
+
+    {% if server_deleted %}
+      <div class="card mb-3">
+        <div class="card-header py-2">
+          <strong>{% trans "Server-deleted notifications" %}</strong>
+          <span class="text-muted small">— {% blocktrans %}these existed before, but are no longer on the server.{% endblocktrans %}</span>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-sm mb-0 align-middle">
+            <thead class="table-light">
+              <tr>
+                <th>{% trans "Name" %}</th>
+                <th>{% trans "Cache type" %}</th>
+                <th>{% trans "Last NID" %}</th>
+                <th>{% trans "Action" %}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for n in server_deleted %}
+                <tr>
+                  <td>{{ n.name }}</td>
+                  <td>{% for tid, tname in notify_cache_types.items %}{% if tid == n.cache_type_id %}{{ tname }}{% endif %}{% endfor %}</td>
+                  <td class="small text-muted">{{ n.server_id }}</td>
+                  <td>
+                    <div class="btn-group btn-group-sm" role="group">
+                      <input type="radio" class="btn-check" name="server_deleted_{{ n.id }}" id="sd{{ n.id }}_recreate" value="recreate">
+                      <label class="btn btn-outline-success" for="sd{{ n.id }}_recreate">{% trans "Recreate on server" %}</label>
+
+                      <input type="radio" class="btn-check" name="server_deleted_{{ n.id }}" id="sd{{ n.id }}_delete" value="delete_locally" checked>
+                      <label class="btn btn-outline-danger" for="sd{{ n.id }}_delete">{% trans "Delete locally" %}</label>
+                    </div>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    {% endif %}
+
+    <div class="d-flex gap-2">
+      <button type="submit" class="btn btn-primary">{% trans "Apply choices" %}</button>
+      <a href="{% url 'geocaches:notifications' %}" class="btn btn-secondary">{% trans "Cancel" %}</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

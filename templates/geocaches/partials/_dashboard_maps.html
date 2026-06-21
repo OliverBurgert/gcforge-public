@@ -1,0 +1,111 @@
+{% load i18n static %}
+{# Maps tab body — loaded in the background via HTMX (see dashboard.html). #}
+{% if map_levels %}
+  {% if maps_note %}
+  <div class="alert alert-info small py-2">
+    {% trans "Enable more maps (continents, countries, counties) in" %}
+    <a href="{{ maps_settings_url }}">{% trans "Settings → Dashboard" %}</a>.
+  </div>
+  {% endif %}
+  <ul class="nav nav-pills flex-wrap mb-3" id="maps-subtabs" role="tablist">
+    {% if show_world_subtab %}
+    <li class="nav-item">
+      <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#maps-world"
+              data-maps-hash="world" type="button">{% trans "World" %}</button>
+    </li>
+    {% endif %}
+    {% if show_countries_subtab %}
+    <li class="nav-item">
+      <button class="nav-link{% if not show_world_subtab %} active{% endif %}"
+              data-bs-toggle="tab" data-bs-target="#maps-countries"
+              data-maps-hash="countries" type="button">{% trans "Countries" %}</button>
+    </li>
+    {% for cm in country_maps %}
+    <li class="nav-item">
+      <button class="nav-link d-flex align-items-center gap-1"
+              data-bs-toggle="tab" data-bs-target="#maps-c-{{ cm.iso|lower }}"
+              data-maps-hash="{{ cm.iso|lower }}" type="button">
+        <span class="fi fi-{{ cm.iso|lower }}"></span> {{ cm.name }}
+      </button>
+    </li>
+    {% endfor %}
+    {% endif %}
+  </ul>
+
+  <div class="tab-content" id="dash-maps-root"
+       data-counts-id="dashboard-country-counts"
+       data-all-counts-id="dashboard-all-country-counts"
+       data-geojson-url="{% static 'geo/world-countries.geojson' %}"
+       data-country-maps-id="dashboard-country-maps"
+       data-region-url-template="{% url 'geocaches:dashboard_region_data' 'XX' %}"
+       data-county-url-template="{% url 'geocaches:dashboard_county_data' 'XX' %}"
+       data-district-url-template="{% url 'geocaches:dashboard_district_data' 'ISOXX' 'STATEXX' %}"
+       data-list-url="{% url 'geocaches:list' %}"
+       data-detail-url-template="{% url 'geocaches:detail' 'CODEXX' %}"
+       data-settings-url="{{ maps_settings_url }}">
+
+    {% if show_world_subtab %}
+    <div class="tab-pane fade show active" id="maps-world" role="tabpanel">
+      {% for m in map_levels %}
+        {% if m.type == 'world' or m.type == 'continent' %}
+        <div class="gcf-dash-map-section mb-4" data-level="{{ m.type }}"></div>
+        {% endif %}
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    {% if show_countries_subtab %}
+    <div class="tab-pane fade{% if not show_world_subtab %} show active{% endif %}"
+         id="maps-countries" role="tabpanel">
+      <h6 class="mb-2">{% trans "Countries with finds" %}</h6>
+      <p class="text-muted small mb-2">
+        {% trans "Click a row to open that country's tab." %}
+      </p>
+      <table class="table table-sm table-hover gcf-dash-country-table" style="max-width:640px">
+        <thead>
+          <tr>
+            <th style="width:1.6em"></th>
+            <th>{% trans "Country" %}</th>
+            <th class="text-end" style="width:6rem">{% trans "Finds" %}</th>
+            <th class="text-end" style="width:5rem">%</th>
+            <th style="width:1.2em"></th>
+          </tr>
+        </thead>
+        <tbody>
+        {% for cm in country_maps %}
+          <tr style="cursor:pointer" data-iso="{{ cm.iso }}" class="gcf-country-row">
+            <td><span class="fi fi-{{ cm.iso|lower }}"></span></td>
+            <td>{{ cm.name }}</td>
+            <td class="text-end">{{ cm.finds }}</td>
+            <td class="text-end text-muted">{{ cm.pct|floatformat:2 }}%</td>
+            <td class="text-muted">›</td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% for cm in country_maps %}
+    <div class="tab-pane fade" id="maps-c-{{ cm.iso|lower }}" role="tabpanel"
+         data-iso="{{ cm.iso }}"
+         data-show-region="{{ cm.show_region|yesno:'1,0' }}"
+         data-show-county="{{ cm.show_county|yesno:'1,0' }}"
+         data-region-downloaded="{{ cm.downloaded|yesno:'1,0' }}"
+         data-county-downloaded="{{ cm.county_downloaded|yesno:'1,0' }}">
+      <h5 class="d-flex align-items-center gap-2 mb-3">
+        <span class="fi fi-{{ cm.iso|lower }}"></span> {{ cm.name }}
+      </h5>
+      <div class="gcf-dash-country-pane"></div>
+    </div>
+    {% endfor %}
+    {% endif %}
+  </div>
+
+  {{ country_counts|json_script:"dashboard-country-counts" }}
+  {{ all_country_counts|json_script:"dashboard-all-country-counts" }}
+  {{ country_maps|json_script:"dashboard-country-maps" }}
+{% else %}
+  <p class="text-muted">
+    {% trans "No maps are enabled." %}
+    <a href="{{ maps_settings_url }}">{% trans "Settings → Dashboard" %}</a>.
+  </p>
+{% endif %}

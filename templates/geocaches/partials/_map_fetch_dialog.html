@@ -1,0 +1,190 @@
+{% comment %}
+Map fetch dialog — Bootstrap modal with two pages:
+  1. Preview (light API search, ghost markers)
+  2. Sync (full API fetch, save to DB)
+{% endcomment %}
+{% load i18n %}
+
+<div class="modal fade" id="mapFetchDialog" tabindex="-1" aria-labelledby="mapFetchDialogLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+
+      {% comment %} ── Preview page ── {% endcomment %}
+      <div id="fetch-page-preview">
+        <div class="modal-header">
+          <h6 class="modal-title" id="mapFetchDialogLabel">{% trans "Preview API caches" %}</h6>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          {% comment %} Mode toggle: drawn area vs attribute criteria {% endcomment %}
+          <div class="btn-group btn-group-sm w-100 mb-2" role="group" aria-label="{% trans 'Fetch mode' %}">
+            <input type="radio" class="btn-check" name="fetch-mode" id="fetch-mode-area"
+                   value="area" autocomplete="off" checked onchange="gcfFetchSetMode('area')">
+            <label class="btn btn-outline-primary" for="fetch-mode-area">{% trans "By area" %}</label>
+            <input type="radio" class="btn-check" name="fetch-mode" id="fetch-mode-criteria"
+                   value="criteria" autocomplete="off" onchange="gcfFetchSetMode('criteria')">
+            <label class="btn btn-outline-primary" for="fetch-mode-criteria">{% trans "By criteria" %}</label>
+          </div>
+
+          <p class="text-muted small mb-2" id="fetch-intro-area">
+            {% trans "Search the drawn area for caches without saving them." %}
+          </p>
+          <p class="text-muted small mb-2" id="fetch-intro-criteria" style="display:none">
+            {% trans "Search by owner, type and other attributes — no drawing needed." %}
+          </p>
+
+          <div class="mb-3">
+            <label class="form-label fw-semibold small">{% trans "Providers" %}</label>
+            <div id="fetch-providers"></div>
+            <div id="fetch-no-providers" class="text-muted small" style="display:none">
+              {% trans "No platform accounts configured. Add them in Settings → Accounts." %}
+            </div>
+          </div>
+
+          {% comment %} Criteria fields — shown only in "By criteria" mode {% endcomment %}
+          <div id="fetch-criteria-fields" class="mb-3" style="display:none">
+            <div class="row g-2">
+              <div class="col-12">
+                <label class="form-label small mb-1" for="crit-owner">{% trans "Hidden by (owner)" %}</label>
+                <input type="text" class="form-control form-control-sm" id="crit-owner"
+                       placeholder="{% trans 'username' %}" autocomplete="off">
+              </div>
+              <div class="col-12">
+                <label class="form-label small mb-1" for="crit-types">{% trans "Cache type" %}</label>
+                <select multiple class="form-select form-select-sm" id="crit-types" size="6">
+                  {% for value, label in cache_types %}
+                    <option value="{{ value }}">{{ label }}</option>
+                  {% endfor %}
+                </select>
+                <div class="form-text">{% trans "Empty = any type. Ctrl/Cmd-click to pick several." %}</div>
+              </div>
+              <div class="col-6">
+                <label class="form-label small mb-1">{% trans "Difficulty" %}</label>
+                <div class="d-flex align-items-center gap-1">
+                  <input type="number" class="form-control form-control-sm" id="crit-d-min" min="1" max="5" step="0.5" value="1">
+                  <span class="text-muted">–</span>
+                  <input type="number" class="form-control form-control-sm" id="crit-d-max" min="1" max="5" step="0.5" value="5">
+                </div>
+              </div>
+              <div class="col-6">
+                <label class="form-label small mb-1">{% trans "Terrain" %}</label>
+                <div class="d-flex align-items-center gap-1">
+                  <input type="number" class="form-control form-control-sm" id="crit-t-min" min="1" max="5" step="0.5" value="1">
+                  <span class="text-muted">–</span>
+                  <input type="number" class="form-control form-control-sm" id="crit-t-max" min="1" max="5" step="0.5" value="5">
+                </div>
+              </div>
+              <div class="col-6">
+                <label class="form-label small mb-1" for="crit-sizes">{% trans "Size" %}</label>
+                <select multiple class="form-select form-select-sm" id="crit-sizes" size="4">
+                  {% for value, label in cache_sizes %}
+                    <option value="{{ value }}">{{ label }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div class="col-6">
+                <label class="form-label small mb-1" for="crit-min-fav">{% trans "Min. favorite points" %}</label>
+                <input type="number" class="form-control form-control-sm" id="crit-min-fav" min="0" step="1" value="0">
+                <div class="form-text" id="crit-min-fav-note" style="display:none">{% trans "GC only" %}</div>
+              </div>
+              <div class="col-12">
+                <label class="form-label small mb-1" for="crit-name">{% trans "Name contains" %}</label>
+                <input type="text" class="form-control form-control-sm" id="crit-name" autocomplete="off">
+              </div>
+              <div class="col-12">
+                <label class="form-label small mb-1" for="crit-found-status">{% trans "Found status" %}</label>
+                <select class="form-select form-select-sm" id="crit-found-status">
+                  <option value="either">{% trans "Any" %}</option>
+                  <option value="notfound_only">{% trans "Not found by me" %}</option>
+                  <option value="found_only">{% trans "Found by me" %}</option>
+                </select>
+                <div class="form-text" id="crit-found-status-note" style="display:none">
+                  {% trans "OpenCaching needs OAuth (Level 3)" %}
+                </div>
+              </div>
+              <div class="col-12">
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" id="crit-limit-view">
+                  <label class="form-check-label small" for="crit-limit-view">{% trans "Limit to current map view" %}</label>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-semibold small">{% trans "Daily quota" %}</label>
+            <div id="fetch-quota" class="small text-muted">{% trans "Loading..." %}</div>
+          </div>
+
+          <div id="fetch-region-summary" class="small text-muted mb-2"></div>
+
+          {% comment %} Progress area {% endcomment %}
+          <div id="fetch-preview-progress" style="display:none">
+            <div class="progress mb-1" style="height:6px">
+              <div class="progress-bar" id="fetch-preview-bar" style="width:0%"></div>
+            </div>
+            <div class="small text-muted" id="fetch-preview-phase"></div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">{% trans "Cancel" %}</button>
+          <button type="button" class="btn btn-sm btn-primary" id="fetch-preview-btn" onclick="gcfSubmitPreview()">
+            {% trans "Preview" %}
+          </button>
+        </div>
+      </div>
+
+      {% comment %} ── Sync page ── {% endcomment %}
+      <div id="fetch-page-sync" style="display:none">
+        <div class="modal-header">
+          <h6 class="modal-title">{% trans "Sync caches to database" %}</h6>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div id="fetch-sync-summary" class="small mb-3"></div>
+
+          <div class="mb-2">
+            <label for="fetch-tags" class="form-label fw-semibold small">{% trans "Tags (comma-separated)" %}</label>
+            <input type="text" class="form-control form-control-sm" id="fetch-tags"
+                   placeholder="{% trans 'e.g. trip-2026, new-finds' %}">
+            <div id="fetch-tag-suggestions" class="mt-1"></div>
+          </div>
+
+          <div class="row mb-2">
+            <div class="col-6">
+              <label for="fetch-log-count" class="form-label fw-semibold small">{% trans "Logs per cache" %}</label>
+              <input type="number" class="form-control form-control-sm" id="fetch-log-count"
+                     value="0" min="0" max="100">
+            </div>
+            <div class="col-6 d-flex align-items-end">
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="fetch-own-logs" checked>
+                <label class="form-check-label small" for="fetch-own-logs">{% trans "Include my own logs" %}</label>
+              </div>
+            </div>
+          </div>
+
+          <div class="mb-2">
+            <label class="form-label fw-semibold small">{% trans "Full-mode quota" %}</label>
+            <div id="fetch-sync-quota" class="small text-muted">{% trans "Loading..." %}</div>
+          </div>
+
+          {% comment %} Progress area {% endcomment %}
+          <div id="fetch-sync-progress" style="display:none">
+            <div class="progress mb-1" style="height:6px">
+              <div class="progress-bar" id="fetch-sync-bar" style="width:0%"></div>
+            </div>
+            <div class="small text-muted" id="fetch-sync-phase"></div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-sm btn-secondary" onclick="gcfFetchShowPage('preview')">{% trans "Back" %}</button>
+          <button type="button" class="btn btn-sm btn-success" id="fetch-sync-btn" onclick="gcfSubmitSync()">
+            {% trans "Sync" %}
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>

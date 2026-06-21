@@ -1,0 +1,45 @@
+{% load i18n %}
+{% for pq in pqs %}
+<tr data-ref="{{ pq.referenceCode }}" data-name="{{ pq.name|escapejs }}">
+  <td>
+    <input type="checkbox" class="form-check-input pq-row-check" name="selected"
+           value="{{ pq.referenceCode }}">
+    <input type="hidden" name="name_{{ pq.referenceCode }}" value="{{ pq.name }}">
+    <input type="hidden" name="guid_{{ pq.referenceCode }}" value="{{ pq.guid }}">
+    <input type="hidden" name="del_{{ pq.referenceCode }}" value="{{ pq.delete_id }}">
+  </td>
+  <td>{{ pq.name }}</td>
+  <td class="text-end">{{ pq.count|default:"—" }}</td>
+  <td class="pq-last-gen text-nowrap">
+    {% if pq.local_time %}{{ pq.local_time }}{% else %}<span class="text-muted">—</span>{% endif %}
+  </td>
+  <td class="pq-server-gen text-nowrap">
+    {% if pq.server_time %}{{ pq.server_time }}{% else %}<span class="text-muted">—</span>{% endif %}
+  </td>
+  <td class="pq-status text-nowrap">
+    {% if pq.is_deleted %}
+      <span class="badge bg-danger" title="{% trans 'Deleted on geocaching.com — still downloadable for a few days' %}">{% trans "Deleted" %}</span>
+    {% endif %}
+    {% if pq.already_ran and pq.lastUpdatedDateUtc %}
+      <span class="badge bg-info">{% trans "Ready (fresh)" %}</span>
+    {% elif pq.already_ran %}
+      <span class="badge bg-info">{% trans "Ran today" %}</span>
+    {% elif pq.already_sched %}
+      <span class="badge bg-warning text-dark">{% trans "Scheduled" %}</span>
+    {% elif pq.lastUpdatedDateUtc %}
+      <span class="badge bg-success">{% trans "Ready" %}</span>
+    {% else %}
+      <span class="badge bg-secondary">{% trans "Not generated" %}</span>
+    {% endif %}
+    {% if pq.imported %}
+      <span class="badge" style="background-color:#4a86c8">{% trans "Imported" %}</span>
+    {% endif %}
+  </td>
+  <td>
+    <input type="text" name="tags_{{ pq.referenceCode }}"
+           class="form-control form-control-sm" style="min-width:120px"
+           placeholder="{% trans 'tag1, tag2' %}"
+           value="{{ pq.saved_tags }}">
+  </td>
+</tr>
+{% endfor %}

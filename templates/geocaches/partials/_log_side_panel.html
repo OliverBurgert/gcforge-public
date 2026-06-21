@@ -1,0 +1,20 @@
+{% load cache_tags i18n %}
+{% comment %}
+Slide-in side panel for composing a new log on the cache detail page.
+Replaces the old _log_submit_modal.html. Mounts on the left so the cache
+detail content (including notes and recent logs) stays readable on the
+right while the user writes — mirrors the bulk-logging layout.
+{% endcomment %}
+<div class="offcanvas offcanvas-start" tabindex="-1" id="newLogPanel"
+     aria-labelledby="newLogPanelLabel" style="width:640px;max-width:95vw">
+  <div class="offcanvas-header py-2">
+    <h6 class="offcanvas-title mb-0" id="newLogPanelLabel">
+      {% blocktrans with name=cache.name %}New log for {{ name }}{% endblocktrans %}
+    </h6>
+    <button type="button" class="btn-close" data-bs-dismiss="offcanvas"
+            aria-label="{% trans 'Close' %}" style="font-size:.7rem"></button>
+  </div>
+  <div class="offcanvas-body py-2">
+    {% include "geocaches/partials/_log_editor_pane.html" with mode="single" %}
+  </div>
+</div>

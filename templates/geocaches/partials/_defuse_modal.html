@@ -1,0 +1,65 @@
+{% load i18n %}
+<div class="modal fade" id="defuseModal" tabindex="-1" aria-labelledby="defuseModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header py-2">
+        <h6 class="modal-title" id="defuseModalLabel">{% blocktrans with gc=cache.gc_code oc=cache.oc_code %}De-fuse {{ gc }} / {{ oc }}{% endblocktrans %}</h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{% trans 'Close' %}" style="font-size:.7rem"></button>
+      </div>
+      <div class="modal-body small">
+
+        <p>{% trans "This will separate the fused record back into two independent caches:" %}</p>
+        <ul class="mb-2">
+          <li>{% blocktrans with gc=cache.gc_code %}<strong>{{ gc }}</strong> — full GC refresh from API{% endblocktrans %}</li>
+          <li>{% blocktrans with oc=cache.oc_code %}<strong>{{ oc }}</strong> — re-imported as new standalone OC record{% endblocktrans %}</li>
+        </ul>
+
+        {% if defuse_has_corrected or defuse_has_notes %}
+        <div class="alert alert-warning py-2 mb-2">
+          <strong>{% trans "Data loss warning" %}</strong><br>
+          {% if defuse_has_corrected %}
+          {% blocktrans %}This cache has <strong>corrected coordinates</strong>.
+          If they originated from the OC side they will not survive the de-fuse.
+          Write them down now and re-enter manually afterwards.{% endblocktrans %}<br>
+          {% endif %}
+          {% if defuse_has_notes %}
+          {% blocktrans %}This cache has <strong>notes</strong>.
+          Notes that originated from the OC cache will not survive.
+          Copy any important notes before proceeding.{% endblocktrans %}
+          {% endif %}
+        </div>
+        {% endif %}
+
+        <p class="mb-1">{% trans "API access:" %}</p>
+        <ul class="mb-2">
+          <li>{% trans "GC API:" %}
+            {% if defuse_gc_ok %}
+            <span class="text-success">{% trans "available" %}</span>
+            {% else %}
+            <span class="text-danger">{% trans "no tokens — de-fuse will be blocked" %}</span>
+            {% endif %}
+          </li>
+          <li>{% blocktrans with platform=cache.oc_platform %}OC API ({{ platform }}):{% endblocktrans %}
+            {% if defuse_oc_ok %}
+            <span class="text-success">{% trans "available" %}</span>
+            {% else %}
+            <span class="text-danger">{% trans "no OAuth tokens — de-fuse will be blocked" %}</span>
+            {% endif %}
+          </li>
+        </ul>
+
+        <p class="text-muted mb-0">{% trans "All attributes and OC-sourced logs will be removed and re-fetched. Corrected coordinates and notes on the GC side are preserved." %}</p>
+      </div>
+      <div class="modal-footer py-1">
+        <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">{% trans "Cancel" %}</button>
+        <form method="post" action="{% url 'geocaches:defuse' cache.display_code %}" class="d-inline">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-sm btn-warning"
+                  {% if not defuse_gc_ok or not defuse_oc_ok %}disabled title="{% trans 'API credentials missing' %}"{% endif %}>
+            {% trans "De-fuse" %}
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>

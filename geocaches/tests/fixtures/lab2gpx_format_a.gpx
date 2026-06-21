@@ -1,0 +1,148 @@
+<?xml version='1.0' encoding='utf-8'?>
+<gpx xmlns="http://www.topografix.com/GPX/1/0" xmlns:groundspeak="http://www.groundspeak.com/cache/1/0/1" xmlns:gsak="http://www.gsak.net/xmlv1/6" xmlns:lab2gpx="https://lab2gpx.gcutils.de/ns/lab2gpx/1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="1.0" creator="Lab2Gpx" xsi:schemaLocation="http://www.topografix.com/GPX/1/0 http://www.topografix.com/GPX/1/0/gpx.xsd http://www.groundspeak.com/cache/1/0/1 http://www.groundspeak.com/cache/1/0/1/cache.xsd">
+    <name>Adventure Labs</name>
+                                                                                                                                                    <wpt lat="52.521783333333" lon="13.34825">
+                        <time>2022-11-17T18:40:45.747</time>
+                        <name>LC28NG-1</name>
+                        <desc>Moabiter Brücke</desc>
+                        <url>https://labs.geocaching.com/goto/6bb169ae-ea0a-466d-9dff-d95b8af05097</url>
+                        <urlname>S1 Moabit am Spreebogen</urlname>
+                        <sym>Geocache</sym>
+                        <type>Geocache|Lab Cache</type>
+                        <gsak:wptExtension>
+                            <gsak:Code>LC28NG-1</gsak:Code>
+                            <gsak:IsPremium>false</gsak:IsPremium>
+                            <gsak:FavPoints>0</gsak:FavPoints>
+                            <gsak:UserFlag>false</gsak:UserFlag>
+                            <gsak:Guid>7d3bc05c-6748-4504-aa86-af01d120f236</gsak:Guid>
+                            <gsak:DNF>false</gsak:DNF>
+                            <gsak:FTF>false</gsak:FTF>
+                                                    </gsak:wptExtension>
+                        <lab2gpx:adventureLab>
+                            <lab2gpx:uuid>4cef8a3f-ec20-472a-8de2-9b4859bc6526</lab2gpx:uuid>
+                            <lab2gpx:stagesTotal>5</lab2gpx:stagesTotal>
+                            <lab2gpx:stagesCompleted>0</lab2gpx:stagesCompleted>
+                            <lab2gpx:themes>History,Neighborhood,Sightseeing</lab2gpx:themes>
+                            <lab2gpx:bonus />
+                        </lab2gpx:adventureLab>
+                        <groundspeak:cache id="9149072" available="True" archived="False">
+                            <groundspeak:name>Moabit am Spreebogen : S1 Moabiter Brücke</groundspeak:name>
+                            <groundspeak:placed_by>DoriSingha</groundspeak:placed_by>
+                            <groundspeak:owner>DoriSingha</groundspeak:owner>
+                            <groundspeak:type>Lab Cache</groundspeak:type>
+                            <groundspeak:container>Virtual</groundspeak:container>
+                            <groundspeak:attributes />
+                            <groundspeak:difficulty>1</groundspeak:difficulty>
+                            <groundspeak:terrain>1</groundspeak:terrain>
+                            <groundspeak:country />
+                            <groundspeak:state />
+                            <groundspeak:short_description html="True" />
+                            <groundspeak:long_description html="True">
+                                                                                                                                        &lt;h3&gt;Moabit am Spreebogen&lt;/h3&gt;
+    &lt;h4&gt;Moabiter Brücke&lt;/h4&gt;
+
+
+&lt;p&gt;&lt;a href="https://labs.geocaching.com/goto/6bb169ae-ea0a-466d-9dff-d95b8af05097" target="_blank"&gt;https://labs.geocaching.com/goto/6bb169ae-ea0a-466d-9dff-d95b8af05097&lt;/a&gt;&lt;/p&gt;
+
+    &lt;p&gt;Radius: 25m&lt;/p&gt;
+
+    &lt;p&gt;Stages: 5&lt;/p&gt;
+
+
+    &lt;p&gt;Kind of question:
+                    single
+            &lt;/p&gt;
+    &lt;p&gt;Question:&lt;br /&gt;Welcher Ort und welche Telefonnummer stehen am Fuß der Laterne?&lt;/p&gt;
+
+    &lt;hr /&gt;
+    &lt;h5&gt;Waypoint Description&lt;/h5&gt;
+    &lt;p&gt;&lt;img src="https://gsmediadata.blob.core.windows.net/mediacontainer/07a5de3a-0ea6-4b86-9d81-906e555a4571" /&gt;&lt;/p&gt;
+    &lt;p&gt;Die Moabiter Brücke ist wegen der Bärenskulpturen auch als Bärenbrücke bekannt. Bereits 1821 gab es hier eine Holzbrücke, seit 1894 diese mit rheinischer Basaltlava verkleidete Steinbrücke. 
+
+Auf und an der Brücke stehen mehrere dreiarmige Laternen. &lt;/p&gt;
+
+    &lt;hr /&gt;
+    &lt;h5&gt;Adventure Lab Description&lt;/h5&gt;
+    &lt;p&gt;&lt;img src="https://gsmediadata.blob.core.windows.net/mediacontainer/402835e3-c251-43f3-af46-7ed1bc332033" /&gt;&lt;/p&gt;
+    &lt;p&gt;Die Spree entspringt im Lausitzer Bergland nahe der Grenze zu Tschechien aus drei Quellen und mündet nach ca. 400 km in Spandau in die Havel. Durch Berlin fließt sie ca. 44 km -- teilweise in ausgeprägten Bögen, wie hier zwischen Moabit (nördlich) und dem Hansaviertel (südlich).&lt;/p&gt;
+
+                                    
+                            </groundspeak:long_description>
+                            <groundspeak:encoded_hints />
+                            <groundspeak:logs />
+                            <groundspeak:travelbugs />
+                        </groundspeak:cache>
+                    </wpt>
+                                                                                                                                                    <wpt lat="52.522616666667" lon="13.34765">
+                        <time>2022-11-17T18:40:45.747</time>
+                        <name>LC28NG-2</name>
+                        <desc>Mauerdenkmal</desc>
+                        <url>https://labs.geocaching.com/goto/6bb169ae-ea0a-466d-9dff-d95b8af05097</url>
+                        <urlname>S2 Moabit am Spreebogen</urlname>
+                        <sym>Geocache</sym>
+                        <type>Geocache|Lab Cache</type>
+                        <gsak:wptExtension>
+                            <gsak:Code>LC28NG-2</gsak:Code>
+                            <gsak:IsPremium>false</gsak:IsPremium>
+                            <gsak:FavPoints>0</gsak:FavPoints>
+                            <gsak:UserFlag>false</gsak:UserFlag>
+                            <gsak:Guid>452ada04-ed07-44ff-8cbe-4f269d409460</gsak:Guid>
+                            <gsak:DNF>false</gsak:DNF>
+                            <gsak:FTF>false</gsak:FTF>
+                                                    </gsak:wptExtension>
+                        <lab2gpx:adventureLab>
+                            <lab2gpx:uuid>4cef8a3f-ec20-472a-8de2-9b4859bc6526</lab2gpx:uuid>
+                            <lab2gpx:stagesTotal>5</lab2gpx:stagesTotal>
+                            <lab2gpx:stagesCompleted>0</lab2gpx:stagesCompleted>
+                            <lab2gpx:themes>History,Neighborhood,Sightseeing</lab2gpx:themes>
+                            <lab2gpx:bonus />
+                        </lab2gpx:adventureLab>
+                        <groundspeak:cache id="9149073" available="True" archived="False">
+                            <groundspeak:name>Moabit am Spreebogen : S2 Mauerdenkmal</groundspeak:name>
+                            <groundspeak:placed_by>DoriSingha</groundspeak:placed_by>
+                            <groundspeak:owner>DoriSingha</groundspeak:owner>
+                            <groundspeak:type>Lab Cache</groundspeak:type>
+                            <groundspeak:container>Virtual</groundspeak:container>
+                            <groundspeak:attributes />
+                            <groundspeak:difficulty>1</groundspeak:difficulty>
+                            <groundspeak:terrain>1</groundspeak:terrain>
+                            <groundspeak:country />
+                            <groundspeak:state />
+                            <groundspeak:short_description html="True" />
+                            <groundspeak:long_description html="True">
+                                                                                                                                        &lt;h3&gt;Moabit am Spreebogen&lt;/h3&gt;
+    &lt;h4&gt;Mauerdenkmal&lt;/h4&gt;
+
+
+&lt;p&gt;&lt;a href="https://labs.geocaching.com/goto/6bb169ae-ea0a-466d-9dff-d95b8af05097" target="_blank"&gt;https://labs.geocaching.com/goto/6bb169ae-ea0a-466d-9dff-d95b8af05097&lt;/a&gt;&lt;/p&gt;
+
+    &lt;p&gt;Radius: 30m&lt;/p&gt;
+
+    &lt;p&gt;Stages: 5&lt;/p&gt;
+
+
+    &lt;p&gt;Kind of question:
+                    single
+            &lt;/p&gt;
+    &lt;p&gt;Question:&lt;br /&gt;Welches Wort steht auf dem blauen Schild? Welche Telefonnummer steht auf dem weißen Schild?&lt;/p&gt;
+
+    &lt;hr /&gt;
+    &lt;h5&gt;Waypoint Description&lt;/h5&gt;
+    &lt;p&gt;&lt;img src="https://gsmediadata.blob.core.windows.net/mediacontainer/8913507f-b2d4-46cc-a3dc-71d025ff73b0" /&gt;&lt;/p&gt;
+    &lt;p&gt;Bei diesen drei Mauersegmenten beginnt die Straße der Erinnerung mit der Skulptur &amp;quot;Wir sind das Volk&amp;quot; (2009 von Rolf Biebl). Die Straße der Erinnerung besteht aus mehreren Denkmalen, mit denen die Ernst Freiberger-Stiftung &amp;quot;Helden ohne Degen&amp;quot; ehrt. 
+
+Zwischen der Skulptur und den Mauersegmenten hängen an einem Laternenmast mehrere Schilder. &lt;/p&gt;
+
+    &lt;hr /&gt;
+    &lt;h5&gt;Adventure Lab Description&lt;/h5&gt;
+    &lt;p&gt;&lt;img src="https://gsmediadata.blob.core.windows.net/mediacontainer/402835e3-c251-43f3-af46-7ed1bc332033" /&gt;&lt;/p&gt;
+    &lt;p&gt;Die Spree entspringt im Lausitzer Bergland nahe der Grenze zu Tschechien aus drei Quellen und mündet nach ca. 400 km in Spandau in die Havel. Durch Berlin fließt sie ca. 44 km -- teilweise in ausgeprägten Bögen, wie hier zwischen Moabit (nördlich) und dem Hansaviertel (südlich).&lt;/p&gt;
+
+                                    
+                            </groundspeak:long_description>
+                            <groundspeak:encoded_hints />
+                            <groundspeak:logs />
+                            <groundspeak:travelbugs />
+                        </groundspeak:cache>
+                    </wpt>
+                                                                                                                                                    </gpx>

@@ -1,0 +1,168 @@
+<?xml version='1.0' encoding='utf-8'?>
+<gpx xmlns="http://www.topografix.com/GPX/1/0" xmlns:groundspeak="http://www.groundspeak.com/cache/1/0/1" xmlns:gsak="http://www.gsak.net/xmlv1/6" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="1.0" creator="Lab2Gpx" xsi:schemaLocation="http://www.topografix.com/GPX/1/0 http://www.topografix.com/GPX/1/0/gpx.xsd http://www.groundspeak.com/cache/1/0/1 http://www.groundspeak.com/cache/1/0/1/cache.xsd">
+    <name>Adventure Labs</name>
+    <desc>(HasChildren)</desc>
+                            <wpt lat="52.521633333333" lon="13.348333333333">
+            <time>2022-11-17T18:40:45.747</time>
+            <name>LC28NG</name>
+            <desc>Moabit am Spreebogen</desc>
+            <url>https://labs.geocaching.com/goto/6bb169ae-ea0a-466d-9dff-d95b8af05097</url>
+            <urlname>Moabit am Spreebogen</urlname>
+            <sym>Geocache</sym>
+            <type>Geocache|Lab Cache</type>
+            <gsak:wptExtension>
+                <gsak:Code>LC28NG</gsak:Code>
+                <gsak:IsPremium>false</gsak:IsPremium>
+                <gsak:FavPoints>0</gsak:FavPoints>
+                <gsak:UserFlag>false</gsak:UserFlag>
+                <gsak:Guid>4cef8a3f-ec20-472a-8de2-9b4859bc6526</gsak:Guid>
+                <gsak:DNF>false</gsak:DNF>
+                <gsak:FTF>false</gsak:FTF>
+                            </gsak:wptExtension>
+            <groundspeak:cache available="True" archived="False">
+                <groundspeak:name>Moabit am Spreebogen</groundspeak:name>
+                <groundspeak:placed_by>DoriSingha</groundspeak:placed_by>
+                <groundspeak:owner>DoriSingha</groundspeak:owner>
+                <groundspeak:type>Lab Cache</groundspeak:type>
+                <groundspeak:container>Virtual</groundspeak:container>
+                <groundspeak:attributes />
+                <groundspeak:difficulty>1</groundspeak:difficulty>
+                <groundspeak:terrain>1</groundspeak:terrain>
+                <groundspeak:country />
+                <groundspeak:state />
+                <groundspeak:short_description html="True" />
+                <groundspeak:long_description html="True">
+                                                                                        &lt;h3&gt;Moabit am Spreebogen&lt;/h3&gt;
+
+    
+    &lt;p&gt;&lt;a href="https://labs.geocaching.com/goto/6bb169ae-ea0a-466d-9dff-d95b8af05097" target="_blank"&gt;https://labs.geocaching.com/goto/6bb169ae-ea0a-466d-9dff-d95b8af05097&lt;/a&gt;&lt;/p&gt;
+
+            &lt;p&gt;Stages: 5&lt;/p&gt;
+    
+    
+            &lt;hr /&gt;
+        &lt;h5&gt;Adventure Lab Description&lt;/h5&gt;
+        &lt;p&gt;&lt;img src="https://gsmediadata.blob.core.windows.net/mediacontainer/402835e3-c251-43f3-af46-7ed1bc332033" /&gt;&lt;/p&gt;
+        &lt;p&gt;Die Spree entspringt im Lausitzer Bergland nahe der Grenze zu Tschechien aus drei Quellen und mündet nach ca. 400 km in Spandau in die Havel. Durch Berlin fließt sie ca. 44 km -- teilweise in ausgeprägten Bögen, wie hier zwischen Moabit (nördlich) und dem Hansaviertel (südlich).&lt;/p&gt;
+    
+                                    &lt;hr /&gt;
+        &lt;h4&gt;S1 Moabiter Brücke&lt;/h4&gt;
+
+                    &lt;p&gt;Radius: 25m&lt;/p&gt;
+        
+                    &lt;p&gt;Kind of question:
+                                    single
+                            &lt;/p&gt;
+            &lt;p&gt;Question:&lt;br /&gt;Welcher Ort und welche Telefonnummer stehen am Fuß der Laterne?&lt;/p&gt;
+        
+                    &lt;hr /&gt;
+            &lt;h5&gt;Waypoint Description&lt;/h5&gt;
+            &lt;p&gt;&lt;img src="https://gsmediadata.blob.core.windows.net/mediacontainer/07a5de3a-0ea6-4b86-9d81-906e555a4571" /&gt;&lt;/p&gt;
+            &lt;p&gt;Die Moabiter Brücke ist wegen der Bärenskulpturen auch als Bärenbrücke bekannt. Bereits 1821 gab es hier eine Holzbrücke, seit 1894 diese mit rheinischer Basaltlava verkleidete Steinbrücke. 
+
+Auf und an der Brücke stehen mehrere dreiarmige Laternen. &lt;/p&gt;
+        
+        
+                                    &lt;hr /&gt;
+        &lt;h4&gt;S2 Mauerdenkmal&lt;/h4&gt;
+
+                    &lt;p&gt;Radius: 30m&lt;/p&gt;
+        
+                    &lt;p&gt;Kind of question:
+                                    single
+                            &lt;/p&gt;
+            &lt;p&gt;Question:&lt;br /&gt;Welches Wort steht auf dem blauen Schild? Welche Telefonnummer steht auf dem weißen Schild?&lt;/p&gt;
+        
+                    &lt;hr /&gt;
+            &lt;h5&gt;Waypoint Description&lt;/h5&gt;
+            &lt;p&gt;&lt;img src="https://gsmediadata.blob.core.windows.net/mediacontainer/8913507f-b2d4-46cc-a3dc-71d025ff73b0" /&gt;&lt;/p&gt;
+            &lt;p&gt;Bei diesen drei Mauersegmenten beginnt die Straße der Erinnerung mit der Skulptur &amp;quot;Wir sind das Volk&amp;quot; (2009 von Rolf Biebl). Die Straße der Erinnerung besteht aus mehreren Denkmalen, mit denen die Ernst Freiberger-Stiftung &amp;quot;Helden ohne Degen&amp;quot; ehrt. 
+
+Zwischen der Skulptur und den Mauersegmenten hängen an einem Laternenmast mehrere Schilder. &lt;/p&gt;
+        
+        
+                                    &lt;hr /&gt;
+        &lt;h4&gt;S3 Straße der Erinnerung&lt;/h4&gt;
+
+                    &lt;p&gt;Radius: 60m&lt;/p&gt;
+        
+                    &lt;p&gt;Kind of question:
+                                    single
+                            &lt;/p&gt;
+            &lt;p&gt;Question:&lt;br /&gt;Wer bezeichnete sich als &amp;quot;leidenschaftlich neugierig&amp;quot;? Und wer erwähnte &amp;quot;Zweckmäßiges&amp;quot; und &amp;quot;Schönes&amp;quot; in einem Satz? (vollständige Namen)&lt;/p&gt;
+        
+                    &lt;hr /&gt;
+            &lt;h5&gt;Waypoint Description&lt;/h5&gt;
+            &lt;p&gt;&lt;img src="https://gsmediadata.blob.core.windows.net/mediacontainer/1670cb7e-a4b0-4a80-9856-d2a63cfcc6fd" /&gt;&lt;/p&gt;
+            &lt;p&gt;Die Straße der Erinnerung ehrt Persönlichkeiten, die sich (vorrangig in der ersten Hälfte des 20. Jahrhunderts) durch herausragende wissenschaftliche Leistungen, besondere Beiträge zur künstlerischen Kultur oder durch mutiges Eintreten gegen staatliche Willkür ausgezeichnet haben. Dazu zählen unter anderem Albrecht Haushofer, Georg Elser, Käthe Kollwitz, Albert Einstein und Edith Stein. 
+An den Pfeilern, auf denen die Büsten platziert sind, ist auf Texttafeln viel zu lesen ...&lt;/p&gt;
+        
+        
+                                    &lt;hr /&gt;
+        &lt;h4&gt;S4 Spree-Bogen&lt;/h4&gt;
+
+                    &lt;p&gt;Radius: 80m&lt;/p&gt;
+        
+                    &lt;p&gt;Kind of question:
+                                    single
+                            &lt;/p&gt;
+            &lt;p&gt;Question:&lt;br /&gt;Wieviele Glasteller sind es insgesamt? (Antwort als Wort)&lt;/p&gt;
+        
+                    &lt;hr /&gt;
+            &lt;h5&gt;Waypoint Description&lt;/h5&gt;
+            &lt;p&gt;&lt;img src="https://gsmediadata.blob.core.windows.net/mediacontainer/306e540c-478a-460c-ae16-506a69465d17" /&gt;&lt;/p&gt;
+            &lt;p&gt;Auf dem ehemaligen Bolle-Gelände entstand 1992 dieses U-förmige, 15-geschossige Bürogebäude, das nach Plänen des Architektenbüros Kühn/Bergander/Bley errichtet wurde. Unter anderem beherbergte es von 1999 bis 2015 das Bundesinnenministerium. 
+Hier im &amp;quot;U&amp;quot; stehen zwei vom Landschaftsplaner Stephan Haan geschaffene Brunnen: der südliche mit einer Granitkugel, der nördliche mit mehreren Säulen aus Glastellern, über die das Wasser in das Becken rinnt.&lt;/p&gt;
+        
+        
+                                    &lt;hr /&gt;
+        &lt;h4&gt;S5 Bolle-Meierei&lt;/h4&gt;
+
+                    &lt;p&gt;Radius: 60m&lt;/p&gt;
+        
+                    &lt;p&gt;Kind of question:
+                                    single
+                            &lt;/p&gt;
+            &lt;p&gt;Question:&lt;br /&gt;Wie lautet das vierte Wort in der siebten Zeile auf der Gedenktafel? (alle Zeilen zählen)&lt;/p&gt;
+        
+                    &lt;hr /&gt;
+            &lt;h5&gt;Waypoint Description&lt;/h5&gt;
+            &lt;p&gt;&lt;img src="https://gsmediadata.blob.core.windows.net/mediacontainer/cbd187aa-6f98-4f87-918e-c791e25faac5" /&gt;&lt;/p&gt;
+            &lt;p&gt;Westlich sehen wir das langgestreckte Bolle-Gebäude, an dessen Nordende sich die Bolle-Festsäle befinden: ein ehemaliges Kino und Theater. In den 1880er Jahren hatte Carl Bolle die Immobilie gekauft und umbauen lassen, um die Unternehmenszentrale der 1879 gegründeten Meierei hierher zu verlegen. 1887 lieferte Bolle ein Zehntel des Berliner Milchverbrauchs! 
+1969 wurde die Produktion von Milchprodukten in der Moabiter Niederlassung eingestellt. 
+
+Entlang dem Gebäude gen Norden gehend entdecken wir die auf den Stufen sitzende Skulptur &amp;quot;Kinder mit Katze&amp;quot;. Nahebei befindet sich eine weiße Gedenktafel. &lt;/p&gt;
+        
+        
+                            
+                </groundspeak:long_description>
+                <groundspeak:encoded_hints />
+                <groundspeak:logs />
+                <groundspeak:travelbugs />
+            </groundspeak:cache>
+        </wpt>
+                                                                                                                                        <wpt lat="52.521783333333" lon="13.34825">
+                        <time>2022-11-17T18:40:45.747</time>
+                        <name>S128NG</name>
+                        <cmt>Welcher Ort und welche Telefonnummer stehen am Fuß der Laterne?</cmt>
+                        <url>https://labs.geocaching.com/goto/6bb169ae-ea0a-466d-9dff-d95b8af05097</url>
+                        <desc>1 Moabiter Brücke</desc>
+                        <sym>Virtual Stage</sym>
+                        <type>Waypoint|Virtual Stage</type>
+                        <gsak:wptExtension>
+                            <gsak:Parent>LC28NG</gsak:Parent>
+                        </gsak:wptExtension>
+                    </wpt>
+                                                                                                                                                    <wpt lat="52.522616666667" lon="13.34765">
+                        <time>2022-11-17T18:40:45.747</time>
+                        <name>S228NG</name>
+                        <cmt>Welches Wort steht auf dem blauen Schild? Welche Telefonnummer steht auf dem weißen Schild?</cmt>
+                        <url>https://labs.geocaching.com/goto/6bb169ae-ea0a-466d-9dff-d95b8af05097</url>
+                        <desc>2 Mauerdenkmal</desc>
+                        <sym>Virtual Stage</sym>
+                        <type>Waypoint|Virtual Stage</type>
+                        <gsak:wptExtension>
+                            <gsak:Parent>LC28NG</gsak:Parent>
+                        </gsak:wptExtension>
+                    </wpt>
+                                                                                                                                                    </gpx>

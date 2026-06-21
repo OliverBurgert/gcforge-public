@@ -1,0 +1,247 @@
+{% extends "base.html" %}
+{% load cache_tags i18n %}
+{% block title %}{% trans "Bulk Logging" %} — GCForge{% endblock %}
+
+{% block content %}
+<style>
+  #bulk-layout { display: flex; height: calc(100vh - 56px); overflow: hidden; }
+  #bulk-left  { width: 380px; min-width: 280px; display: flex; flex-direction: column; border-right: 1px solid #dee2e6; }
+  #bulk-list  { flex: 1; overflow-y: auto; min-height: 0; }
+  #bulk-editor-header { flex-shrink: 0; }
+  #bulk-editor { padding: 0.75rem; overflow-y: auto; max-height: 52vh; }
+  #bulk-right { flex: 1; overflow: hidden; }
+  #detail-frame { width: 100%; height: 100%; border: none; }
+  .note-row { cursor: pointer; border-left: 3px solid transparent; }
+  .note-row.active { border-left-color: #0d6efd; background: #eef3ff; }
+  .chip-new    { background: #6c757d; }
+  .chip-draft  { background: #0d6efd; }
+  .chip-logged { background: #198754; }
+  .chip-error  { background: #dc3545; }
+</style>
+
+<div id="bulk-layout">
+
+  {# ===== LEFT: list + editor ===== #}
+  <div id="bulk-left">
+
+    {# --- Tab bar --- #}
+    <ul class="nav nav-tabs nav-fill border-bottom px-2 pt-2 flex-shrink-0" style="font-size:.8rem">
+      <li class="nav-item">
+        <a class="nav-link py-1 {% if active_tab == 'pending' %}active{% endif %}"
+           href="?tab=pending{% if selected_note %}&note={{ selected_note.pk }}{% endif %}">
+          {% trans "Pending" %}
+          <span class="badge bg-secondary ms-1">{{ pending_notes|length }}</span>
+        </a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link py-1 {% if active_tab == 'done' %}active{% endif %}"
+           href="?tab=done{% if selected_note %}&note={{ selected_note.pk }}{% endif %}">
+          {% trans "Done" %}
+          <span class="badge bg-success ms-1">{{ done_notes|length }}</span>
+        </a>
+      </li>
+    </ul>
+
+    {# --- Note list --- #}
+    <div id="bulk-list">
+      {% if active_tab == 'pending' %}
+        {% if pending_notes %}
+        <div class="list-group list-group-flush">
+          {% for note in pending_notes %}
+          <a href="?tab=pending&note={{ note.pk }}"
+             class="list-group-item list-group-item-action note-row py-2 px-3
+                    {% if selected_note and selected_note.pk == note.pk %}active{% endif %}">
+            <div class="d-flex align-items-center justify-content-between">
+              <span class="small fw-semibold text-truncate" style="max-width:185px">
+                {{ note.geocache.display_code }}{% if not note.geocache.is_placeholder %} — {{ note.geocache.name|truncatechars:28 }}{% endif %}
+                {% if note.geocache.is_placeholder %}<span class="text-warning-emphasis" title="{% trans 'Not in database' %}">{% trans "(pending)" %}</span>{% endif %}
+              </span>
+              <span class="badge chip-{{ note.status }} text-white ms-1" style="font-size:.62rem" data-role="status-chip">{{ note.status }}</span>
+            </div>
+            <div class="d-flex align-items-center justify-content-between mt-1">
+              <span class="text-muted" style="font-size:.73rem" data-role="log-type-text">
+                {{ note.log_type }}{% if note.logged_at %} · {{ note.logged_at|date:"Y-m-d H:i" }}{% endif %}
+              </span>
+              <span class="text-muted" style="font-size:.7rem">#{{ note.auto_seq }}</span>
+            </div>
+            {% if note.status == "error" %}
+            <div class="text-danger mt-1" style="font-size:.7rem">{{ note.submit_error|truncatechars:70 }}</div>
+            {% endif %}
+          </a>
+          {% endfor %}
+        </div>
+        {% else %}
+        <div class="px-3 pt-3 text-center">
+          <p class="text-muted small mb-2">{% trans "No pending field notes." %}</p>
+          <a href="{% url 'geocaches:import_fieldnotes' %}" class="btn btn-sm btn-outline-primary">{% trans "Import field notes" %}</a>
+        </div>
+        {% endif %}
+
+      {% else %}
+        {# Done tab #}
+        {% if done_notes %}
+        <div class="list-group list-group-flush">
+          {% for note in done_notes %}
+          <a href="?tab=done&note={{ note.pk }}"
+             class="list-group-item list-group-item-action note-row py-2 px-3
+                    {% if selected_note and selected_note.pk == note.pk %}active{% endif %}">
+            <div class="d-flex align-items-center justify-content-between">
+              <span class="small fw-semibold text-truncate" style="max-width:200px">
+                {{ note.geocache.display_code }} — {{ note.geocache.name|truncatechars:28 }}
+              </span>
+              <span class="badge chip-logged text-white ms-1" style="font-size:.62rem">{% trans "logged" %}</span>
+            </div>
+            <div class="text-muted mt-1" style="font-size:.73rem">
+              {{ note.log_type }}{% if note.submitted_at %} · {{ note.submitted_at|date:"Y-m-d H:i" }}{% endif %}
+            </div>
+          </a>
+          {% endfor %}
+        </div>
+        {% else %}
+        <p class="text-muted small px-3 pt-3">{% trans "No submitted logs yet." %}</p>
+        {% endif %}
+      {% endif %}
+    </div>
+
+    {# --- Editor --- #}
+    <div id="bulk-editor-header" class="d-flex align-items-center justify-content-between px-3 py-2 flex-shrink-0"
+         style="background:#e9ecef;border-top:2px solid #adb5bd;min-height:2.5rem">
+      {% if selected_note %}
+      <strong class="small text-truncate" style="max-width:230px">
+        {{ selected_note.geocache.display_code }}{% if not selected_note.geocache.is_placeholder %} — {{ selected_note.geocache.name|truncatechars:28 }}{% else %} <span class="text-warning-emphasis fw-normal">{% trans "(pending)" %}</span>{% endif %}
+      </strong>
+      <span class="badge chip-{{ selected_note.status }} text-white ms-2" style="font-size:.65rem">{{ selected_note.status }}</span>
+      {% else %}
+      <span class="text-muted small">{% trans "No note selected" %}</span>
+      {% endif %}
+    </div>
+    <div id="bulk-editor">
+      {% if selected_note %}
+
+      <div id="bulk-submit-error" class="alert alert-danger py-1 mb-2 {% if not selected_note.submit_error %}d-none{% endif %}"
+           style="font-size:.8rem">{{ selected_note.submit_error }}</div>
+
+      {% include "geocaches/partials/_log_editor_pane.html" with mode="bulk" %}
+
+      {% else %}
+      <p class="text-muted small">{% trans "Select a field note from the list." %}</p>
+      {% endif %}
+    </div>
+
+  </div>
+
+  {# ===== RIGHT: cache detail iframe ===== #}
+  <div id="bulk-right">
+    {% if selected_note %}
+    <iframe id="detail-frame"
+            src="{% url 'geocaches:detail' selected_note.geocache.display_code %}?embed=1"
+            title="{% trans 'Cache detail' %}"></iframe>
+    {% else %}
+    <div class="d-flex align-items-center justify-content-center h-100 text-muted small">
+      {% trans "Select a field note to preview the cache." %}
+    </div>
+    {% endif %}
+  </div>
+
+</div>
+
+<script>
+(function () {
+  var pending = [{% for n in pending_notes %}{{ n.pk }}{% if not forloop.last %},{% endif %}{% endfor %}];
+  var selectedId = {% if selected_note %}{{ selected_note.pk }}{% else %}null{% endif %};
+  var tab = '{{ active_tab }}';
+  var idx = pending.indexOf(selectedId);
+
+  function noteUrl(id) {
+    return '?tab=' + tab + '&note=' + id;
+  }
+
+  var btnPrev = document.getElementById('btn-prev');
+  var btnNext = document.getElementById('btn-next');
+  if (btnPrev) {
+    if (idx > 0) { btnPrev.href = noteUrl(pending[idx - 1]); }
+    else { btnPrev.classList.add('disabled'); btnPrev.setAttribute('aria-disabled','true'); }
+  }
+  if (btnNext) {
+    if (idx >= 0 && idx < pending.length - 1) { btnNext.href = noteUrl(pending[idx + 1]); }
+    else { btnNext.classList.add('disabled'); btnNext.setAttribute('aria-disabled','true'); }
+  }
+
+  // Reload editor when the detail iframe navigates (e.g. after cache refresh)
+  // so the passphrase field appears if req_passwd changed.
+  var detailFrame = document.getElementById('detail-frame');
+  if (detailFrame) {
+    var iframeInitialLoad = true;
+    detailFrame.addEventListener('load', function () {
+      if (iframeInitialLoad) { iframeInitialLoad = false; return; }
+      window.location.reload();
+    });
+  }
+
+  // Submit-now goes through fetch so a failed submit (e.g. a wrong OC
+  // passphrase) keeps the editor open with the typed text, passphrase and the
+  // attached images intact instead of navigating to the next note. Save draft,
+  // Remove from queue and prev/next stay plain links/submits.
+  var SUBMIT_FAILED_MSG = '{% trans "Submit failed." %}';
+  var editorForm = document.querySelector('#bulk-editor form');
+  var errBox = document.getElementById('bulk-submit-error');
+  function showSubmitError(msg) {
+    if (!errBox) return;
+    errBox.textContent = msg;
+    errBox.classList.remove('d-none');
+    var ed = document.getElementById('bulk-editor');
+    if (ed) ed.scrollTop = 0;
+  }
+  if (editorForm) {
+    editorForm.addEventListener('submit', function (ev) {
+      var submitter = ev.submitter;
+      if (!submitter || submitter.value !== 'submit_now') return;
+      ev.preventDefault();
+      var fd = new FormData(editorForm);
+      fd.set('action', 'submit_now');
+      var csrfEl = editorForm.querySelector('[name=csrfmiddlewaretoken]');
+      var csrf = csrfEl ? csrfEl.value : '';
+      // NB: the form has <button name="action">, which shadows the form's
+      // built-in .action property — read the attribute string explicitly.
+      var actionUrl = editorForm.getAttribute('action');
+      submitter.disabled = true;
+      if (errBox) { errBox.classList.add('d-none'); errBox.textContent = ''; }
+      fetch(actionUrl, {
+        method: 'POST',
+        headers: { 'X-Requested-With': 'XMLHttpRequest', 'X-CSRFToken': csrf },
+        body: fd,
+        credentials: 'same-origin',
+      })
+        .then(function (r) {
+          if (!r.ok) { throw new Error('HTTP ' + r.status); }
+          return r.json();
+        })
+        .then(function (res) {
+          if (res.success) { window.location.href = res.next_url; return; }
+          submitter.disabled = false;
+          showSubmitError(res.error || SUBMIT_FAILED_MSG);
+        })
+        .catch(function (e) {
+          submitter.disabled = false;
+          showSubmitError(SUBMIT_FAILED_MSG + ' ' + e);
+        });
+    });
+  }
+
+  // Live-update log type text in the active list item when the select changes
+  var logTypeSelect = document.querySelector('select[name="log_type"]');
+  if (logTypeSelect) {
+    logTypeSelect.addEventListener('change', function () {
+      var activeRow = document.querySelector('.note-row.active');
+      if (!activeRow) return;
+      var logTypeSpan = activeRow.querySelector('[data-role="log-type-text"]');
+      if (logTypeSpan) {
+        var current = logTypeSpan.textContent;
+        var datePart = current.indexOf(' · ') >= 0 ? current.substring(current.indexOf(' · ')) : '';
+        logTypeSpan.textContent = this.value + datePart;
+      }
+    });
+  }
+})();
+</script>
+{% endblock %}

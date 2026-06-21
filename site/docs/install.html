@@ -1,0 +1,191 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Installation — GCForge</title>
+  <meta name="description" content="Install GCForge on Windows, macOS, or Linux.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/styles.css">
+  <link rel="icon" href="../img/logo.svg" type="image/svg+xml">
+</head>
+<body>
+
+  <nav class="nav">
+    <div class="nav__inner">
+      <a href="../index.html" class="nav__brand">
+        <img src="../img/logo.svg" alt="" style="border-radius: 4px;">
+        <img src="../img/logo-text.png" alt="GCForge" class="nav__brand-text">
+      </a>
+      <ul class="nav__links">
+        <li><a href="../index.html#features">Features</a></li>
+        <li><a href="../index.html#screenshots">Screenshots</a></li>
+        <li><a href="../index.html#download">Download</a></li>
+        <li><a href="getting-started.html">Docs</a></li>
+        <li><a href="https://github.com/OliverBurgert/gcforge-public" class="nav__cta">GitHub</a></li>
+      </ul>
+      <button class="nav__toggle" aria-label="Toggle navigation">☰</button>
+    </div>
+  </nav>
+
+  <div class="page-header">
+    <div class="container">
+      <h1>Installation</h1>
+      <p>Platform-specific instructions for installing GCForge.</p>
+    </div>
+  </div>
+
+  <div class="content">
+    <div class="container" style="max-width: 800px;">
+
+      <h2 id="requirements">System Requirements</h2>
+      <ul>
+        <li><strong>OS:</strong> Windows 10+, macOS 12+, or Linux (Ubuntu 22.04+, Fedora 38+)</li>
+        <li><strong>RAM:</strong> 2 GB minimum (4 GB recommended for large collections)</li>
+        <li><strong>Disk:</strong> 200 MB for the application + space for your cache database</li>
+        <li><strong>Other:</strong> No Python or other dependencies required — everything is bundled</li>
+      </ul>
+
+      <h2 id="windows">Windows</h2>
+      <ol>
+        <li>
+          Download the installer from
+          <a href="../index.html#download">GitHub Releases</a>
+          (<code>gcforge-setup-x64.exe</code>)
+        </li>
+        <li>Run the installer — click <strong>Next</strong> through the wizard</li>
+        <li>
+          Choose install location (default: <code>C:\Program Files\GCForge</code>)
+        </li>
+        <li>
+          Optionally create Desktop and Start Menu shortcuts
+        </li>
+        <li>Click <strong>Install</strong> and wait for completion</li>
+        <li>Launch from the Start Menu or Desktop shortcut</li>
+      </ol>
+
+      <h3>Windows Notes</h3>
+      <ul>
+        <li>
+          Windows SmartScreen may show a warning for unsigned executables.
+          Click <strong>More info → Run anyway</strong> to proceed.
+        </li>
+        <li>
+          The database is stored in
+          <code>%APPDATA%\gcforge\gcforge.sqlite</code>
+          by default.
+        </li>
+        <li>
+          Uninstall via <strong>Settings → Apps → GCForge</strong> or the included uninstaller.
+        </li>
+      </ul>
+
+      <h2 id="macos">macOS</h2>
+      <ol>
+        <li>
+          Download the DMG from
+          <a href="../index.html#download">GitHub Releases</a>
+          (<code>gcforge-macos-arm64.dmg</code>)
+        </li>
+        <li>Open the DMG file</li>
+        <li>Drag <strong>GCForge.app</strong> to the <strong>Applications</strong> folder</li>
+        <li>
+          On first launch, right-click the app and select <strong>Open</strong>
+          to bypass Gatekeeper (or allow in <strong>System Settings → Privacy &amp; Security</strong>)
+        </li>
+      </ol>
+
+      <h3>macOS Notes</h3>
+      <ul>
+        <li>
+          Both Intel (<code>x64</code>) and Apple Silicon (<code>arm64</code>) builds are available.
+        </li>
+        <li>
+          The database is stored in
+          <code>~/Library/Application Support/gcforge/gcforge.sqlite</code>.
+        </li>
+        <li>
+          To uninstall: drag <code>GCForge.app</code> from Applications to Trash,
+          then delete <code>~/Library/Application Support/gcforge/</code>.
+        </li>
+      </ul>
+
+      <h2 id="linux">Linux</h2>
+      <ol>
+        <li>
+          Download the AppImage from
+          <a href="../index.html#download">GitHub Releases</a>
+          (<code>gcforge-linux-x86_64.AppImage</code>)
+        </li>
+        <li>Make it executable: <code>chmod +x gcforge-linux-x86_64.AppImage</code></li>
+        <li>Run it: <code>./gcforge-linux-x86_64.AppImage</code></li>
+      </ol>
+
+      <h3>Optional: Desktop Integration</h3>
+      <p>To add a desktop entry and menu shortcut:</p>
+      <pre><code># Create a desktop entry
+mkdir -p ~/.local/share/applications
+cat > ~/.local/share/applications/gcforge.desktop &lt;&lt;'EOF'
+[Desktop Entry]
+Name=GCForge
+Comment=Geocache Management Tool
+Exec=/path/to/gcforge-linux-x86_64.AppImage
+Icon=utilities-terminal
+Type=Application
+Categories=Utility;
+EOF
+
+# Update icon cache
+update-desktop-database ~/.local/share/applications/</code></pre>
+
+      <h3>Linux Notes</h3>
+      <ul>
+        <li>
+          AppImage runs without installation — no root privileges required.
+        </li>
+        <li>
+          The database is stored in <code>~/.local/share/gcforge/gcforge.sqlite</code>.
+        </li>
+        <li>
+          If FUSE is not installed (required for AppImage), install it:
+          <code>sudo apt install fuse</code> (Debian/Ubuntu) or
+          <code>sudo dnf install fuse</code> (Fedora).
+        </li>
+      </ul>
+
+      <h2 id="from-source">Building from Source</h2>
+      <p>
+        For developers who want to run GCForge from source:
+      </p>
+      <pre><code># Clone the repository
+git clone https://github.com/OliverBurgert/gcforge-public.git
+cd gcforge
+
+# Install dependencies with uv
+uv sync
+
+# Run the development server
+uv run python manage.py migrate
+uv run python manage.py runserver 127.0.0.1:8000</code></pre>
+      <p>
+        See the project README for development setup details.
+      </p>
+
+    </div>
+  </div>
+
+  <footer class="footer">
+    <div class="container">
+      <div class="footer__bottom">
+        <span>&copy; 2026 GCForge Contributors. Open source under MIT License.</span>
+        <div class="footer__social">
+          <a href="https://github.com/OliverBurgert/gcforge-public" title="GitHub">GitHub</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+</body>
+</html>

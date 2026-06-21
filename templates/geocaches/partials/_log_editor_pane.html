@@ -1,0 +1,57 @@
+{% load cache_tags i18n %}
+{% comment %}
+Shared log compose pane. Renders the form + fields + action bar.
+Modes:
+  bulk   — used by tools/bulk_logging.html. Posts to geocaches:bulk_logging
+           with hidden note_id; offers Save draft / Submit now / Remove from
+           queue plus prev/next queue navigation (the prev/next links are
+           wired up by the bulk page's own script).
+  single — used by the cache-detail side panel. Posts to geocaches:log_submit
+           for the current cache; offers Submit log / Cancel.
+
+The form-fields include (_log_form_fields.html) is identical between modes;
+only the surrounding form attributes and action-bar buttons differ.
+{% endcomment %}
+<form method="post"
+      action="{% if mode == 'bulk' %}{% url 'geocaches:bulk_logging' %}{% else %}{% url 'geocaches:log_submit' cache.display_code %}{% endif %}"
+      enctype="multipart/form-data">
+  {% csrf_token %}
+  {% if mode == "bulk" %}
+  <input type="hidden" name="note_id" value="{{ selected_note.pk }}">
+  {% endif %}
+
+  {% include "geocaches/partials/_log_form_fields.html" %}
+
+  <div class="d-flex align-items-center gap-1 mt-2 flex-wrap">
+    {% if mode == "bulk" %}
+    <a href="#" class="btn btn-sm btn-outline-secondary" id="btn-prev">&#8592;</a>
+    <a href="#" class="btn btn-sm btn-outline-secondary" id="btn-next">&#8594;</a>
+    {% endif %}
+
+    {% if submit_platforms %}
+    <button type="button" class="btn btn-sm btn-outline-secondary {% if mode == 'bulk' %}ms-1{% endif %}"
+            onclick="gcfImageOpen()">+ {% trans "Image" %}</button>
+    {% endif %}
+
+    {% if mode == "bulk" %}
+    <button type="submit" name="action" value="save_draft"
+            class="btn btn-sm btn-outline-primary ms-1">{% trans "Save draft" %}</button>
+    <button type="submit" name="action" value="submit_now"
+            class="btn btn-sm btn-success">{% trans "Submit now" %}</button>
+    <button type="submit" name="action" value="delete"
+            class="btn btn-sm btn-outline-danger ms-auto"
+            onclick="return confirm('{% trans "Remove from pending queue? The field note will be kept." %}')">{% trans "Remove from queue" %}</button>
+    {% else %}
+    <button type="button" class="btn btn-sm btn-secondary ms-auto"
+            data-bs-dismiss="offcanvas">{% trans "Cancel" %}</button>
+    <button type="submit" class="btn btn-sm btn-primary">{% trans "Submit log" %}</button>
+    {% endif %}
+  </div>
+</form>
+
+{% if submit_platforms %}
+{% include "geocaches/partials/_log_image_dialog.html" %}
+<script>
+gcfImageSetPlatforms([{% for p in submit_platforms %}'{{ p.id }}'{% if not forloop.last %},{% endif %}{% endfor %}]);
+</script>
+{% endif %}

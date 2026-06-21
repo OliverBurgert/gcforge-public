@@ -1,0 +1,221 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Migrating from GSAK — GCForge</title>
+  <meta name="description" content="Step-by-step guide to migrate your existing GSAK data into GCForge.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/styles.css">
+  <link rel="icon" href="../img/logo.svg" type="image/svg+xml">
+</head>
+<body>
+
+  <nav class="nav">
+    <div class="nav__inner">
+      <a href="../index.html" class="nav__brand">
+        <img src="../img/logo.svg" alt="" style="border-radius: 4px;">
+        <img src="../img/logo-text.png" alt="GCForge" class="nav__brand-text">
+      </a>
+      <ul class="nav__links">
+        <li><a href="../index.html#features">Features</a></li>
+        <li><a href="../index.html#screenshots">Screenshots</a></li>
+        <li><a href="../index.html#download">Download</a></li>
+        <li><a href="getting-started.html">Docs</a></li>
+        <li><a href="https://github.com/OliverBurgert/gcforge-public" class="nav__cta">GitHub</a></li>
+      </ul>
+      <button class="nav__toggle" aria-label="Toggle navigation">☰</button>
+    </div>
+  </nav>
+
+  <div class="page-header">
+    <div class="container">
+      <h1>Migrating from GSAK</h1>
+      <p>Step-by-step guide to move your existing GSAK data into GCForge.</p>
+    </div>
+  </div>
+
+  <div class="content">
+    <div class="container" style="max-width: 800px;">
+
+      <h2 id="overview">Overview</h2>
+      <p>
+        GCForge is designed as the spiritual successor to GSAK (Geocaching Swiss Army Knife).
+        We've made migrating your data as straightforward as possible.
+      </p>
+      <p>
+        GSAK's concept of separate databases maps to <strong>tags</strong> in GCForge.
+        Each GSAK database becomes a tag, so you can still organize caches into groups
+        — but now a cache can belong to multiple groups simultaneously.
+      </p>
+
+      <h2 id="preparation">Preparation</h2>
+
+      <h3>Back Up Your GSAK Database</h3>
+      <p>
+        Before migrating, make a copy of your GSAK database file:
+      </p>
+      <ul>
+        <li>
+          Default location: <code>C:\Users\&lt;yourname&gt;\AppData\Local\GSAK\sqlite.db3</code>
+        </li>
+        <li>
+          Or find it in GSAK via <strong>File → Database Location</strong>
+        </li>
+      </ul>
+      <p>
+        Copy this file to a safe location before proceeding.
+      </p>
+
+      <h3>What Transfers</h3>
+      <table style="width: 100%; border-collapse: collapse; margin: var(--space-lg) 0;">
+        <thead>
+          <tr style="border-bottom: 2px solid var(--pebble-gray); text-align: left;">
+            <th style="padding: var(--space-sm);">GSAK Data</th>
+            <th style="padding: var(--space-sm);">GCForge Equivalent</th>
+            <th style="padding: var(--space-sm);">Notes</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr style="border-bottom: 1px solid var(--pebble-gray);">
+            <td style="padding: var(--space-sm);">Caches</td>
+            <td style="padding: var(--space-sm);">Geocache records</td>
+            <td style="padding: var(--space-sm);">All core fields</td>
+          </tr>
+          <tr style="border-bottom: 1px solid var(--pebble-gray);">
+            <td style="padding: var(--space-sm);">Database name</td>
+            <td style="padding: var(--space-sm);">Tag</td>
+            <td style="padding: var(--space-sm);">Each DB becomes a tag</td>
+          </tr>
+          <tr style="border-bottom: 1px solid var(--pebble-gray);">
+            <td style="padding: var(--space-sm);">Corrected coordinates</td>
+            <td style="padding: var(--space-sm);">Corrected coordinates</td>
+            <td style="padding: var(--space-sm);">Direct transfer</td>
+          </tr>
+          <tr style="border-bottom: 1px solid var(--pebble-gray);">
+            <td style="padding: var(--space-sm);">Logs</td>
+            <td style="padding: var(--space-sm);">Logs</td>
+            <td style="padding: var(--space-sm);">Including date, author, type</td>
+          </tr>
+          <tr style="border-bottom: 1px solid var(--pebble-gray);">
+            <td style="padding: var(--space-sm);">Waypoints</td>
+            <td style="padding: var(--space-sm);">Child waypoints</td>
+            <td style="padding: var(--space-sm);">Parking, trailhead, stages</td>
+          </tr>
+          <tr style="border-bottom: 1px solid var(--pebble-gray);">
+            <td style="padding: var(--space-sm);">User flags</td>
+            <td style="padding: var(--space-sm);">Custom tags</td>
+            <td style="padding: var(--space-sm);">Flagged → tagged</td>
+          </tr>
+          <tr style="border-bottom: 1px solid var(--pebble-gray);">
+            <td style="padding: var(--space-sm);">Notes</td>
+            <td style="padding: var(--space-sm);">Notes field</td>
+            <td style="padding: var(--space-sm);">Preserved as-is</td>
+          </tr>
+          <tr>
+            <td style="padding: var(--space-sm);">Adventure Labs (Q)</td>
+            <td style="padding: var(--space-sm);">AL parent + stages</td>
+            <td style="padding: var(--space-sm);">Stage order preserved</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>What Does NOT Transfer</h3>
+      <ul>
+        <li>GSAK-specific settings and preferences (set up fresh in GCForge)</li>
+        <li>GSAK macros (no equivalent — use GCForge's plugin system in the future)</li>
+        <li>GSAK column layouts (configure in GCForge Settings → Column Presets)</li>
+      </ul>
+
+      <h2 id="migration">Migration Steps</h2>
+
+      <h3>Step 1: Install GCForge</h3>
+      <p>
+        Follow the <a href="install.html">installation instructions</a> for your platform.
+      </p>
+
+      <h3>Step 2: Import the GSAK Database</h3>
+      <ol>
+        <li>Launch GCForge</li>
+        <li>Go to <strong>Import → GSAK Database</strong></li>
+        <li>Select your <code>sqlite.db3</code> file</li>
+        <li>Click <strong>Import</strong></li>
+        <li>Wait for the background task to complete</li>
+      </ol>
+      <p>
+        Each GSAK database you imported from will appear as a tag in GCForge.
+        Caches that were in multiple GSAK databases will have multiple tags.
+      </p>
+
+      <h3>Step 3: Set Your Location</h3>
+      <p>
+        GSAK's "center location" doesn't transfer automatically. Set it up in GCForge:
+      </p>
+      <ol>
+        <li>Go to <strong>Import → GSAK locations</strong></li>
+        <li>Go to <strong>Settings → Reference Points</strong></li>
+        <li>Add your home location coordinates</li>
+        <li>Assign center points to tags for quick auto-selection</li>
+        <li>Set one as the default reference point</li>
+      </ol>
+
+      <h3>Step 4: Update Your Finds (Optional)</h3>
+
+      <ol>
+        <li>Download a "All Your Finds" Pocket Query from geocaching.com</li>
+        <li>Import the GPX in GCForge (merges with existing caches)</li>
+        <li>Tag these caches as "Found" if desired - but they get an automated flag!</li>
+      </ol>
+
+      <h3>Step 5: Review &amp; Organize</h3>
+      <ul>
+        <li>Check that all your caches imported correctly</li>
+        <li>Review tags — rename or reorganize as needed</li>
+        <li>Set up column presets for your preferred view</li>
+        <li>Configure your default filters</li>
+      </ul>
+
+      <h2 id="troubleshooting">Troubleshooting</h2>
+
+      <h3>Import is very slow</h3>
+      <p>
+        Large GSAK databases (50,000+ caches) can take several minutes to import.
+        The progress is shown in the task bar. Don't close GCForge during import.
+      </p>
+
+      <h3>Missing caches</h3>
+      <p>
+        If caches appear to be missing, they may have been filtered out.
+        Reset all filters (<strong>Filters → Clear All</strong>) and check again.
+      </p>
+
+      <h3>Corrected coordinates not showing</h3>
+      <p>
+        Make sure you imported from the GSAK database directly (not a GPX export from GSAK).
+        Corrected coordinates are only preserved from the GSAK database import.
+      </p>
+
+      <h3>Duplicate caches</h3>
+      <p>
+        If you imported the same GSAK database twice, caches are merged by GC code.
+        No duplicates are created — existing records are updated with newer data.
+      </p>
+
+    </div>
+  </div>
+
+  <footer class="footer">
+    <div class="container">
+      <div class="footer__bottom">
+        <span>&copy; 2026 GCForge Contributors. Open source under MIT License.</span>
+        <div class="footer__social">
+          <a href="https://github.com/OliverBurgert/gcforge-public" title="GitHub">GitHub</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+</body>
+</html>

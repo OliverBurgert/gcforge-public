@@ -1,0 +1,172 @@
+{% load i18n %}
+{% load l10n %}
+
+{% comment %}
+Multi-neighbourhood layout for opencaching.us.
+``card.rows`` is sorted with the default nbh (server_id="0") first and
+additional neighbourhoods after, in numeric order.  Platform-global
+settings (master enable, notify_logs, frequency) are rendered as a single
+form at the top of the card so it's visually clear they apply site-wide.
+Each neighbourhood then has its own sub-card for coords / radius (+ name
+for additional ones).
+{% endcomment %}
+
+{% if card.default_row %}
+  {# Platform-wide settings — they live on the default row but apply to every neighbourhood. #}
+  <form method="post" action="{% url 'geocaches:oc_notification_save_globals' platform=card.platform %}" class="mb-3">
+    {% csrf_token %}
+    <div class="row g-2 align-items-start">
+      <div class="col-md-4">
+        <div class="form-check">
+          <input class="form-check-input" type="checkbox" name="enabled"
+                 id="oc-us-enabled-master" {% if card.default_row.enabled %}checked{% endif %}>
+          <label class="form-check-label small" for="oc-us-enabled-master">
+            <strong>{% trans "Notifications enabled" %}</strong>
+          </label>
+          <div class="form-text small">{% trans "Site-wide master — covers every neighbourhood." %}</div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="form-check">
+          <input class="form-check-input" type="checkbox" name="notify_logs"
+                 id="oc-us-logs" {% if card.default_row.notify_logs %}checked{% endif %}>
+          <label class="form-check-label small" for="oc-us-logs">
+            {% trans "Also notify on new logs in watched caches" %}
+          </label>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label small mb-0">{% trans "Digest frequency" %}</label>
+        <select name="frequency" class="form-select form-select-sm">
+          <option value="hourly" {% if card.default_row.frequency == "hourly" %}selected{% endif %}>{% trans "Once per hour" %}</option>
+          <option value="daily" {% if card.default_row.frequency == "daily" %}selected{% endif %}>{% trans "Once per day" %}</option>
+          <option value="weekly" {% if card.default_row.frequency == "weekly" %}selected{% endif %}>{% trans "Once per week" %}</option>
+        </select>
+      </div>
+      <div class="col-md-1 d-flex align-items-end">
+        <button type="submit" class="btn btn-sm btn-primary w-100">{% trans "Save" %}</button>
+      </div>
+    </div>
+    <div class="form-text small mt-1">{% blocktrans %}Day-of-week and hour-of-day are stored on opencaching.us at their defaults; tune them on the site if needed.{% endblocktrans %}</div>
+  </form>
+  <hr class="mt-0 mb-3">
+{% endif %}
+
+{% for n in card.rows %}
+  {% if n.server_id == "0" %}
+    <div class="border rounded p-3 mb-3 bg-light">
+      <div class="d-flex align-items-center mb-2 gap-2">
+        <strong>{% trans "Default neighbourhood" %}</strong>
+        <span class="badge text-bg-light text-secondary">{{ n.radius_km }} km</span>
+      </div>
+      <form method="post" action="{% url 'geocaches:oc_notification_save' pk=n.id %}">
+        {% csrf_token %}
+        {% include "geocaches/partials/_notify_oc_us_coords.html" with n=n %}
+        <div class="row g-2 mb-3 align-items-end">
+          <div class="col-md-4">
+            <label class="form-label small">
+              {% blocktrans with max=oc_max_radius %}Radius (1–{{ max }} km){% endblocktrans %}
+            </label>
+            <input type="number" name="radius_km" class="form-control form-control-sm"
+                   min="1" max="{{ oc_max_radius }}" value="{{ n.radius_km }}">
+          </div>
+        </div>
+        <div class="d-flex justify-content-between align-items-center">
+          <div class="text-muted small">
+            {% if n.last_synced_at %}
+              {% blocktrans with t=n.last_synced_at %}Last synced {{ t }}{% endblocktrans %}
+            {% endif %}
+          </div>
+          <button type="submit" class="btn btn-sm btn-primary">{% trans "Save and push" %}</button>
+        </div>
+      </form>
+    </div>
+
+  {% else %}
+    {% comment %}
+    Additional neighbourhood — has a name, coords, radius, and can be deleted.
+    The enable state is controlled platform-wide by the master toggle above;
+    we don't expose a per-nbh enable here.
+    {% endcomment %}
+    <div class="border rounded p-3 mb-3">
+      <div class="d-flex align-items-center mb-2 gap-2">
+        <strong>{{ n.name|default:"(unnamed)" }}</strong>
+        <span class="badge text-bg-light text-secondary">{{ n.radius_km }} km</span>
+        <form method="post" action="{% url 'geocaches:oc_neighbourhood_delete' pk=n.id %}" class="ms-auto"
+              onsubmit="return confirm('{% blocktrans with name=n.name %}Delete neighbourhood &lsquo;{{ name }}&rsquo; on the server and locally?{% endblocktrans %}');">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-sm btn-outline-danger">{% trans "Delete" %}</button>
+        </form>
+      </div>
+      <form method="post" action="{% url 'geocaches:oc_notification_save' pk=n.id %}">
+        {% csrf_token %}
+        <div class="row g-2 mb-3">
+          <div class="col-md-5">
+            <label class="form-label small">{% trans "Name" %}</label>
+            <input type="text" name="name" class="form-control form-control-sm" value="{{ n.name }}" required>
+          </div>
+        </div>
+        {% include "geocaches/partials/_notify_oc_us_coords.html" with n=n %}
+        <div class="row g-2 mb-3 align-items-end">
+          <div class="col-md-4">
+            <label class="form-label small">
+              {% blocktrans with max=oc_max_radius %}Radius (1–{{ max }} km){% endblocktrans %}
+            </label>
+            <input type="number" name="radius_km" class="form-control form-control-sm"
+                   min="1" max="{{ oc_max_radius }}" value="{{ n.radius_km }}">
+          </div>
+        </div>
+        <div class="d-flex justify-content-end">
+          <button type="submit" class="btn btn-sm btn-primary">{% trans "Save and push" %}</button>
+        </div>
+      </form>
+    </div>
+  {% endif %}
+{% endfor %}
+
+{# Add a new neighbourhood #}
+<div class="border rounded p-3 bg-light-subtle">
+  <strong class="small">{% trans "Add a new neighbourhood" %}</strong>
+  <form method="post" action="{% url 'geocaches:oc_neighbourhood_create' platform=card.platform %}" class="mt-2">
+    {% csrf_token %}
+    <div class="row g-2 mb-2">
+      <div class="col-md-5">
+        <label class="form-label small">{% trans "Name" %}</label>
+        <input type="text" name="name" class="form-control form-control-sm" required>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label small">{% trans "Reference location" %}</label>
+        <select name="location_id" class="form-select form-select-sm">
+          <option value="">{% trans "— use coordinates below —" %}</option>
+          {% for loc in locations %}
+            <option value="{{ loc.id }}"
+                    data-lat="{{ loc.latitude|unlocalize }}"
+                    data-lon="{{ loc.longitude|unlocalize }}">
+              {{ loc.name }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label small">
+          {% blocktrans with max=oc_max_radius %}Radius (1–{{ max }} km){% endblocktrans %}
+        </label>
+        <input type="number" name="radius_km" class="form-control form-control-sm"
+               min="1" max="{{ oc_max_radius }}" value="20" required>
+      </div>
+    </div>
+    <div class="row g-2 mb-2">
+      <div class="col-md-3">
+        <label class="form-label small">{% trans "Latitude" %}</label>
+        <input type="text" name="latitude" class="form-control form-control-sm">
+      </div>
+      <div class="col-md-3">
+        <label class="form-label small">{% trans "Longitude" %}</label>
+        <input type="text" name="longitude" class="form-control form-control-sm">
+      </div>
+    </div>
+    <div class="d-flex justify-content-end">
+      <button type="submit" class="btn btn-sm btn-success">{% trans "Add neighbourhood" %}</button>
+    </div>
+  </form>
+</div>

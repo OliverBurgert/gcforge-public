@@ -1,0 +1,205 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% trans "User Profile" %} — GCForge{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-3" style="max-width:900px">
+  <h5 class="mb-3">{% trans "User Profile" %}</h5>
+  <p class="text-muted small mb-4">{% trans "Live data fetched from platform APIs on page load." %}</p>
+
+  {% for card in cards %}
+  <div class="card mb-4">
+    <div class="card-header d-flex align-items-center gap-2">
+      <strong>{{ card.platform }}</strong>
+      {% if card.username %}
+        <span class="text-muted small">{{ card.username }}</span>
+      {% endif %}
+      {% if card.profile_url %}
+        <a href="{{ card.profile_url }}" target="_blank" class="ms-auto small">{% trans "View profile" %}</a>
+      {% endif %}
+    </div>
+    <div class="card-body">
+
+      {% if card.error and not card.data %}
+        <div class="text-muted">{{ card.error }}</div>
+
+      {% elif card.platform_key == "gc" and card.data %}
+        <div class="row">
+          {% if card.data.avatar_url %}
+          <div class="col-auto">
+            <img src="{{ card.data.avatar_url }}" alt="{% trans 'Avatar' %}" class="rounded"
+                 style="max-width:80px;max-height:80px;">
+            <div class="text-muted small mt-1" style="max-width:150px;word-break:break-all;">{{ card.data.avatar_url }}</div>
+          </div>
+          {% endif %}
+          <div class="col">
+            <table class="table table-sm table-borderless mb-0" style="max-width:400px">
+              <tr><th class="text-muted" style="width:140px">{% trans "Username" %}</th><td>{{ card.data.username }}</td></tr>
+              <tr><th class="text-muted">{% trans "Reference Code" %}</th><td>{{ card.data.reference_code }}</td></tr>
+              <tr><th class="text-muted">{% trans "Membership" %}</th><td>{{ card.data.membership }}</td></tr>
+              <tr><th class="text-muted">{% trans "Finds" %}</th><td>{{ card.data.find_count|default_if_none:"—" }}</td></tr>
+              <tr><th class="text-muted">{% trans "Hides" %}</th><td>{{ card.data.hide_count|default_if_none:"—" }}</td></tr>
+              <tr><th class="text-muted">{% trans "Favorite Points" %}</th><td>{{ card.data.favorite_points|default_if_none:"—" }}</td></tr>
+              <tr><th class="text-muted">{% trans "Joined" %}</th><td>{{ card.data.join_date|default:"—" }}</td></tr>
+              {% if card.data.home_lat != None %}
+              <tr><th class="text-muted">{% trans "Home Coordinates" %}</th><td>{{ card.data.home_lat }}, {{ card.data.home_lon }}</td></tr>
+              {% endif %}
+            </table>
+          </div>
+        </div>
+
+        {% if card.quotas %}
+        <hr class="my-3">
+        <h6 class="mb-2">{% trans "API Quota (today)" %}</h6>
+        <table class="table table-sm table-borderless mb-0" style="max-width:400px">
+          <thead>
+            <tr><th class="text-muted">{% trans "Mode" %}</th><th class="text-muted">{% trans "Used" %}</th><th class="text-muted">{% trans "Limit" %}</th><th class="text-muted">{% trans "Remaining" %}</th></tr>
+          </thead>
+          <tbody>
+            {% for q in card.quotas %}
+            <tr>
+              <td>{{ q.mode }}</td>
+              <td>{{ q.used }}</td>
+              <td>{{ q.limit }}</td>
+              <td>{{ q.remaining }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        {% endif %}
+
+        {% if card.trackables or card.trackables_error %}
+        <hr class="my-3">
+        <h6 class="mb-2">{% trans "Trackables in inventory" %}
+          {% if card.trackables %}<span class="text-muted small">({{ card.trackables|length }})</span>{% endif %}
+        </h6>
+        {% if card.trackables_error %}
+          <div class="text-warning small">{{ card.trackables_error }}</div>
+        {% elif card.trackables %}
+          <p class="text-muted small mb-2">
+            {% blocktrans %}Toggle <em>Auto-visit</em> to have a "Visited" trackable log
+            pre-selected on each cache log with the text below. The
+            <code>[name]</code> / <code>[gc_code]</code> placeholders are
+            expanded per cache.{% endblocktrans %}
+          </p>
+          <div class="list-group list-group-flush" data-tb-auto-save-url="{% url 'geocaches:trackable_auto_visit_save' %}">
+            {% for tb in card.trackables %}
+            <div class="list-group-item px-0 py-2 tb-inv-edit" data-ref="{{ tb.ref_code }}">
+              <div class="d-flex align-items-center gap-2 small">
+                {% if tb.icon_url %}<img src="{{ tb.icon_url }}" alt="" style="height:18px">{% endif %}
+                <a href="https://www.geocaching.com/track/details.aspx?tracker={{ tb.ref_code }}"
+                   target="_blank" rel="noopener" class="font-monospace">{{ tb.ref_code }}</a>
+                <span class="flex-grow-1">{{ tb.name }}</span>
+                <div class="form-check form-switch m-0">
+                  <input class="form-check-input" type="checkbox" role="switch"
+                         data-tb-auto-enabled
+                         {% if tb.auto_visit_enabled %}checked{% endif %}>
+                  <label class="form-check-label small">{% trans "Auto-visit" %}</label>
+                </div>
+              </div>
+              <div class="mt-1" data-tb-auto-text-wrap
+                   {% if not tb.auto_visit_enabled %}style="display:none"{% endif %}>
+                <textarea class="form-control form-control-sm" rows="2"
+                          data-tb-auto-text
+                          placeholder="{% trans 'Visited [name] while finding [gc_code]' %}">{{ tb.auto_visit_text }}</textarea>
+                <div class="d-flex justify-content-end mt-1 gap-2">
+                  <span class="small" data-tb-auto-status></span>
+                  <button type="button" class="btn btn-sm btn-outline-secondary" data-tb-auto-save>{% trans "Save" %}</button>
+                </div>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+          <script>
+          (function () {
+            var root = document.currentScript.previousElementSibling;
+            var url = root.getAttribute('data-tb-auto-save-url');
+            function csrf() { return (document.querySelector('input[name=csrfmiddlewaretoken]') || {}).value || ''; }
+            function _save(row, statusEl) {
+              var ref = row.getAttribute('data-ref');
+              var enabled = row.querySelector('[data-tb-auto-enabled]').checked ? '1' : '0';
+              var text = row.querySelector('[data-tb-auto-text]').value;
+              statusEl.textContent = 'saving…';
+              statusEl.className = 'small text-muted';
+              fetch(url, {
+                method: 'POST',
+                headers: { 'X-CSRFToken': csrf(), 'Content-Type': 'application/x-www-form-urlencoded' },
+                credentials: 'same-origin',
+                body: 'ref_code=' + encodeURIComponent(ref)
+                    + '&enabled=' + enabled
+                    + '&text=' + encodeURIComponent(text),
+              })
+                .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, body: j }; }); })
+                .then(function (res) {
+                  if (!res.ok || !res.body.ok) {
+                    statusEl.textContent = (res.body && res.body.error) || 'save failed';
+                    statusEl.className = 'small text-danger';
+                    return;
+                  }
+                  statusEl.textContent = 'saved';
+                  statusEl.className = 'small text-success';
+                  setTimeout(function () { statusEl.textContent = ''; }, 1500);
+                })
+                .catch(function (exc) {
+                  statusEl.textContent = String(exc);
+                  statusEl.className = 'small text-danger';
+                });
+            }
+            root.querySelectorAll('.tb-inv-edit').forEach(function (row) {
+              var cb = row.querySelector('[data-tb-auto-enabled]');
+              var wrap = row.querySelector('[data-tb-auto-text-wrap]');
+              var statusEl = row.querySelector('[data-tb-auto-status]');
+              cb.addEventListener('change', function () {
+                wrap.style.display = cb.checked ? '' : 'none';
+                _save(row, statusEl);
+              });
+              var btn = row.querySelector('[data-tb-auto-save]');
+              btn.addEventListener('click', function () { _save(row, statusEl); });
+            });
+          })();
+          </script>
+        {% else %}
+          <div class="text-muted small">{% trans "No trackables held." %}</div>
+        {% endif %}
+        {% endif %}
+
+        {% if card.error %}
+        <div class="text-warning small mt-2">{{ card.error }}</div>
+        {% endif %}
+
+      {% elif card.data %}
+        {# OC platform #}
+        <div class="row">
+          <div class="col">
+            <table class="table table-sm table-borderless mb-0" style="max-width:400px">
+              <tr><th class="text-muted" style="width:140px">{% trans "Username" %}</th><td>{{ card.data.username }}</td></tr>
+              <tr><th class="text-muted">{% trans "UUID" %}</th><td class="small">{{ card.data.uuid }}</td></tr>
+              {% if card.data.profile_url %}
+              <tr><th class="text-muted">{% trans "Profile" %}</th><td><a href="{{ card.data.profile_url }}" target="_blank">{{ card.data.profile_url }}</a></td></tr>
+              {% endif %}
+              <tr><th class="text-muted">{% trans "Caches Found" %}</th><td>{{ card.data.caches_found|default_if_none:"—" }}</td></tr>
+              <tr><th class="text-muted">{% trans "DNFs" %}</th><td>{{ card.data.caches_notfound|default_if_none:"—" }}</td></tr>
+              <tr><th class="text-muted">{% trans "Caches Hidden" %}</th><td>{{ card.data.caches_hidden|default_if_none:"—" }}</td></tr>
+              <tr><th class="text-muted">{% trans "Recommendations" %}</th><td>{{ card.data.rcmds_given|default_if_none:"—" }}</td></tr>
+              {% if card.data.date_registered %}
+              <tr><th class="text-muted">{% trans "Registered" %}</th><td>{{ card.data.date_registered }}</td></tr>
+              {% endif %}
+              {% if card.data.home_lat != None %}
+              <tr><th class="text-muted">{% trans "Home Coordinates" %}</th><td>{{ card.data.home_lat }}, {{ card.data.home_lon }}</td></tr>
+              {% endif %}
+            </table>
+          </div>
+        </div>
+
+        {% if card.error %}
+        <div class="text-warning small mt-2">{{ card.error }}</div>
+        {% endif %}
+
+      {% endif %}
+
+    </div>
+  </div>
+  {% endfor %}
+
+</div>
+{% endblock %}

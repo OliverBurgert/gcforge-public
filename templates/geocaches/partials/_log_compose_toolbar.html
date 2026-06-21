@@ -1,0 +1,247 @@
+{% load cache_tags i18n %}
+{% comment %}
+Log compose toolbar — formatting buttons + smiley picker.
+Operates on the textarea identified by `textarea_id` (default "logFormText").
+Set `show_templates=False` to hide the "Insert template" dropdown (e.g. when
+editing a template body itself). Uses canonical authoring format
+(Markdown + Unicode emoji); see geocaches/log_format.py.
+{% endcomment %}
+<div class="btn-toolbar gap-1 mb-1" role="toolbar" aria-label="{% trans 'Log formatting' %}"
+     data-textarea-id="{{ textarea_id|default:'logFormText' }}">
+  <div class="btn-group btn-group-sm" role="group" aria-label="{% trans 'Inline formatting' %}">
+    <button type="button" class="btn btn-outline-secondary py-0" title="{% trans 'Bold (**text**)' %}"
+            onclick="gcfFmtWrap('**', '**')"><strong>B</strong></button>
+    <button type="button" class="btn btn-outline-secondary py-0" title="{% trans 'Italic (*text*)' %}"
+            onclick="gcfFmtWrap('*', '*')"><em>I</em></button>
+    <button type="button" class="btn btn-outline-secondary py-0" title="{% trans 'Link' %}"
+            onclick="gcfFmtLink()">🔗</button>
+  </div>
+
+  <div class="btn-group btn-group-sm" role="group" aria-label="{% trans 'Block formatting' %}">
+    <button type="button" class="btn btn-outline-secondary py-0" title="{% trans 'Bullet list' %}"
+            onclick="gcfFmtLines('* ')">•</button>
+    <button type="button" class="btn btn-outline-secondary py-0" title="{% trans 'Numbered list' %}"
+            onclick="gcfFmtNumbered()">1.</button>
+    <button type="button" class="btn btn-outline-secondary py-0" title="{% trans 'Quote' %}"
+            onclick="gcfFmtLines('> ')">❝</button>
+    <button type="button" class="btn btn-outline-secondary py-0" title="{% trans 'Horizontal rule' %}"
+            onclick="gcfFmtInsertLine('---')">―</button>
+  </div>
+
+  <div class="btn-group btn-group-sm" role="group">
+    <button type="button" class="btn btn-outline-secondary py-0 dropdown-toggle"
+            data-bs-toggle="dropdown" aria-expanded="false" title="{% trans 'Insert smiley' %}">
+      😊
+    </button>
+    <ul class="dropdown-menu p-1" style="min-width:auto">
+      {% for entry in compose_smileys %}
+      <li class="d-inline-block">
+        <button type="button" class="btn btn-sm btn-link p-1"
+                style="font-size:1.1rem;line-height:1;text-decoration:none"
+                title="{{ entry.label }} ({{ entry.code }})"
+                onclick="gcfFmtInsert({{ entry.emoji|tojson }})">{{ entry.emoji }}</button>
+      </li>
+      {% endfor %}
+    </ul>
+  </div>
+
+  {% if compose_templates and show_templates|default_if_none:True %}
+  <div class="btn-group btn-group-sm" role="group">
+    <button type="button" class="btn btn-outline-secondary py-0 dropdown-toggle"
+            data-bs-toggle="dropdown" aria-expanded="false" title="{% trans 'Insert template' %}">
+      📋
+    </button>
+    <ul class="dropdown-menu" style="min-width:14em">
+      {% for tpl in compose_templates %}
+      <li>
+        <button type="button" class="dropdown-item small d-flex justify-content-between gap-2"
+                data-template-scope="{{ tpl.scope }}"
+                onclick="gcfFmtInsertTemplate({{ tpl.body|tojson }})">
+          <span>{{ tpl.name }}</span>
+          {% if tpl.scope != "any" %}
+          <span class="text-muted" style="font-size:.7rem">{{ tpl.scope }}</span>
+          {% endif %}
+        </button>
+      </li>
+      {% endfor %}
+      <li><hr class="dropdown-divider"></li>
+      <li>
+        <a class="dropdown-item small text-muted" href="{% url 'preferences:settings' %}#logging">
+          {% trans "Manage templates…" %}
+        </a>
+      </li>
+    </ul>
+  </div>
+  {% endif %}
+</div>
+
+<script>
+(function () {
+  // Resolve the active textarea per click — falls back to the legacy id
+  // "logFormText" when the toolbar's data-textarea-id is missing or stale.
+  // This keeps multiple toolbars on a page (e.g. compose dialog + template
+  // editor) independent without globals fighting each other.
+  function _ta(srcEl) {
+    var src = srcEl || (typeof event !== 'undefined' ? event.currentTarget : null);
+    var toolbar = src && src.closest ? src.closest('[data-textarea-id]') : null;
+    var id = (toolbar && toolbar.getAttribute('data-textarea-id')) || 'logFormText';
+    return document.getElementById(id);
+  }
+
+  function _selection(ta) {
+    return {
+      start: ta.selectionStart || 0,
+      end:   ta.selectionEnd   || 0,
+      value: ta.value,
+    };
+  }
+
+  function _replace(ta, start, end, replacement, cursorStart, cursorEnd) {
+    ta.value = ta.value.substring(0, start) + replacement + ta.value.substring(end);
+    var newStart = (typeof cursorStart === 'number') ? cursorStart : start + replacement.length;
+    var newEnd   = (typeof cursorEnd   === 'number') ? cursorEnd   : newStart;
+    ta.selectionStart = newStart;
+    ta.selectionEnd   = newEnd;
+    ta.focus();
+    ta.dispatchEvent(new Event('input', { bubbles: true }));
+  }
+
+  // Returns the extra leading newlines needed to guarantee a blank line
+  // before the block starting at `lineStart`. Block-level markdown on gc.com
+  // (lists, blockquotes, HR) requires a preceding blank line — without it,
+  // lists render as literal '* foo' and a leading '---' becomes a setext h2
+  // of the previous line.
+  function _blankLineLead(value, lineStart) {
+    if (lineStart === 0) return '';
+    if (lineStart === 1 && value[0] === '\n') return '';
+    if (value[lineStart - 2] === '\n') return '';
+    return '\n';
+  }
+
+  // Wrap selection (or insert at cursor) with `before`/`after` markers.
+  window.gcfFmtWrap = function (before, after) {
+    var ta = _ta(); if (!ta) return;
+    var s = _selection(ta);
+    var selected = s.value.substring(s.start, s.end);
+    var replacement = before + selected + after;
+    if (selected) {
+      _replace(ta, s.start, s.end, replacement,
+               s.start + before.length,
+               s.start + before.length + selected.length);
+    } else {
+      _replace(ta, s.start, s.end, replacement,
+               s.start + before.length, s.start + before.length);
+    }
+  };
+
+  // Insert literal text at cursor.
+  window.gcfFmtInsert = function (text) {
+    var ta = _ta(); if (!ta) return;
+    var s = _selection(ta);
+    _replace(ta, s.start, s.end, text);
+  };
+
+  // Insert `text` on its own line, guaranteeing a blank line before it
+  // (needed for HR — without a blank, gc.com turns "prev\n---" into an h2).
+  window.gcfFmtInsertLine = function (text) {
+    var ta = _ta(); if (!ta) return;
+    var s = _selection(ta);
+    var before = s.value.substring(0, s.start);
+    var after  = s.value.substring(s.end);
+    var lead;
+    if (before.length === 0)            lead = '';
+    else if (before.endsWith('\n\n'))   lead = '';
+    else if (before.endsWith('\n'))     lead = '\n';
+    else                                lead = '\n\n';
+    var trail = (after.length === 0 || after.startsWith('\n')) ? '' : '\n';
+    _replace(ta, s.start, s.end, lead + text + trail);
+  };
+
+  // Prefix every selected line (or current line if no selection) with `prefix`.
+  // Inserts a blank line before the block when missing, so list/quote markdown
+  // is rendered correctly on gc.com (it requires a blank line above lists).
+  window.gcfFmtLines = function (prefix) {
+    var ta = _ta(); if (!ta) return;
+    var s = _selection(ta);
+    var before = s.value.substring(0, s.start);
+    var after  = s.value.substring(s.end);
+    var lineStart = before.lastIndexOf('\n') + 1;
+    var lineEndOffset = after.indexOf('\n');
+    var lineEnd = (lineEndOffset === -1) ? s.value.length : s.end + lineEndOffset;
+    var block = s.value.substring(lineStart, lineEnd);
+    var prefixed = block.split('\n').map(function (line) {
+      return line.length ? prefix + line : line;
+    }).join('\n');
+    var lead = _blankLineLead(s.value, lineStart);
+    var replacement = lead + prefixed;
+    _replace(ta, lineStart, lineEnd, replacement,
+             lineStart + lead.length, lineStart + replacement.length);
+  };
+
+  // Number every selected line (or current line) as 1., 2., 3., ...
+  // Same blank-line-before guarantee as gcfFmtLines.
+  window.gcfFmtNumbered = function () {
+    var ta = _ta(); if (!ta) return;
+    var s = _selection(ta);
+    var before = s.value.substring(0, s.start);
+    var after  = s.value.substring(s.end);
+    var lineStart = before.lastIndexOf('\n') + 1;
+    var lineEndOffset = after.indexOf('\n');
+    var lineEnd = (lineEndOffset === -1) ? s.value.length : s.end + lineEndOffset;
+    var block = s.value.substring(lineStart, lineEnd);
+    var n = 0;
+    var numbered = block.split('\n').map(function (line) {
+      if (!line.length) return line;
+      n += 1;
+      return n + '. ' + line;
+    }).join('\n');
+    var lead = _blankLineLead(s.value, lineStart);
+    var replacement = lead + numbered;
+    _replace(ta, lineStart, lineEnd, replacement,
+             lineStart + lead.length, lineStart + replacement.length);
+  };
+
+  // Insert a template body at the cursor. The body has been pre-expanded
+  // server-side against the cache context; [find_count] is substituted here
+  // from the current "Find #" input value (the user-visible source of
+  // truth for find numbering — manual edits stick).
+  window.gcfFmtInsertTemplate = function (body) {
+    var ta = _ta(); if (!ta) return;
+    var seqInput = document.querySelector('input[name="sequence_number"]');
+    var findCount = (seqInput && seqInput.value) ? seqInput.value : '';
+    body = body.split('[find_count]').join(findCount);
+    var s = _selection(ta);
+    _replace(ta, s.start, s.end, body);
+  };
+
+  // Hide template entries whose scope doesn't match the currently selected
+  // log type ("any" templates are always shown).
+  function _filterTemplatesByLogType() {
+    var logTypeSel = document.querySelector('select[name="log_type"]');
+    var current = logTypeSel ? logTypeSel.value : '';
+    var entries = document.querySelectorAll('[data-template-scope]');
+    for (var i = 0; i < entries.length; i++) {
+      var scope = entries[i].getAttribute('data-template-scope');
+      var li = entries[i].closest('li');
+      if (!li) continue;
+      li.style.display = (scope === 'any' || scope === current) ? '' : 'none';
+    }
+  }
+  document.addEventListener('DOMContentLoaded', function () {
+    _filterTemplatesByLogType();
+    var sel = document.querySelector('select[name="log_type"]');
+    if (sel) sel.addEventListener('change', _filterTemplatesByLogType);
+  });
+
+  // Prompt for URL, wrap selection (or 'link') as Markdown link.
+  window.gcfFmtLink = function () {
+    var ta = _ta(); if (!ta) return;
+    var s = _selection(ta);
+    var url = window.prompt('{% trans "Link URL:" %}', 'https://');
+    if (!url) return;
+    var label = s.value.substring(s.start, s.end) || 'link';
+    var replacement = '[' + label + '](' + url + ')';
+    _replace(ta, s.start, s.end, replacement);
+  };
+})();
+</script>

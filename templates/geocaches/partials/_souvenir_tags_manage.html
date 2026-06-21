@@ -1,0 +1,44 @@
+{% load i18n %}
+{% comment %}Modal body: CRUD for souvenir tags. Each form re-renders this panel
+and (on POST) triggers souvenirs:reload for the main list.{% endcomment %}
+<form hx-post="{% url 'geocaches:dashboard_souvenirs_tags_manage' %}"
+      hx-target="#souv-tags-manage-body" hx-swap="innerHTML" class="d-flex gap-2 mb-3">
+  {% csrf_token %}
+  <input type="hidden" name="_action" value="create">
+  <input class="form-control form-control-sm" type="text" name="name" maxlength="100"
+         placeholder="{% trans 'New tag name' %}" required>
+  <button class="btn btn-sm btn-primary" type="submit">{% trans "Add" %}</button>
+</form>
+
+<table class="table table-sm align-middle mb-0">
+  <tbody>
+  {% for t in souvenir_tags.tags %}
+  <tr>
+    <td>
+      <form hx-post="{% url 'geocaches:dashboard_souvenirs_tags_manage' %}"
+            hx-target="#souv-tags-manage-body" hx-swap="innerHTML" class="d-flex gap-1">
+        {% csrf_token %}
+        <input type="hidden" name="_action" value="rename">
+        <input type="hidden" name="tag_id" value="{{ t.id }}">
+        <input class="form-control form-control-sm" type="text" name="name"
+               value="{{ t.name }}" maxlength="100">
+        <button class="btn btn-sm btn-outline-secondary" type="submit">{% trans "Rename" %}</button>
+      </form>
+    </td>
+    <td class="text-muted small">{{ t.count }}</td>
+    <td>
+      <form hx-post="{% url 'geocaches:dashboard_souvenirs_tags_manage' %}"
+            hx-target="#souv-tags-manage-body" hx-swap="innerHTML"
+            hx-confirm="{% trans 'Delete this tag? Souvenirs keep their other tags.' %}">
+        {% csrf_token %}
+        <input type="hidden" name="_action" value="delete">
+        <input type="hidden" name="tag_id" value="{{ t.id }}">
+        <button class="btn btn-sm btn-outline-danger" type="submit">{% trans "Delete" %}</button>
+      </form>
+    </td>
+  </tr>
+  {% empty %}
+  <tr><td class="text-muted small">{% trans "No tags yet." %}</td></tr>
+  {% endfor %}
+  </tbody>
+</table>

@@ -1,0 +1,310 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% trans "Manage ignore lists" %} — GCForge{% endblock %}
+{% block content %}
+<div class="px-3 py-3" style="max-width:1400px">
+  <h5 class="mb-3">{% trans "Manage ignore lists" %}</h5>
+
+  <!-- Toolbar row 1: filters -->
+  <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+
+    <!-- Source chips -->
+    <div class="btn-group btn-group-sm" role="group">
+      <a href="?{% if filter_params %}{{ filter_params }}&{% endif %}source="
+         class="btn {% if not source_f %}btn-secondary{% else %}btn-outline-secondary{% endif %}">{% trans "All" %}</a>
+      <a href="?{% if filter_params %}{{ filter_params }}&{% endif %}source=internal"
+         class="btn {% if source_f == 'internal' %}btn-secondary{% else %}btn-outline-secondary{% endif %}">{% trans "Internal" %}</a>
+      <a href="?{% if filter_params %}{{ filter_params }}&{% endif %}source=gsak"
+         class="btn {% if source_f == 'gsak' %}btn-secondary{% else %}btn-outline-secondary{% endif %}">GSAK</a>
+      {% if has_gc %}
+      <a href="?{% if filter_params %}{{ filter_params }}&{% endif %}source=gc"
+         class="btn {% if source_f == 'gc' %}btn-secondary{% else %}btn-outline-secondary{% endif %}">GC</a>
+      {% endif %}
+      {% for plat in oc_platforms %}
+      <a href="?{% if filter_params %}{{ filter_params }}&{% endif %}source=oc&oc_platform={{ plat }}"
+         class="btn {% if source_f == 'oc' and platform_f == plat %}btn-secondary{% else %}btn-outline-secondary{% endif %}">{{ plat }}</a>
+      {% endfor %}
+    </div>
+
+    <form method="get" class="d-flex align-items-center gap-1" id="filter-form">
+      {% if source_f %}<input type="hidden" name="source" value="{{ source_f }}">{% endif %}
+      {% if platform_f %}<input type="hidden" name="oc_platform" value="{{ platform_f }}">{% endif %}
+      <select name="status" class="form-select form-select-sm" style="width:auto" onchange="this.form.submit()">
+        <option value="">{% trans "All statuses" %}</option>
+        {% for val, label in status_choices %}
+        <option value="{{ val }}" {% if status_f == val %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+      <select name="db" class="form-select form-select-sm" style="width:auto" onchange="this.form.submit()">
+        <option value="">{% trans "All" %}</option>
+        <option value="in_db" {% if db_f == "in_db" %}selected{% endif %}>{% trans "In DB" %}</option>
+        <option value="found" {% if db_f == "found" %}selected{% endif %}>{% trans "Found" %}</option>
+        <option value="in_db_found" {% if db_f == "in_db_found" %}selected{% endif %}>{% trans "In DB & Found" %}</option>
+      </select>
+      <input type="text" name="q" value="{{ q }}" placeholder="{% trans 'Search code / name / notes…' %}"
+             class="form-control form-control-sm" style="min-width:200px">
+      <button type="submit" class="btn btn-outline-secondary btn-sm">{% trans "Search" %}</button>
+      {% if q or status_f or db_f %}
+      <a href="?{% if source_f %}source={{ source_f }}{% endif %}{% if platform_f %}&oc_platform={{ platform_f }}{% endif %}"
+         class="btn btn-outline-secondary btn-sm">{% trans "Clear" %}</a>
+      {% endif %}
+    </form>
+
+    <span class="text-muted small ms-auto">{% blocktrans count n=total %}{{ n }} entry{% plural %}{{ n }} entries{% endblocktrans %}</span>
+  </div>
+
+  <!-- Toolbar row 2: actions -->
+  <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+
+    <!-- Add button -->
+    <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addIgnoreModal">
+      {% trans "Add…" %}
+    </button>
+
+    <!-- Sync GC button -->
+    {% if has_gc %}
+    <form method="post" action="{% url 'geocaches:ignore_lists_sync_gc' %}" class="d-inline">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-outline-secondary btn-sm">{% trans "Sync GC.com list" %}</button>
+    </form>
+    {% endif %}
+
+    <!-- Sync OC buttons -->
+    {% for plat in oc_platforms %}
+    <form method="post" action="{% url 'geocaches:ignore_lists_sync_oc' %}" class="d-inline">
+      {% csrf_token %}
+      <input type="hidden" name="oc_platform" value="{{ plat }}">
+      <button type="submit" class="btn btn-outline-secondary btn-sm">{% blocktrans with p=plat %}Sync {{ p }}{% endblocktrans %}</button>
+    </form>
+    {% endfor %}
+
+    <!-- Remove archived button -->
+    {% if archived_count > 0 %}
+    <form method="post" action="{% url 'geocaches:ignore_lists_remove_archived' %}" class="d-inline">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-outline-danger btn-sm"
+              onclick="return confirm('{% blocktrans with n=archived_count %}Remove all {{ n }} archived entries from the ignore list?{% endblocktrans %}')">
+        {% blocktrans with n=archived_count %}Remove archived ({{ n }}){% endblocktrans %}
+      </button>
+    </form>
+    {% endif %}
+
+    <!-- Refresh status button -->
+    <form method="post" action="{% url 'geocaches:ignore_lists_refresh' %}" class="d-inline">
+      {% csrf_token %}
+      {% if source_f %}<input type="hidden" name="source" value="{{ source_f }}">{% endif %}
+      {% if platform_f %}<input type="hidden" name="oc_platform" value="{{ platform_f }}">{% endif %}
+      {% if status_f %}<input type="hidden" name="status" value="{{ status_f }}">{% endif %}
+      {% if db_f %}<input type="hidden" name="db" value="{{ db_f }}">{% endif %}
+      {% if q %}<input type="hidden" name="q" value="{{ q }}">{% endif %}
+      <button type="submit" class="btn btn-outline-secondary btn-sm"
+              title="{% trans 'Refresh name/status for filtered entries' %}">
+        {% trans "Refresh status…" %}
+      </button>
+    </form>
+
+    <!-- Move/Copy + Remove all filtered buttons -->
+    {% if total > 0 %}
+    <form method="post" action="{% url 'geocaches:ignore_lists_bulk_transfer' %}" class="d-inline ms-auto">
+      {% csrf_token %}
+      {% if source_f %}<input type="hidden" name="source" value="{{ source_f }}">{% endif %}
+      {% if platform_f %}<input type="hidden" name="oc_platform" value="{{ platform_f }}">{% endif %}
+      {% if status_f %}<input type="hidden" name="status" value="{{ status_f }}">{% endif %}
+      {% if db_f %}<input type="hidden" name="db" value="{{ db_f }}">{% endif %}
+      {% if q %}<input type="hidden" name="q" value="{{ q }}">{% endif %}
+      <div class="btn-group btn-group-sm">
+        <button type="button" class="btn btn-outline-secondary btn-sm dropdown-toggle"
+                data-bs-toggle="dropdown" aria-expanded="false"
+                title="{% trans 'Move/copy the filtered subset to another ignore list' %}">
+          {% blocktrans with n=total %}Move/Copy ({{ n }}){% endblocktrans %}
+        </button>
+        <ul class="dropdown-menu">
+          <li><h6 class="dropdown-header">{% trans "Move to" %}</h6></li>
+          <li><button type="submit" name="action" value="move:internal" class="dropdown-item"
+                      onclick="return confirm('{% blocktrans count n=total %}Move {{ n }} entry to the Internal list (remove from current list)?{% plural %}Move {{ n }} entries to the Internal list (remove from current list)?{% endblocktrans %}')">{% trans "Internal" %}</button></li>
+          {% if has_gc %}
+          <li><button type="submit" name="action" value="move:gc" class="dropdown-item"
+                      onclick="return confirm('{% trans "Move applicable entries to GC.com (will add to GC.com ignore list and remove from current list; OC codes will be skipped)?" %}')">GC.com</button></li>
+          {% endif %}
+          {% for plat in oc_platforms %}
+          <li><button type="submit" name="action" value="move:oc:{{ plat }}" class="dropdown-item"
+                      onclick="return confirm('{% blocktrans with p=plat %}Move applicable entries to {{ p }}?{% endblocktrans %}')">{{ plat }}</button></li>
+          {% endfor %}
+          <li><hr class="dropdown-divider"></li>
+          <li><h6 class="dropdown-header">{% trans "Copy to" %}</h6></li>
+          <li><button type="submit" name="action" value="copy:internal" class="dropdown-item"
+                      onclick="return confirm('{% blocktrans count n=total %}Copy {{ n }} entry to the Internal list?{% plural %}Copy {{ n }} entries to the Internal list?{% endblocktrans %}')">{% trans "Internal" %}</button></li>
+          {% if has_gc %}
+          <li><button type="submit" name="action" value="copy:gc" class="dropdown-item"
+                      onclick="return confirm('{% trans "Copy applicable entries to GC.com (OC codes will be skipped)?" %}')">GC.com</button></li>
+          {% endif %}
+          {% for plat in oc_platforms %}
+          <li><button type="submit" name="action" value="copy:oc:{{ plat }}" class="dropdown-item"
+                      onclick="return confirm('{% blocktrans with p=plat %}Copy applicable entries to {{ p }}?{% endblocktrans %}')">{{ plat }}</button></li>
+          {% endfor %}
+        </ul>
+      </div>
+    </form>
+    <form method="post" action="{% url 'geocaches:ignore_lists_remove_filtered' %}" class="d-inline">
+      {% csrf_token %}
+      {% if source_f %}<input type="hidden" name="source" value="{{ source_f }}">{% endif %}
+      {% if platform_f %}<input type="hidden" name="oc_platform" value="{{ platform_f }}">{% endif %}
+      {% if status_f %}<input type="hidden" name="status" value="{{ status_f }}">{% endif %}
+      {% if db_f %}<input type="hidden" name="db" value="{{ db_f }}">{% endif %}
+      {% if q %}<input type="hidden" name="q" value="{{ q }}">{% endif %}
+      <button type="submit" class="btn btn-outline-danger btn-sm"
+              onclick="return confirm('{% blocktrans count n=total %}Remove all {{ n }} entry matching the current filter?{% plural %}Remove all {{ n }} entries matching the current filter?{% endblocktrans %}')">
+        {% blocktrans with n=total %}Remove all ({{ n }}){% endblocktrans %}
+      </button>
+    </form>
+    {% endif %}
+
+  </div>
+
+  {% if total == 0 %}
+  <div class="card">
+    <div class="card-body text-muted">{% trans "No entries match the current filter." %}</div>
+  </div>
+  {% else %}
+  <div class="table-responsive">
+    <table class="table table-sm table-bordered align-middle">
+      <thead class="table-light">
+        <tr>
+          {% with base_params=filter_params %}
+          <th>
+            <a href="?{{ base_params }}&sort=code&dir={% if sort == 'code' and dir == 'asc' %}desc{% else %}asc{% endif %}"
+               class="text-decoration-none text-dark">{% trans "Code" %}{% if sort == 'code' %} {% if dir == 'asc' %}▲{% else %}▼{% endif %}{% endif %}</a>
+          </th>
+          <th>
+            <a href="?{{ base_params }}&sort=source&dir={% if sort == 'source' and dir == 'asc' %}desc{% else %}asc{% endif %}"
+               class="text-decoration-none text-dark">{% trans "Source" %}{% if sort == 'source' %} {% if dir == 'asc' %}▲{% else %}▼{% endif %}{% endif %}</a>
+          </th>
+          <th>{% trans "Platform" %}</th>
+          <th>
+            <a href="?{{ base_params }}&sort=name&dir={% if sort == 'name' and dir == 'asc' %}desc{% else %}asc{% endif %}"
+               class="text-decoration-none text-dark">{% trans "Name" %}{% if sort == 'name' %} {% if dir == 'asc' %}▲{% else %}▼{% endif %}{% endif %}</a>
+          </th>
+          <th>
+            <a href="?{{ base_params }}&sort=status&dir={% if sort == 'status' and dir == 'asc' %}desc{% else %}asc{% endif %}"
+               class="text-decoration-none text-dark">{% trans "Status" %}{% if sort == 'status' %} {% if dir == 'asc' %}▲{% else %}▼{% endif %}{% endif %}</a>
+          </th>
+          <th>{% trans "In DB" %}</th>
+          <th>{% trans "Notes" %}</th>
+          <th>
+            <a href="?{{ base_params }}&sort=last_status_refresh&dir={% if sort == 'last_status_refresh' and dir == 'asc' %}desc{% else %}asc{% endif %}"
+               class="text-decoration-none text-dark">{% trans "Last refresh" %}{% if sort == 'last_status_refresh' %} {% if dir == 'asc' %}▲{% else %}▼{% endif %}{% endif %}</a>
+          </th>
+          <th>
+            <a href="?{{ base_params }}&sort=added&dir={% if sort == 'added' and dir == 'asc' %}desc{% else %}asc{% endif %}"
+               class="text-decoration-none text-dark">{% trans "Added" %}{% if sort == 'added' %} {% if dir == 'asc' %}▲{% else %}▼{% endif %}{% endif %}</a>
+          </th>
+          <th></th>
+          {% endwith %}
+        </tr>
+      </thead>
+      <tbody id="ignore-list-tbody">
+        {% for entry, local_cache in page_entries %}
+          {% include "geocaches/partials/_ignore_row.html" with entry=entry local_cache=local_cache editing=False %}
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Pagination -->
+  {% with last=page_obj.paginator.num_pages lo=page_obj.number|add:"-3" hi=page_obj.number|add:"3" %}
+  {% if page_obj.paginator.num_pages > 1 %}
+  <nav>
+    <ul class="pagination pagination-sm">
+      {% if page_obj.has_previous %}
+      <li class="page-item"><a class="page-link" href="?{{ filter_params }}&page={{ page_obj.previous_page_number }}">«</a></li>
+      {% else %}
+      <li class="page-item disabled"><span class="page-link">«</span></li>
+      {% endif %}
+
+      {% if lo > 1 %}
+      <li class="page-item"><a class="page-link" href="?{{ filter_params }}&page=1">1</a></li>
+      {% if lo > 2 %}<li class="page-item disabled"><span class="page-link">…</span></li>{% endif %}
+      {% endif %}
+
+      {% for num in page_obj.paginator.page_range %}
+        {% if num >= lo and num <= hi %}
+          {% if page_obj.number == num %}
+          <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+          {% else %}
+          <li class="page-item"><a class="page-link" href="?{{ filter_params }}&page={{ num }}">{{ num }}</a></li>
+          {% endif %}
+        {% endif %}
+      {% endfor %}
+
+      {% if hi < last %}
+      {% if hi < last|add:"-1" %}<li class="page-item disabled"><span class="page-link">…</span></li>{% endif %}
+      <li class="page-item"><a class="page-link" href="?{{ filter_params }}&page={{ last }}">{{ last }}</a></li>
+      {% endif %}
+
+      {% if page_obj.has_next %}
+      <li class="page-item"><a class="page-link" href="?{{ filter_params }}&page={{ page_obj.next_page_number }}">»</a></li>
+      {% else %}
+      <li class="page-item disabled"><span class="page-link">»</span></li>
+      {% endif %}
+    </ul>
+  </nav>
+  {% endif %}
+  {% endwith %}
+  {% endif %}
+</div>
+
+<!-- Add modal -->
+<div class="modal fade" id="addIgnoreModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form method="post" action="{% url 'geocaches:ignore_lists_add' %}">
+        {% csrf_token %}
+        <div class="modal-header">
+          <h5 class="modal-title">{% trans "Add to ignore list" %}</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label fw-semibold small">{% trans "Cache code" %}</label>
+            <input type="text" name="code" class="form-control form-control-sm font-monospace"
+                   placeholder="{% trans 'GC1234 or OC1234…' %}" required autofocus>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold small">{% trans "Add to" %}</label>
+            <div class="d-flex flex-column gap-1">
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="targets" value="internal"
+                       id="target-internal" checked>
+                <label class="form-check-label small" for="target-internal">{% trans "Internal (GCForge)" %}</label>
+              </div>
+              {% if has_gc %}
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="targets" value="gc"
+                       id="target-gc">
+                <label class="form-check-label small" for="target-gc">Geocaching.com</label>
+              </div>
+              {% endif %}
+              {% for plat in oc_platforms %}
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="targets" value="oc:{{ plat }}"
+                       id="target-{{ plat }}">
+                <label class="form-check-label small" for="target-{{ plat }}">{{ plat }}</label>
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+          <div class="mb-1">
+            <label class="form-label fw-semibold small">{% trans "Notes" %} <span class="text-muted fw-normal">{% trans "(optional)" %}</span></label>
+            <textarea name="notes" class="form-control form-control-sm" rows="2"
+                      placeholder="{% trans 'Why is this cache ignored?' %}"></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">{% trans "Cancel" %}</button>
+          <button type="submit" class="btn btn-primary btn-sm">{% trans "Add" %}</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

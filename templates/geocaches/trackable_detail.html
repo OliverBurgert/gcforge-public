@@ -1,0 +1,588 @@
+{% extends "base.html" %}
+{% load static cache_tags i18n %}
+{% block title %}{{ tb.reference_code }} — {{ tb.name }} — GCForge{% endblock %}
+
+{% block content %}
+<div class="px-3 py-2" id="tb-detail-content">
+
+  {# ── Header ── #}
+  <div class="d-flex align-items-center gap-3 mb-2 flex-wrap">
+    {% if tb.icon_url %}
+    <img src="{{ tb.icon_url|cached_image:'tb_icon' }}" alt="" class="flex-shrink-0"
+         style="height:24px;width:auto">
+    {% endif %}
+    <h5 class="mb-0 font-monospace">{{ tb.reference_code }}</h5>
+    <h5 class="mb-0 fw-normal">{{ tb.name }}</h5>
+    <span class="badge bg-secondary">{{ kind_label }}</span>
+    {% if tb.series %}<span class="text-muted small">{{ tb.series }}</span>{% endif %}
+    <a href="{{ external_url }}" target="_blank" rel="noopener"
+       class="btn btn-sm btn-outline-primary">&#8599; geocaching.com</a>
+    <a href="{{ edit_url }}" target="_blank" rel="noopener"
+       class="btn btn-sm btn-outline-secondary">&#8599; {% trans "Edit on GC" %}</a>
+    <form method="post" action="{% url 'geocaches:trackable_refresh' tb.reference_code %}"
+          id="refresh-form" class="d-inline">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-sm btn-outline-success" id="refresh-btn">&#8635; {% trans "Refresh" %}</button>
+    </form>
+    <span id="refresh-status" class="text-muted small"></span>
+    {% if not embed %}
+    <div class="ms-auto d-flex gap-2">
+      <a href="{% url 'geocaches:trackable_list' %}" class="btn btn-sm btn-outline-secondary">&larr; {% trans "Back" %}</a>
+      <button type="button" class="btn btn-sm btn-outline-danger"
+              data-bs-toggle="modal" data-bs-target="#tbDeleteModal">{% trans "Delete" %}</button>
+    </div>
+    {% endif %}
+  </div>
+
+  {# ── Delete modal ── #}
+  <div class="modal fade" id="tbDeleteModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">{% trans "Delete trackable?" %}</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <p>{% blocktrans with ref=tb.reference_code name=tb.name %}This will permanently delete <strong>{{ ref }} — {{ name }}</strong> from GCForge, along with its local log history.{% endblocktrans %}</p>
+          <p class="text-muted small mb-0">{% trans "The trackable still exists on geocaching.com. Visit the page again to re-sync it locally." %}</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans "Cancel" %}</button>
+          <form method="post" action="{% url 'geocaches:trackable_delete' tb.reference_code %}">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-danger">{% trans "Delete" %}</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {# ── Status row ── #}
+  <div class="card mb-3">
+    <div class="card-body py-2 px-3">
+      <div class="row row-cols-auto g-2 align-items-center small">
+
+        <div class="col">
+          <span class="text-muted">{% trans "State:" %}</span>
+          {% if tb.holder_state == "held_by_user" %}
+            <span class="badge bg-success">{{ holder_state_label }}</span>
+          {% elif tb.holder_state == "collection" %}
+            <span class="badge bg-info text-dark">{{ holder_state_label }}</span>
+          {% elif tb.holder_state == "missing" %}
+            <span class="badge bg-danger">{{ holder_state_label }}</span>
+          {% elif tb.holder_state == "in_cache" %}
+            <span class="badge bg-primary">{{ holder_state_label }}</span>
+          {% else %}
+            <span class="badge bg-secondary">{{ holder_state_label }}</span>
+          {% endif %}
+        </div>
+
+        <div class="col">
+          <span class="text-muted">{% trans "Tracking code:" %}</span>
+          <form method="post" action="{% url 'geocaches:trackable_tracking_code_save' tb.reference_code %}"
+                class="d-inline-flex align-items-center gap-1">
+            {% csrf_token %}
+            <input type="text" name="tracking_code"
+                   value="{{ tb.tracking_code }}"
+                   class="form-control form-control-sm font-monospace"
+                   style="width:7rem" maxlength="20"
+                   pattern="[A-Za-z0-9]*" placeholder="—"
+                   title="{% trans 'Private tracking code — edit to save' %}">
+            <button type="submit" class="btn btn-sm btn-link p-0">{% trans "Save" %}</button>
+          </form>
+        </div>
+
+        {% if tb.current_holder_name %}
+        <div class="col">
+          <span class="text-muted">{% trans "Holder:" %}</span>
+          <a href="https://www.geocaching.com/p/?u={{ tb.current_holder_name|urlencode }}" target="_blank" rel="noopener">{{ tb.current_holder_name }}</a>
+        </div>
+        {% endif %}
+
+        {% if tb.current_geocache_code %}
+        <div class="col">
+          <span class="text-muted">{% trans "Cache:" %}</span>
+          {% if tb.current_geocache_id %}
+            <a href="{% url 'geocaches:detail' tb.current_geocache_code %}">{{ tb.current_geocache_code }}{% if tb.current_geocache_name %} — {{ tb.current_geocache_name }}{% endif %}</a>
+          {% else %}
+            <a href="https://coord.info/{{ tb.current_geocache_code }}" target="_blank" rel="noopener">{{ tb.current_geocache_code }}{% if tb.current_geocache_name %} — {{ tb.current_geocache_name }}{% endif %} &#8599;</a>
+          {% endif %}
+        </div>
+        {% endif %}
+
+        {% if tb.owner_name %}
+        <div class="col">
+          <span class="text-muted">{% trans "Owner:" %}</span>
+          <a href="https://www.geocaching.com/p/?u={{ tb.owner_name|urlencode }}" target="_blank" rel="noopener">{{ tb.owner_name }}</a>
+        </div>
+        {% endif %}
+
+        {% if tb.released_date %}
+        <div class="col">
+          <span class="text-muted">{% trans "Released:" %}</span> {{ tb.released_date }}
+        </div>
+        {% endif %}
+
+        {% if tb.origin %}
+        <div class="col">
+          <span class="text-muted">{% trans "Origin:" %}</span> {{ tb.origin }}
+        </div>
+        {% endif %}
+
+        {% if tb.total_distance_km %}
+        <div class="col">
+          <span class="text-muted">{% trans "Distance:" %}</span> {{ tb.total_distance_km|floatformat:0 }} km
+        </div>
+        {% endif %}
+
+      </div>
+    </div>
+  </div>
+
+  {# ── Tags ── #}
+  <div class="card mb-3">
+    <div class="card-body py-2 px-3">
+      <form method="post" action="{% url 'geocaches:trackable_tags_save' tb.reference_code %}"
+            class="d-flex align-items-center gap-2 flex-wrap small">
+        {% csrf_token %}
+        <label class="text-muted mb-0">{% trans "Tags:" %}</label>
+        <input type="text" name="tags" class="form-control form-control-sm" style="max-width:32rem"
+               list="tb-tag-suggestions"
+               placeholder="{% trans 'comma-separated; new tags auto-create' %}"
+               value="{% for t in tags %}{{ t.name }}{% if not forloop.last %}, {% endif %}{% endfor %}">
+        <datalist id="tb-tag-suggestions">
+          {% for name in all_tags %}<option value="{{ name }}">{% endfor %}
+        </datalist>
+        <button type="submit" class="btn btn-sm btn-outline-primary">{% trans "Save tags" %}</button>
+      </form>
+    </div>
+  </div>
+
+  {# ── Action buttons (only when TB is actionable) ── #}
+  {% if tb.holder_state == "held_by_user" or tb.holder_state == "collection" %}
+  <div class="d-flex gap-2 mb-3 flex-wrap align-items-center">
+    <span class="text-muted small">{% trans "Actions:" %}</span>
+    {% if tb.holder_state == "collection" %}
+    <button type="button" class="btn btn-sm btn-outline-success"
+            data-bs-toggle="modal" data-bs-target="#actionModal"
+            data-action="move_to_inventory" data-label="{% trans 'Move to Inventory' %}">
+      {% trans "Move to Inventory" %}
+    </button>
+    {% endif %}
+    {% if tb.holder_state == "held_by_user" %}
+    <button type="button" class="btn btn-sm btn-outline-secondary"
+            data-bs-toggle="modal" data-bs-target="#actionModal"
+            data-action="move_to_collection" data-label="{% trans 'Move to Collection' %}">
+      {% trans "Move to Collection" %}
+    </button>
+    {% endif %}
+    <button type="button" class="btn btn-sm btn-outline-danger"
+            data-bs-toggle="modal" data-bs-target="#actionModal"
+            data-action="mark_missing" data-label="{% trans 'Mark Missing' %}">
+      {% trans "Mark Missing" %}
+    </button>
+  </div>
+  <div id="action-result" class="mb-2 small"></div>
+  {% endif %}
+
+  {# ── Action modal ── #}
+  <div class="modal fade" id="actionModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header py-2">
+          <h6 class="modal-title mb-0" id="actionModalLabel">{% trans "Action" %}</h6>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body py-2">
+          <div class="mb-2">
+            <label class="form-label small mb-1">{% trans "Log text (optional)" %}</label>
+            <textarea id="action-text" class="form-control form-control-sm" rows="3"></textarea>
+          </div>
+          <div id="action-modal-error" class="text-danger small d-none"></div>
+          <div id="action-modal-hint" class="text-muted small d-none mt-1"></div>
+        </div>
+        <div class="modal-footer py-2">
+          <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">{% trans "Cancel" %}</button>
+          <button type="button" class="btn btn-primary btn-sm" id="action-submit-btn">{% trans "Submit" %}</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {# ── Two-column body ── #}
+  <div class="row g-3">
+
+    {# Left column: goal + about #}
+    <div class="col-lg-7">
+      {% if tb.goal %}
+      <div class="card mb-3">
+        <div class="card-header py-1 small fw-semibold">{% trans "Goal" %}</div>
+        <div class="card-body py-2 px-3 small desc-html">{{ tb.goal|safe_html }}</div>
+      </div>
+      {% endif %}
+      {% if tb.about %}
+      <div class="card mb-3">
+        <div class="card-header py-1 small fw-semibold">{% trans "About" %}</div>
+        <div class="card-body py-2 px-3 small desc-html">{{ tb.about|safe_html }}</div>
+      </div>
+      {% endif %}
+      {% if not tb.goal and not tb.about %}
+      <div class="text-muted small mb-3">{% trans "No description available. Try refreshing." %}</div>
+      {% endif %}
+
+      {% if images %}
+      <div class="card mb-3">
+        <div class="card-header py-1 small fw-semibold">{% trans "Gallery" %}</div>
+        <div class="card-body py-2 px-3">
+          <div class="d-flex flex-wrap gap-3">
+            {% for img in images %}
+            <figure class="m-0 d-flex flex-column align-items-center" style="max-width:200px">
+              <a href="{{ img.large_url|default:img.url|cached_image:'tb_listing' }}" target="_blank" rel="noopener"
+                 title="{{ img.caption }}{% if img.description %} — {{ img.description|striptags }}{% endif %}">
+                <img src="{{ img.thumbnail_url|default:img.url|cached_image:'tb_listing' }}"
+                     alt="{{ img.caption }}"
+                     class="rounded border"
+                     style="height:120px;width:auto"
+                     loading="lazy">
+              </a>
+              {% if img.caption %}
+              <figcaption class="small text-muted text-center mt-1" style="max-width:200px;line-height:1.2">{{ img.caption }}</figcaption>
+              {% endif %}
+            </figure>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+      {# Log history — left column so it sits beside the map #}
+      <div class="card mb-3" id="logs">
+        <div class="card-header py-1 small fw-semibold d-flex justify-content-between">
+          <span>{% trans "Log History" %}</span>
+          <span class="text-muted">{% blocktrans count n=page_obj.paginator.count %}{{ n }} log{% plural %}{{ n }} logs{% endblocktrans %}</span>
+        </div>
+        {% if page_obj.object_list %}
+        <div class="table-responsive">
+          <table class="table table-sm table-hover mb-0 small">
+            <thead class="table-light">
+              <tr>
+                <th style="width:90px">{% trans "Date" %}</th>
+                <th style="width:140px">{% trans "Type" %}</th>
+                <th>{% trans "User" %}</th>
+                <th>{% trans "Cache" %}</th>
+                <th>{% trans "Log text" %}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for log in page_obj %}
+              <tr{% if log.geocache_lat is not None %} class="tb-log-row" data-log-id="{{ log.id }}" style="cursor:pointer"{% endif %}>
+                <td class="text-nowrap text-muted">{{ log.logged_date }}</td>
+                <td>{{ log.log_type }}</td>
+                <td>{{ log.user_name|default:"—" }}</td>
+                <td>
+                  {% if log.geocache_ref_code %}
+                    {% if log.geocache_id %}
+                      <a href="{% url 'geocaches:detail' log.geocache_ref_code %}">{{ log.geocache_ref_code }}</a>
+                    {% else %}
+                      <a href="https://coord.info/{{ log.geocache_ref_code }}" target="_blank" rel="noopener">{{ log.geocache_ref_code }} &#8599;</a>
+                    {% endif %}
+                  {% else %}—{% endif %}
+                </td>
+                <td>
+                  {% if log.text %}
+                    {% if log.text|length > 200 %}
+                      <span class="log-short">{{ log.text|truncatechars:200 }}
+                        <a href="#" class="log-expand-link" onclick="this.closest('td').querySelector('.log-short').classList.add('d-none');this.closest('td').querySelector('.log-full').classList.remove('d-none');return false;">{% trans "more" %}</a>
+                      </span>
+                      <span class="log-full d-none">{% tb_log_html log.text tb %}
+                        <a href="#" class="log-expand-link" onclick="this.closest('td').querySelector('.log-full').classList.add('d-none');this.closest('td').querySelector('.log-short').classList.remove('d-none');return false;">{% trans "less" %}</a>
+                      </span>
+                    {% else %}
+                      {% tb_log_html log.text tb %}
+                    {% endif %}
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+
+        {# Pagination — pagination-sm ±3 window pattern #}
+        {% if page_obj.paginator.num_pages > 1 %}
+        {% with last=page_obj.paginator.num_pages lo=page_obj.number|add:"-3" hi=page_obj.number|add:"3" %}
+        <nav class="py-1 px-2">
+          <ul class="pagination pagination-sm justify-content-center mb-0">
+            {% if page_obj.has_previous %}
+            <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}#logs">&laquo;</a></li>
+            {% else %}
+            <li class="page-item disabled"><span class="page-link">&laquo;</span></li>
+            {% endif %}
+            {% if lo > 1 %}
+            <li class="page-item"><a class="page-link" href="?page=1#logs">1</a></li>
+            {% if lo > 2 %}<li class="page-item disabled"><span class="page-link">&hellip;</span></li>{% endif %}
+            {% endif %}
+            {% for num in page_obj.paginator.page_range %}
+              {% if num >= lo and num <= hi %}
+                {% if page_obj.number == num %}
+                <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                {% else %}
+                <li class="page-item"><a class="page-link" href="?page={{ num }}#logs">{{ num }}</a></li>
+                {% endif %}
+              {% endif %}
+            {% endfor %}
+            {% if hi < last %}
+            {% if hi < last|add:"-1" %}<li class="page-item disabled"><span class="page-link">&hellip;</span></li>{% endif %}
+            <li class="page-item"><a class="page-link" href="?page={{ last }}#logs">{{ last }}</a></li>
+            {% endif %}
+            {% if page_obj.has_next %}
+            <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}#logs">&raquo;</a></li>
+            {% else %}
+            <li class="page-item disabled"><span class="page-link">&raquo;</span></li>
+            {% endif %}
+          </ul>
+        </nav>
+        {% endwith %}
+        {% endif %}
+        {% else %}
+        <div class="card-body py-3 text-center text-muted small">{% trans "No logs yet. Use Refresh to fetch the log history." %}</div>
+        {% endif %}
+      </div>
+    </div>
+
+    {# Right column: map + stats + coords editor #}
+    <div class="col-lg-5">
+      <div class="card mb-3">
+        <div class="card-header py-1 small fw-semibold d-flex justify-content-between">
+          <span>{% trans "Movement Map" %}</span>
+          <div class="btn-group btn-group-sm" id="tb-layer-switcher">
+            <button class="btn btn-outline-secondary btn-sm py-0" data-layer="street" onclick="gcfTbSetLayer('street',this)">{% trans "Street" %}</button>
+            <button class="btn btn-outline-secondary btn-sm py-0" data-layer="outdoor" onclick="gcfTbSetLayer('outdoor',this)">{% trans "Topo" %}</button>
+            <button class="btn btn-outline-secondary btn-sm py-0" data-layer="aerial" onclick="gcfTbSetLayer('aerial',this)">{% trans "Aerial" %}</button>
+          </div>
+        </div>
+        <div id="tb-movement-map"
+             style="height:400px"
+             data-home-lat="{{ home_ref.latitude|default:'' }}"
+             data-home-lon="{{ home_ref.longitude|default:'' }}"
+             data-current-lat="{{ tb.current_lat|default:'' }}"
+             data-current-lon="{{ tb.current_lon|default:'' }}"
+             data-current-code="{{ tb.current_geocache_code }}"
+             data-current-name="{{ tb.current_geocache_name }}">
+        </div>
+      </div>
+
+      {# Stats panel #}
+      <div class="card mb-3">
+        <div class="card-header py-1 small fw-semibold">{% trans "Stats" %}</div>
+        <div class="card-body py-2 px-3 small">
+          <div class="row g-1">
+            {% if tb.total_visits is not None %}
+            <div class="col-6 text-muted">{% trans "Total visits" %}</div>
+            <div class="col-6">{{ tb.total_visits }}</div>
+            {% endif %}
+            {% if tb.last_log_date %}
+            <div class="col-6 text-muted">{% trans "Last activity" %}</div>
+            <div class="col-6">{{ tb.last_log_date }}</div>
+            {% endif %}
+            {% if tb.current_geocache_code %}
+            <div class="col-6 text-muted">{% trans "Current cache" %}</div>
+            <div class="col-6">
+              {% if tb.current_geocache_id %}
+                <a href="{% url 'geocaches:detail' tb.current_geocache_code %}">{{ tb.current_geocache_code }}</a>
+              {% else %}
+                <a href="https://coord.info/{{ tb.current_geocache_code }}" target="_blank" rel="noopener">{{ tb.current_geocache_code }} &#8599;</a>
+              {% endif %}
+            </div>
+            {% endif %}
+            {% if tb.total_distance_km %}
+            <div class="col-6 text-muted">{% trans "Distance traveled" %}</div>
+            <div class="col-6">{{ tb.total_distance_km|floatformat:0 }} km</div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      {# Coords editor #}
+      <div class="card mb-3">
+        <div class="card-header py-1 small fw-semibold d-flex align-items-center gap-2">
+          {% trans "Current position" %}
+          {% if tb.coords_user_override %}
+          <span class="badge bg-warning text-dark" style="font-size:0.65rem">{% trans "user-overridden" %}</span>
+          {% endif %}
+        </div>
+        <div class="card-body py-2 px-3">
+          <form id="coords-form" class="row g-2 align-items-end">
+            {% csrf_token %}
+            <div class="col">
+              <label class="form-label mb-0 small">{% trans "Lat" %}</label>
+              <input type="number" name="lat" id="coords-lat" step="0.000001"
+                     class="form-control form-control-sm"
+                     value="{{ tb.current_lat|default:'' }}">
+            </div>
+            <div class="col">
+              <label class="form-label mb-0 small">{% trans "Lon" %}</label>
+              <input type="number" name="lon" id="coords-lon" step="0.000001"
+                     class="form-control form-control-sm"
+                     value="{{ tb.current_lon|default:'' }}">
+            </div>
+            <div class="col-auto">
+              <button type="submit" class="btn btn-sm btn-outline-primary">{% trans "Save" %}</button>
+              {% if tb.current_lat %}
+              <button type="button" class="btn btn-sm btn-outline-secondary" id="coords-clear-btn">{% trans "Clear" %}</button>
+              {% endif %}
+            </div>
+          </form>
+          <div id="coords-status" class="text-muted small mt-1"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_head %}
+{{ movements|json_script:"tb-movements" }}
+<style>
+  tr.tb-log-row:hover { background-color: rgba(13, 110, 253, 0.08); }
+</style>
+<script>
+var _gcfTbRefreshUrl = "{% url 'geocaches:trackable_refresh' tb.reference_code %}";
+var _gcfTbActionUrl  = "{% url 'geocaches:trackable_action' tb.reference_code %}";
+var _gcfTbCoordsUrl  = "{% url 'geocaches:trackable_coords_save' tb.reference_code %}";
+var _gcfTbCsrfToken  = "{{ csrf_token }}";
+</script>
+<script>
+// ── Refresh ──────────────────────────────────────────────────────────────────
+document.getElementById('refresh-form').addEventListener('submit', function(e) {
+  e.preventDefault();
+  var btn = document.getElementById('refresh-btn');
+  var status = document.getElementById('refresh-status');
+  btn.disabled = true;
+  btn.textContent = '{% trans "Refreshing…" %}';
+  status.textContent = '';
+  fetch(_gcfTbRefreshUrl, {
+    method: 'POST',
+    headers: {'X-CSRFToken': _gcfTbCsrfToken, 'HX-Request': '1'},
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(d) {
+    btn.disabled = false;
+    btn.textContent = '↻ {% trans "Refresh" %}';
+    if (d.ok) {
+      var msg = '{% trans "Refreshed" %}';
+      if (d.new_logs) msg += ' — ' + d.new_logs + ' {% trans "new log(s)" %}';
+      status.textContent = msg;
+      setTimeout(function() { window.location.reload(); }, 800);
+    } else {
+      status.className = 'text-danger small';
+      status.textContent = d.error || '{% trans "Refresh failed" %}';
+    }
+  })
+  .catch(function(err) {
+    btn.disabled = false;
+    btn.textContent = '↻ {% trans "Refresh" %}';
+    status.className = 'text-danger small';
+    status.textContent = '{% trans "Network error:" %} ' + err;
+  });
+});
+
+// ── Action modal ─────────────────────────────────────────────────────────────
+var _gcfTbPendingAction = '';
+document.querySelectorAll('[data-bs-target="#actionModal"]').forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    _gcfTbPendingAction = this.dataset.action;
+    document.getElementById('actionModalLabel').textContent = this.dataset.label;
+    document.getElementById('action-text').value = '';
+    document.getElementById('action-modal-error').classList.add('d-none');
+    document.getElementById('action-modal-hint').classList.add('d-none');
+  });
+});
+
+document.getElementById('action-submit-btn').addEventListener('click', function() {
+  if (!_gcfTbPendingAction) return;
+  var btn = this;
+  btn.disabled = true;
+  var body = new FormData();
+  body.append('action', _gcfTbPendingAction);
+  body.append('text', document.getElementById('action-text').value);
+  body.append('csrfmiddlewaretoken', _gcfTbCsrfToken);
+  fetch(_gcfTbActionUrl, { method: 'POST', body: body })
+  .then(function(r) { return r.json(); })
+  .then(function(d) {
+    btn.disabled = false;
+    if (d.ok) {
+      var modal = bootstrap.Modal.getInstance(document.getElementById('actionModal'));
+      if (modal) modal.hide();
+      document.getElementById('action-result').innerHTML =
+        '<span class="text-success">{% trans "Done. Reloading…" %}</span>';
+      setTimeout(function() { window.location.reload(); }, 800);
+    } else {
+      var errEl = document.getElementById('action-modal-error');
+      errEl.textContent = d.error || '{% trans "Action failed" %}';
+      errEl.classList.remove('d-none');
+      if (d.hint) {
+        var hintEl = document.getElementById('action-modal-hint');
+        hintEl.innerHTML = '{% trans "To fix:" %} <a href="' + d.hint + '" target="_blank" rel="noopener">{% trans "open the TB edit page" %} &#8599;</a> {% trans 'and enable "Is Collectible".' %}';
+        hintEl.classList.remove('d-none');
+      }
+    }
+  })
+  .catch(function(err) {
+    btn.disabled = false;
+    document.getElementById('action-modal-error').textContent = '{% trans "Network error:" %} ' + err;
+    document.getElementById('action-modal-error').classList.remove('d-none');
+  });
+});
+
+// ── Coords form ──────────────────────────────────────────────────────────────
+document.getElementById('coords-form').addEventListener('submit', function(e) {
+  e.preventDefault();
+  var status = document.getElementById('coords-status');
+  var body = new FormData(this);
+  fetch(_gcfTbCoordsUrl, { method: 'POST', body: body })
+  .then(function(r) { return r.json(); })
+  .then(function(d) {
+    if (d.ok) {
+      status.textContent = '{% trans "Saved." %}';
+      status.className = 'text-success small mt-1';
+      setTimeout(function() { window.location.reload(); }, 600);
+    } else {
+      status.textContent = d.error || '{% trans "Save failed" %}';
+      status.className = 'text-danger small mt-1';
+    }
+  });
+});
+
+var clearBtn = document.getElementById('coords-clear-btn');
+if (clearBtn) {
+  clearBtn.addEventListener('click', function() {
+    document.getElementById('coords-lat').value = '';
+    document.getElementById('coords-lon').value = '';
+    document.getElementById('coords-form').dispatchEvent(new Event('submit'));
+  });
+}
+</script>
+<script src="{% static 'js/map-loader.js' %}"></script>
+<script>
+gcfLoadMapLibre({
+  scripts: [
+    '{% static "js/map-styles.js" %}',
+    '{% static "js/trackable-detail-map.js" %}'
+  ],
+  onReady: function() {
+    if (typeof gcfTrackableMapInit === 'function') gcfTrackableMapInit();
+    document.querySelectorAll('tr.tb-log-row').forEach(function(tr) {
+      var id = parseInt(tr.dataset.logId, 10);
+      tr.addEventListener('mouseenter', function() { if (typeof gcfTbHighlightLog === 'function') gcfTbHighlightLog(id); });
+      tr.addEventListener('mouseleave', function() { if (typeof gcfTbHighlightLog === 'function') gcfTbHighlightLog(null); });
+      tr.addEventListener('click', function(e) {
+        if (e.target.tagName === 'A') return;
+        if (typeof gcfTbFocusLog === 'function') gcfTbFocusLog(id);
+      });
+    });
+  }
+});
+</script>
+{% endblock %}
