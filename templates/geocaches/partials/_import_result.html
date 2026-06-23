@@ -1,0 +1,16 @@
+{% load i18n %}
+{% if result %}
+<div class="alert {% if result.errors %}alert-warning{% else %}alert-success{% endif %} mb-4">
+  <strong>{% if db_name %}{% blocktrans with name=db_name %}{{ name }} import complete{% endblocktrans %}{% else %}{% trans "Import complete" %}{% endif %}</strong>{% if result.file_count %} {% blocktrans count n=result.file_count %}({{ n }} file){% plural %}({{ n }} files){% endblocktrans %}{% endif %} —
+  {% blocktrans with created=result.created updated=result.updated locked=result.locked %}created: {{ created }}, updated: {{ updated }}, locked: {{ locked }}{% endblocktrans %}
+  {% if result.errors %}
+  <ul class="mb-0 mt-2 small">
+    {% for e in result.errors %}<li>{{ e }}</li>{% endfor %}
+  </ul>
+  {% endif %}
+</div>
+{% endif %}
+
+{% for e in errors %}
+<div class="alert alert-danger">{{ e }}</div>
+{% endfor %}

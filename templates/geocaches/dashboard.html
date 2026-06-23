@@ -1,0 +1,728 @@
+{% extends "base.html" %}
+{% load i18n l10n icon_tags static %}
+{% block title %}{% trans "Dashboard" %} — GCForge{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'vendor/flag-icons/css/flag-icons.min.css' %}">
+<style>
+  .gcf-stat-table { border-collapse: separate; border-spacing: 1px; font-size: 12px; }
+  .gcf-stat-table td, .gcf-stat-table th { padding: 2px 6px; text-align: center; }
+  .gcf-stat-table th { background: #e9ecef; font-weight: 600; }
+  .gcf-stat-table .gcf-rowhead { background: #e9ecef; font-weight: 600; }
+  .gcf-stat-table .gcf-total { background: #dee2e6; font-weight: 600; font-style: italic; }
+  .gcf-stat-table .gcf-cell { color: #fff; }
+  .gcf-stat-table .gcf-cell-empty { color: #adb5bd; }
+  .gcf-bar-table td { padding: 2px 8px; vertical-align: middle; }
+  .gcf-bar-table .gcf-bar-count { font-variant-numeric: tabular-nums; }
+  .gcf-bar-track { background: #f1f3f5; border-radius: 2px; height: 13px; min-width: 30px; }
+  .gcf-bar-fill { background: #8c7a1e; height: 100%; border-radius: 2px; }
+  .gcf-chart-toggle .btn { padding: 1px 6px; line-height: 1; }
+  .gcf-chart-toggle svg { width: 14px; height: 14px; display: block; }
+  .gcf-souv-grid { display: flex; flex-wrap: wrap; gap: 10px; }
+  .gcf-souv-card { width: 8.5rem; text-align: center; }
+  .gcf-souv-card img { width: 100%; aspect-ratio: 1; object-fit: contain; }
+  .gcf-souv-card .gcf-souv-title { font-size: 12px; font-weight: 600; line-height: 1.2;
+    margin-top: 3px; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical; }
+  .gcf-souv-card .gcf-souv-date { font-size: 10px; color: #888; }
+  .gcf-souv-card .gcf-souv-tags { display: flex; flex-wrap: wrap; gap: 2px;
+    justify-content: center; align-items: center; margin-top: 3px; }
+  .gcf-souv-card .gcf-souv-tags .badge { font-weight: 500; font-size: 9px; }
+  .gcf-souv-tagbtn { font-size: 12px; text-decoration: none; line-height: 1; }
+  .gcf-treasure-card { display: flex; gap: 12px; border: 1px solid #e5e5e5; border-radius: 6px;
+    padding: 10px; align-items: center; }
+  .gcf-treasure-open { border: 0; background: none; padding: 0; line-height: 0;
+    flex: 0 0 112px; cursor: pointer; }
+  .gcf-treasure-open img { width: 112px; height: 112px; object-fit: contain; }
+  .gcf-treasure-bar { background: #f1f3f5; border-radius: 3px; height: 8px; overflow: hidden; }
+  .gcf-treasure-bar > div { background: #2ecc40; height: 100%; }
+  .gcf-treasure-items { display: flex; flex-wrap: wrap; gap: 14px; }
+  .gcf-treasure-item { width: 92px; text-align: center; }
+  .gcf-treasure-item img { width: 88px; height: 88px; object-fit: contain; }
+  .gcf-treasure-item.locked img { opacity: 0.45; filter: grayscale(65%); }
+  .gcf-treasure-item .gcf-treasure-ph { width: 88px; height: 88px; border-radius: 50%;
+    background: #f1f3f5; color: #c7ccd1; display: flex; align-items: center;
+    justify-content: center; font-size: 30px; font-weight: 700; margin: 0 auto; }
+  .gcf-treasure-item-name { font-size: 10px; color: #666; line-height: 1.15; margin-top: 3px;
+    overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+  .gcf-cal-table td { width: 22px; font-size: 9px; padding: 1px; }
+  .gcf-cal-table .gcf-invalid { background: #f1f3f5; }
+  .gcf-dash-map { height: 440px; width: 100%; border: 1px solid #dee2e6; border-radius: 4px; }
+  .gcf-dash-map .maplibregl-popup-content { padding: 4px 8px; font-size: 12px; }
+  .gcf-dash-maprow { display: flex; gap: 14px; flex-wrap: wrap; align-items: flex-start; }
+  .gcf-dash-mapcol { flex: 1 1 480px; min-width: 320px; }
+  .gcf-dash-table { flex: 0 1 360px; max-height: 470px; overflow-y: auto; }
+  .gcf-dash-table-head { font-weight: 600; font-size: 13px; margin-bottom: 4px; }
+  .gcf-dash-country-table td { padding: 2px 6px; font-size: 12px; vertical-align: middle; }
+  .gcf-dash-country-table .gcf-flag-cell { width: 1.7em; }
+  .gcf-dash-country-table .fi { width: 1.33em; height: 1em; box-shadow: 0 0 0 1px #00000018; }
+  .gcf-dash-country-table .gcf-region-flag { width: 1.33em; height: 1em; object-fit: contain; box-shadow: 0 0 0 1px #00000018; vertical-align: middle; }
+  .gcf-dash-legend { display: flex; align-items: center; gap: 6px; font-size: 11px; color: #555; margin-top: 5px; }
+  .gcf-dash-legend-bar { flex: 1; height: 8px; border-radius: 2px;
+    background: linear-gradient(to right, hsl(120,70%,45%), hsl(60,70%,45%), hsl(0,70%,45%)); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="px-3 py-3">
+  <ul class="nav nav-tabs mb-3" id="dashboard-tabs" role="tablist">
+    <li class="nav-item" role="presentation">
+      <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#dash-home" type="button">
+        {% trans "Dashboard" %}
+      </button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" data-bs-toggle="tab" data-bs-target="#dash-stats" type="button">
+        {% trans "Statistics" %}
+      </button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" data-bs-toggle="tab" data-bs-target="#dash-jasmer" type="button">
+        {% trans "D/T, Jasmer et al." %}
+      </button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" data-bs-toggle="tab" data-bs-target="#dash-maps" type="button">
+        {% trans "Maps" %}
+      </button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" data-bs-toggle="tab" data-bs-target="#dash-360" type="button">
+        {% trans "360° from Location" %}
+      </button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" data-bs-toggle="tab" data-bs-target="#dash-souvenirs" type="button">
+        {% trans "Souvenirs" %}
+      </button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" data-bs-toggle="tab" data-bs-target="#dash-treasures" type="button">
+        {% trans "Treasures" %}
+      </button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" data-bs-toggle="tab" data-bs-target="#dash-alc" type="button">
+        {% trans "Adventure Lab" %}
+      </button>
+    </li>
+  </ul>
+
+  {# Shared chart labels (read by dashboard-charts.js); kept in the shell so the HTMX-loaded Statistics + Adventure Lab charts can read them. #}
+  {% trans "Cumulative total" as lbl_cumulative %}
+  {% trans "Finds per month" as lbl_monthly %}
+  {% trans "Finds by year" as lbl_by_year %}
+  {% trans "Finds by month" as lbl_by_month %}
+  {% trans "Finds by bearing" as lbl_bearing_count %}
+  {% trans "Average distance by bearing (km)" as lbl_bearing_dist %}
+  <script type="application/json" id="chart-labels">
+    {"cumulative": "{{ lbl_cumulative|escapejs }}",
+     "monthly": "{{ lbl_monthly|escapejs }}",
+     "byYear": "{{ lbl_by_year|escapejs }}",
+     "byMonth": "{{ lbl_by_month|escapejs }}",
+     "bearingCount": "{{ lbl_bearing_count|escapejs }}",
+     "bearingDist": "{{ lbl_bearing_dist|escapejs }}"}
+  </script>
+
+  <div class="tab-content">
+    {# ── Tab 1: Home — calendar agenda + management ─────────────────── #}
+    <div class="tab-pane fade show active" id="dash-home" role="tabpanel"
+         hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
+      <div class="row g-3" style="max-width:1100px">
+        <div class="col-lg-7">
+          <div id="dash-cal-agenda"
+               hx-get="{% url 'geocaches:calendar_agenda' %}"
+               hx-trigger="load, calendar:reload from:body"
+               hx-target="this" hx-swap="innerHTML">
+            <div class="text-muted small">{% trans "Loading…" %}</div>
+          </div>
+        </div>
+        <div class="col-lg-5">
+          {# Subscribe card #}
+          <div class="card mb-3">
+            <div class="card-body">
+              <h6 class="card-title">{% trans "Subscribe in your calendar app" %}</h6>
+              <p class="text-muted small mb-2">{% trans "Add this URL as a subscribed/network calendar in Thunderbird, Outlook, etc. It updates automatically while GCForge is running." %}</p>
+              <div class="input-group input-group-sm mb-2">
+                <input type="text" class="form-control font-monospace" id="cal-feed-url"
+                       value="{{ calendar_feed_urls.webcal }}" readonly>
+                <button class="btn btn-outline-secondary" type="button"
+                        onclick="gcfCopyCalUrl()">{% trans "Copy" %}</button>
+              </div>
+              <a href="{{ calendar_feed_urls.download }}" class="btn btn-sm btn-outline-primary" download>
+                {% trans "Download .ics" %}</a>
+              <details class="small text-muted mt-2">
+                <summary>{% trans "Using Outlook?" %}</summary>
+                <p class="mb-0 mt-1">{% blocktrans %}New Outlook and Microsoft 365/Exchange accounts add subscriptions via Microsoft's cloud servers, which cannot reach this local address — the subscription will fail. Use Thunderbird for a live calendar, or use "Download .ics" and import the file. Classic Outlook with a POP/IMAP account can subscribe to the local URL.{% endblocktrans %}</p>
+              </details>
+            </div>
+          </div>
+
+          {# Populate / clear controls #}
+          <div class="card">
+            <div class="card-body">
+              <h6 class="card-title">{% trans "Update calendar" %}</h6>
+              <div class="d-flex flex-wrap gap-2 mb-3">
+                <button class="btn btn-sm btn-primary"
+                        hx-post="{% url 'geocaches:calendar_sync_events' %}"
+                        hx-target="#dash-cal-agenda" hx-swap="innerHTML">
+                  {% trans "Add all upcoming events" %}</button>
+                <button class="btn btn-sm btn-outline-secondary"
+                        hx-post="{% url 'geocaches:calendar_clear' %}" hx-vals='{"kind": "event"}'
+                        hx-target="#dash-cal-agenda" hx-swap="innerHTML">
+                  {% trans "Clear events" %}</button>
+                <button class="btn btn-sm btn-outline-danger"
+                        hx-post="{% url 'geocaches:calendar_clear' %}" hx-vals='{"kind": "all"}'
+                        hx-confirm="{% trans 'Remove all calendar entries?' %}"
+                        hx-target="#dash-cal-agenda" hx-swap="innerHTML">
+                  {% trans "Clear all" %}</button>
+              </div>
+
+              <label class="form-label small fw-semibold mb-1">
+                {% trans "Fill upcoming days I haven't filled yet" %}</label>
+              <form hx-post="{% url 'geocaches:calendar_add_missing' %}"
+                    hx-target="#dash-cal-agenda" hx-swap="innerHTML"
+                    class="d-flex flex-wrap align-items-end gap-2">
+                <div>
+                  <label class="form-label small mb-0" for="cal-miss-type">{% trans "Type" %}</label>
+                  <select class="form-select form-select-sm" id="cal-miss-type" name="stat_type" style="width:auto">
+                    {% for value, label in type_options %}
+                    <option value="{{ value }}">{{ label }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+                <div>
+                  <label class="form-label small mb-0" for="cal-miss-min">{% trans "Min" %}</label>
+                  <select class="form-select form-select-sm" id="cal-miss-min" name="minimum" style="width:auto">
+                    {% for n in minimum_choices %}<option value="{{ n }}">{{ n }}</option>{% endfor %}
+                  </select>
+                </div>
+                <div>
+                  <label class="form-label small mb-0" for="cal-miss-days">{% trans "Range" %}</label>
+                  <select class="form-select form-select-sm" id="cal-miss-days" name="days" style="width:auto">
+                    <option value="30">{% trans "Next 30 days" %}</option>
+                    <option value="90">{% trans "Next 90 days" %}</option>
+                    <option value="365" selected>{% trans "Next 12 months" %}</option>
+                  </select>
+                </div>
+                <button class="btn btn-sm btn-primary" type="submit">{% trans "Fill missing days" %}</button>
+              </form>
+
+              <label class="form-label small fw-semibold mb-1 mt-3">
+                {% trans "Remove days I filled earlier" %}</label>
+              <form hx-post="{% url 'geocaches:calendar_remove_missing' %}"
+                    hx-target="#dash-cal-agenda" hx-swap="innerHTML"
+                    class="d-flex flex-wrap align-items-end gap-2">
+                <div>
+                  <label class="form-label small mb-0" for="cal-rm-type">{% trans "Type" %}</label>
+                  <select class="form-select form-select-sm" id="cal-rm-type" name="stat_type" style="width:auto">
+                    {% for value, label in type_options %}
+                    <option value="{{ value }}">{{ label }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+                <button class="btn btn-sm btn-outline-danger" type="submit">{% trans "Remove filled days" %}</button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {# ── Tab 2: statistics — body loaded in the background via HTMX ──── #}
+    <div class="tab-pane fade" id="dash-stats" role="tabpanel">
+      <div id="dash-stats-body"
+           hx-get="{% url 'geocaches:dashboard_statistics' %}"
+           hx-trigger="load" hx-target="this" hx-swap="innerHTML">
+        <div class="text-center text-muted py-5">
+          <span class="spinner-border spinner-border-sm"></span> {% trans "Loading…" %}
+        </div>
+      </div>
+    </div>
+
+    {# ── Tab: Adventure Lab — body loaded in the background via HTMX ── #}
+    <div class="tab-pane fade" id="dash-alc" role="tabpanel"
+         hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
+      <div id="dash-alc-body"
+           hx-get="{% url 'geocaches:dashboard_alc' %}"
+           hx-trigger="load" hx-target="this" hx-swap="innerHTML">
+        <div class="text-center text-muted py-5">
+          <span class="spinner-border spinner-border-sm"></span> {% trans "Loading…" %}
+        </div>
+      </div>
+    </div>
+
+    {# ── Tab 3: D/T, Jasmer et al. ─────────────────────────────────── #}
+    <div class="tab-pane fade" id="dash-jasmer" role="tabpanel">
+
+      {# Type-filterable tables #}
+      <div class="d-flex align-items-center gap-2 mb-2 flex-wrap">
+        <label class="form-label mb-0 small fw-semibold">{% trans "Filter these tables by type:" %}</label>
+        <select class="form-select form-select-sm" style="width:auto" id="dash-stat-type"
+                hx-get="{% url 'geocaches:dashboard_stat_tables' %}"
+                hx-target="#dashboard-stat-tables" hx-swap="innerHTML"
+                name="stat_type">
+          {% for value, label in type_options %}
+          <option value="{{ value }}" {% if not value %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+        <button type="button" class="btn btn-sm btn-outline-primary"
+                onclick="gcfDashMissing('all', null)"
+                title="{% trans 'Find unfound caches that fill any D/T, placed-month or placed-date gap' %}">
+          {% trans "Find missing in DB" %}
+        </button>
+      </div>
+
+      {# Tables load in the background; the type select re-fetches them on change. #}
+      <div id="dashboard-stat-tables"
+           hx-get="{% url 'geocaches:dashboard_stat_tables' %}"
+           hx-trigger="load" hx-swap="innerHTML">
+        <div class="text-center text-muted py-5">
+          <span class="spinner-border spinner-border-sm"></span> {% trans "Loading…" %}
+        </div>
+      </div>
+    </div>
+
+    {# ── Tab 4: maps — body loaded in the background via HTMX ──────── #}
+    <div class="tab-pane fade" id="dash-maps" role="tabpanel">
+      <div id="dash-maps-body"
+           hx-get="{% url 'geocaches:dashboard_maps_panel' %}"
+           hx-trigger="load" hx-target="this" hx-swap="innerHTML">
+        <div class="text-center text-muted py-5">
+          <span class="spinner-border spinner-border-sm"></span> {% trans "Loading…" %}
+        </div>
+      </div>
+    </div>
+
+    {# ── Tab 5: 360° from Location ──────────────────────────────────── #}
+    <div class="tab-pane fade" id="dash-360" role="tabpanel">
+      <div id="dash-360-root"
+           data-url="{% url 'geocaches:dashboard_360_data' %}"
+           data-default-ref="{{ default_ref_id|default:'' }}"
+           data-default-km="{{ h360_default_km }}"
+           data-finds-label="{% trans 'finds' %}"
+           data-loading-label="{% trans 'Loading…' %}"
+           data-searching-label="{% trans 'Searching…' %}"
+           data-grid-url="{% url 'geocaches:dashboard_360_grid' %}"
+           data-setloc-url="{% url 'geocaches:dashboard_360_set_location' %}"
+           data-detail-url-template="{% url 'geocaches:detail' 'CODEXX' %}">
+      {% csrf_token %}
+      {% if ref_points %}
+        {# Controls: location · max distance · goal #}
+        <div class="d-flex align-items-end gap-3 flex-wrap mb-3">
+          <div>
+            <label class="form-label mb-0 small fw-semibold" for="h360-ref">{% trans "Location" %}</label>
+            <select class="form-select form-select-sm" id="h360-ref" style="width:auto">
+              {% for rp in ref_points %}
+              <option value="{{ rp.id }}" {% if rp.id == default_ref_id %}selected{% endif %}>{{ rp.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div>
+            <label class="form-label mb-0 small fw-semibold" for="h360-km">
+              {% trans "Maximum distance" %} (km)</label>
+            <input type="number" class="form-control form-control-sm" id="h360-km"
+                   min="1" max="20000" step="1" value="{{ h360_default_km }}" style="width:7rem">
+          </div>
+          <div class="form-check align-self-center">
+            <input class="form-check-input" type="checkbox" id="h360-corrected">
+            <label class="form-check-label small" for="h360-corrected">
+              {% trans "Use corrected coordinates" %}</label>
+          </div>
+          <div class="flex-grow-1" style="min-width:220px">
+            <label class="form-label mb-0 small fw-semibold" for="h360-goal">
+              {% trans "Goal" %}: <span id="h360-goal-val">1</span> {% trans "finds" %}</label>
+            <input type="range" class="form-range" id="h360-goal" min="1" max="10" step="1" value="1">
+          </div>
+        </div>
+
+        {# Sub-tabs: Overview · Table · Map #}
+        <ul class="nav nav-pills mb-3" id="h360-subtabs" role="tablist">
+          <li class="nav-item">
+            <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#h360-overview"
+                    type="button">{% trans "Overview" %}</button>
+          </li>
+          <li class="nav-item">
+            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#h360-table"
+                    type="button">{% trans "Table" %}</button>
+          </li>
+          <li class="nav-item">
+            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#h360-map"
+                    type="button">{% trans "Map" %}</button>
+          </li>
+        </ul>
+
+        <div class="tab-content">
+          {# Overview: ring chart + statistics #}
+          <div class="tab-pane fade show active" id="h360-overview" role="tabpanel">
+            <div class="row g-3">
+              <div class="col-lg-8">
+                <h6 class="text-center mb-1">{% trans "Number of finds per sector" %}</h6>
+                <div id="h360-ring" style="height:520px;"></div>
+              </div>
+              <div class="col-lg-4">
+                <h6>{% trans "Statistics" %}</h6>
+                <table class="table table-sm">
+                  <tbody>
+                    <tr><td>{% trans "Goal" %}</td>
+                      <td class="text-end" id="h360-stat-goal">–</td></tr>
+                    <tr><td>{% trans "Minimum finds in a sector" %}</td>
+                      <td class="text-end" id="h360-stat-min">–</td></tr>
+                    <tr><td>{% trans "Maximum finds in a sector" %}</td>
+                      <td class="text-end" id="h360-stat-max">–</td></tr>
+                    <tr><td>{% trans "Number of sectors missing finds" %}</td>
+                      <td class="text-end" id="h360-stat-missing">–</td></tr>
+                    <tr><td>{% trans "Number of sectors completed" %}</td>
+                      <td class="text-end" id="h360-stat-completed">–</td></tr>
+                    <tr><td>{% trans "Total finds missing to reach goal" %}</td>
+                      <td class="text-end" id="h360-stat-tomissing">–</td></tr>
+                  </tbody>
+                </table>
+                <button type="button" class="btn btn-sm btn-outline-primary" id="h360-missing-btn"
+                        data-url="{% url 'geocaches:dashboard_360_missing' %}"
+                        title="{% trans 'Show unfound caches in the under-goal angles within the max distance' %}">
+                  {% trans "Find missing in DB" %}
+                </button>
+                <div id="h360-status" class="small text-muted mt-2"></div>
+              </div>
+            </div>
+
+            {# Grid search — nudge the centre to optimise sector coverage #}
+            <hr class="my-3">
+            <h6>{% trans "Perform grid search for optimized result" %}</h6>
+            <div class="d-flex align-items-end gap-3 flex-wrap mb-2">
+              <div style="min-width:220px">
+                <label class="form-label mb-0 small fw-semibold" for="h360-grid-width">
+                  {% trans "Grid width" %}: <span id="h360-grid-width-val">9</span></label>
+                <input type="range" class="form-range" id="h360-grid-width"
+                       min="3" max="21" step="2" value="9">
+              </div>
+              <button type="button" class="btn btn-sm btn-primary" id="h360-grid-btn"
+                      data-url="{% url 'geocaches:dashboard_360_grid' %}"
+                      data-update-label="{% trans 'Update location with these coords' %}">
+                {% trans "Perform grid search" %}
+              </button>
+              <span id="h360-grid-status" class="small text-muted"></span>
+            </div>
+            <div class="table-responsive" style="max-height:360px; overflow-y:auto">
+              <table class="table table-sm table-hover">
+                <thead><tr>
+                  <th>{% trans "Coordinates" %}</th>
+                  <th class="text-end">{% trans "Sectors missing" %}</th>
+                  <th class="text-end">{% trans "Distance" %}</th>
+                  <th></th>
+                </tr></thead>
+                <tbody id="h360-grid-body"></tbody>
+              </table>
+            </div>
+          </div>
+
+          {# Table: bearing · #found · first ten finds #}
+          <div class="tab-pane fade" id="h360-table" role="tabpanel">
+            <div class="table-responsive">
+              <table class="table table-sm table-hover">
+                <thead><tr>
+                  <th style="width:7rem">{% trans "Bearing" %}</th>
+                  <th class="text-end" style="width:6rem">{% trans "Found" %}</th>
+                  <th>{% trans "First ten finds" %}</th>
+                </tr></thead>
+                <tbody id="h360-table-body"></tbody>
+              </table>
+            </div>
+          </div>
+
+          {# Map: center marker + find density #}
+          <div class="tab-pane fade" id="h360-map" role="tabpanel">
+            <div id="h360-map-canvas" class="gcf-dash-map" style="height:560px;"></div>
+          </div>
+        </div>
+      {% else %}
+        <p class="text-muted">
+          {% trans "Add a location first to use this view." %}
+          <a href="{% url 'preferences:settings' %}">{% trans "Settings" %}</a>.
+        </p>
+      {% endif %}
+      </div>
+    </div>
+
+    {# ── Tab 6: Souvenirs ───────────────────────────────────────────── #}
+    <div class="tab-pane fade" id="dash-souvenirs" role="tabpanel">
+      {% csrf_token %}
+      <div class="d-flex align-items-center gap-2 flex-wrap mb-2">
+        {% if souvenir_gc_available %}
+        {% trans "Refreshing…" as souv_busy %}
+        {% trans "Added {n} new." as souv_done %}
+        <button type="button" class="btn btn-sm btn-primary" id="souv-refresh-all"
+                data-url="{% url 'geocaches:dashboard_souvenirs_refresh' %}?mode=all"
+                data-busy="{{ souv_busy }}" data-done="{{ souv_done }}">
+          {% trans "Refresh all" %}</button>
+        <button type="button" class="btn btn-sm btn-outline-primary" id="souv-refresh-latest"
+                data-url="{% url 'geocaches:dashboard_souvenirs_refresh' %}?mode=latest"
+                data-busy="{{ souv_busy }}" data-done="{{ souv_done }}">
+          {% trans "Refresh latest" %}</button>
+        {% else %}
+        <span class="text-muted small">
+          {% trans "Connect a geocaching.com account to refresh souvenirs." %}</span>
+        {% endif %}
+        <button type="button" class="btn btn-sm btn-outline-secondary" id="souv-manage-btn"
+                hx-get="{% url 'geocaches:dashboard_souvenirs_tags_manage' %}"
+                hx-target="#souv-tags-manage-body" hx-swap="innerHTML"
+                data-bs-toggle="modal" data-bs-target="#souv-tags-manage-modal">
+          {% trans "Manage tags" %}</button>
+        <span id="souv-status" class="small text-muted"></span>
+        <span class="ms-auto text-muted small">
+          {% trans "Total" %}: <b id="souv-total">{{ souvenir_total }}</b></span>
+      </div>
+      <p class="text-muted small mb-3">
+        {% blocktrans %}A list of all known souvenirs can be found at{% endblocktrans %}
+        <a href="https://project-gc.com/Tools/SouvenirList" target="_blank" rel="noopener">project-gc.com/Tools/SouvenirList</a>.
+      </p>
+
+      <div id="souvenirs-body"
+           hx-get="{% url 'geocaches:dashboard_souvenirs_list' %}"
+           hx-trigger="load, change, souvenirs:reload from:body"
+           hx-include="#souvenirs-body"
+           hx-target="this" hx-swap="innerHTML">
+        <div class="text-muted small">{% trans "Loading…" %}</div>
+      </div>
+
+      {# Per-souvenir tag-edit modal (body loaded via HTMX) #}
+      <div class="modal fade" id="souv-tag-modal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title">{% trans "Edit tags" %}</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="souv-tag-modal-body"></div>
+          </div>
+        </div>
+      </div>
+
+      {# Tag management modal (CRUD; body loaded via HTMX) #}
+      <div class="modal fade" id="souv-tags-manage-modal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title">{% trans "Manage tags" %}</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="souv-tags-manage-body"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {# ── Tab 7: Treasures ───────────────────────────────────────────── #}
+    <div class="tab-pane fade" id="dash-treasures" role="tabpanel">
+      {% csrf_token %}
+      <div class="d-flex align-items-center gap-2 flex-wrap mb-2">
+        {% if treasure_web_available %}
+        {% trans "Refreshing…" as treasure_busy %}
+        <button type="button" class="btn btn-sm btn-primary" id="treasure-refresh"
+                data-url="{% url 'geocaches:dashboard_treasures_refresh' %}"
+                data-busy="{{ treasure_busy }}">
+          {% trans "Refresh" %}</button>
+        {% else %}
+        <span class="text-muted small">
+          {% trans "Add a geocaching.com account in Settings to load Treasures." %}</span>
+        {% endif %}
+        <span id="treasure-status" class="small text-muted"></span>
+        <span class="ms-auto text-muted small">
+          {% trans "Collected" %}: <b>{{ treasure_collected }}</b> ·
+          {% trans "Completed collections" %}: <b>{{ treasure_completed }}</b> ·
+          {% trans "Total" %}: <b>{{ treasure_total }}</b></span>
+      </div>
+      <p class="text-muted small mb-3">
+        {% blocktrans %}Read-only mirror of your geocaching.com Treasures. "Show candidates" lists unfound caches in your GCForge database that match a collection's criteria.{% endblocktrans %}</p>
+
+      <div id="treasures-list"
+           hx-get="{% url 'geocaches:dashboard_treasures_list' %}"
+           hx-trigger="load, treasures:reload from:body"
+           hx-target="this" hx-swap="innerHTML">
+        <div class="text-muted small">{% trans "Loading…" %}</div>
+      </div>
+
+      {# Collection detail modal (body loaded live via HTMX) #}
+      <div class="modal fade" id="treasure-detail-modal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title">{% trans "Treasure collection" %}</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="treasure-detail-modal-body">
+              <div class="text-muted small">{% trans "Loading…" %}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  // White-out heatmap cells below the chosen minimum (client-side, no reload).
+  function gcfDashMinChange(sectionId, minVal) {
+    var min = parseInt(minVal, 10) || 1;
+    var section = document.getElementById(sectionId);
+    if (!section) return;
+    section.querySelectorAll('td.gcf-cell[data-count]').forEach(function(td) {
+      var count = parseInt(td.getAttribute('data-count'), 10);
+      td.style.background = (min > 1 && count < min)
+        ? '#fff'
+        : (td.getAttribute('data-color') || '');
+    });
+  }
+
+  // "Find missing in DB" — read the type from the per-table select (typeSelectId)
+  // or fall back to the global select, plus an optional per-table minimum.
+  // typeSelectId is omitted for the overall (case a) button.
+  function gcfDashMissing(which, minSelectId, typeSelectId) {
+    var typeEl = typeSelectId
+      ? document.getElementById(typeSelectId)
+      : document.getElementById('dash-stat-type');
+    var p = new URLSearchParams();
+    p.set('which', which);
+    if (typeEl && typeEl.value) p.set('stat_type', typeEl.value);
+    if (minSelectId) {
+      var ms = document.getElementById(minSelectId);
+      if (ms) p.set('minimum', ms.value);
+    }
+    window.location.href = '{% url "geocaches:dashboard_missing" %}?' + p.toString();
+  }
+
+  // Auto-dismiss the calendar confirmation toast ~7s after it's swapped in.
+  document.body.addEventListener('htmx:afterSwap', function (e) {
+    if (!e.target || e.target.id !== 'dash-cal-agenda') return;
+    var toast = e.target.querySelector('.gcf-cal-toast');
+    if (!toast) return;
+    setTimeout(function () {
+      toast.classList.remove('show');
+      setTimeout(function () { if (toast.parentNode) toast.remove(); }, 300);
+    }, 7000);
+  });
+
+  // Copy the calendar subscription URL to the clipboard.
+  function gcfCopyCalUrl() {
+    var el = document.getElementById('cal-feed-url');
+    if (!el) return;
+    el.select();
+    if (navigator.clipboard) navigator.clipboard.writeText(el.value);
+    else document.execCommand('copy');
+  }
+
+  // Switch to the Home (calendar) tab.
+  function gcfShowHome() {
+    var btn = document.querySelector('#dashboard-tabs button[data-bs-target="#dash-home"]');
+    if (btn) bootstrap.Tab.getOrCreateInstance(btn).show();
+  }
+
+  // "Add missing days to calendar" from a stat-table — read its type + minimum
+  // selects, POST, then reload the agenda and jump to the Home tab.
+  function gcfCalAddMissing(typeId, minId, alc) {
+    var typeEl = document.getElementById(typeId);
+    var minEl = minId ? document.getElementById(minId) : null;
+    var body = new URLSearchParams();
+    if (typeEl && typeEl.value) body.set('stat_type', typeEl.value);
+    if (minEl) body.set('minimum', minEl.value);
+    if (alc) body.set('alc', '1');
+    body.set('days', '365');
+    fetch('{% url "geocaches:calendar_add_missing" %}', {
+      method: 'POST',
+      headers: {
+        'X-CSRFToken': '{{ csrf_token }}',
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: body.toString(),
+    }).then(function () {
+      htmx.trigger(document.body, 'calendar:reload');
+      gcfShowHome();
+    });
+  }
+
+  // Hash routing: outer dashboard tabs + inner Maps sub-tabs.
+  // Outer:  #home / #stats / #maps
+  // Inner:  #maps-world / #maps-countries / #maps-<iso> (e.g. #maps-de)
+  (function () {
+    var OUTER = { '#home': '#dash-home', '#stats': '#dash-stats',
+                  '#alc': '#dash-alc', '#jasmer': '#dash-jasmer', '#360': '#dash-360',
+                  '#souvenirs': '#dash-souvenirs', '#treasures': '#dash-treasures' };
+
+    function activateOuter(target) {
+      var btn = document.querySelector('#dashboard-tabs button[data-bs-target="' + target + '"]');
+      if (btn) bootstrap.Tab.getOrCreateInstance(btn).show();
+    }
+    function activateInner(name) {
+      var btn = document.querySelector('#maps-subtabs button[data-maps-hash="' + name + '"]');
+      if (btn) bootstrap.Tab.getOrCreateInstance(btn).show();
+    }
+
+    var hash = window.location.hash || '';
+    // The Maps sub-tabs only exist once that tab's body loads (HTMX), so a
+    // #maps-<iso> deep link is applied later in wireMapsSubtabs().
+    var pendingMapsSub = null;
+    if (OUTER[hash]) {
+      activateOuter(OUTER[hash]);
+    } else if (hash === '#maps' || hash.indexOf('#maps-') === 0) {
+      activateOuter('#dash-maps');
+      pendingMapsSub = hash === '#maps' ? null : hash.slice(6);  // "world"/"countries"/"de"
+    }
+
+    document.querySelectorAll('#dashboard-tabs button[data-bs-toggle="tab"]').forEach(function (b) {
+      b.addEventListener('shown.bs.tab', function () {
+        var target = b.getAttribute('data-bs-target');
+        for (var h in OUTER) {
+          if (OUTER[h] === target) { history.replaceState(null, '', h); return; }
+        }
+        if (target === '#dash-maps') {
+          var act = document.querySelector('#maps-subtabs button.nav-link.active');
+          var name = act ? act.getAttribute('data-maps-hash') : 'world';
+          history.replaceState(null, '', '#maps-' + name);
+        }
+      });
+    });
+
+    // Wire Maps sub-tab hash persistence once the (deferred) body is in place,
+    // then apply any #maps-<iso> deep link.
+    function wireMapsSubtabs() {
+      document.querySelectorAll('#maps-subtabs button[data-maps-hash]').forEach(function (b) {
+        if (b._gcfHashWired) return;
+        b._gcfHashWired = true;
+        b.addEventListener('shown.bs.tab', function () {
+          history.replaceState(null, '', '#maps-' + b.getAttribute('data-maps-hash'));
+        });
+      });
+      if (pendingMapsSub) { activateInner(pendingMapsSub); pendingMapsSub = null; }
+    }
+
+    // Heavy tab bodies load in the background via HTMX; kick off their JS once
+    // each one settles into the DOM.
+    document.body.addEventListener('htmx:afterSettle', function (e) {
+      var id = e.target && e.target.id;
+      if (id === 'dash-stats-body') {
+        if (window.gcfRenderStatsCharts) window.gcfRenderStatsCharts();
+      } else if (id === 'dash-alc-body') {
+        if (window.gcfRenderAlcCharts) window.gcfRenderAlcCharts();
+      } else if (id === 'dash-maps-body') {
+        wireMapsSubtabs();
+        // MapLibre needs a visible container, so only build now if the Maps tab
+        // is already on screen (the user opened it before the body finished
+        // loading); otherwise dashboard-maps.js builds it on the tab's shown event.
+        var pane = document.getElementById('dash-maps');
+        if (pane && pane.classList.contains('active') && window.gcfStartDashboardMaps) {
+          window.gcfStartDashboardMaps();
+        }
+      }
+    });
+  })();
+</script>
+<script src="{% static 'js/dashboard-maps.js' %}"></script>
+<script src="{% static 'vendor/js/echarts.min.js' %}"></script>
+<script src="{% static 'js/dashboard-charts.js' %}"></script>
+<script src="{% static 'js/dashboard-360.js' %}"></script>
+<script src="{% static 'js/dashboard-souvenirs.js' %}"></script>
+<script src="{% static 'js/dashboard-treasures.js' %}"></script>
+{% endblock %}

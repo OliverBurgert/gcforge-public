@@ -1,0 +1,115 @@
+{% load i18n %}
+{# Waypoint add/edit modal — included from detail.html #}
+<div class="modal fade" id="waypointModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+    <form method="post" id="waypointForm" action="{% url 'geocaches:waypoint_add' cache.display_code %}">
+      {% csrf_token %}
+      <input type="hidden" name="wp_id" id="wpId" value="">
+      <div class="modal-header py-2">
+        <h6 class="modal-title mb-0" id="waypointModalTitle">{% trans "Add waypoint" %}</h6>
+        <button type="button" class="btn-close btn-sm" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body pb-2">
+        <div class="row g-2 mb-3">
+          <div class="col-sm-4">
+            <label class="form-label form-label-sm mb-1">{% trans "Type" %}</label>
+            <select name="waypoint_type" id="wpType" class="form-select form-select-sm">
+              <option value="Parking">{% trans "Parking Area" %}</option>
+              <option value="Stage">{% trans "Stage of a Multi-Cache" %}</option>
+              <option value="Question">{% trans "Question to Answer" %}</option>
+              <option value="Final">{% trans "Final Location" %}</option>
+              <option value="Trailhead">{% trans "Trailhead" %}</option>
+              <option value="Reference">{% trans "Reference Point" %}</option>
+              <option value="Other" selected>{% trans "Other" %}</option>
+            </select>
+          </div>
+          <div class="col-sm-2">
+            <label class="form-label form-label-sm mb-1 d-flex align-items-center gap-1">
+              {% trans "Code prefix" %}
+              <span tabindex="0" data-bs-toggle="tooltip"
+                    title="{% trans 'PK=Parking, ST=Stage, QA=Question, FL=Final, TH=Trailhead, RP=Reference, WP=Other. Leave blank to derive from type.' %}"
+                    style="cursor:help; font-size:.8em; color:#6c757d">&#9432;</span>
+            </label>
+            <input type="text" name="prefix" id="wpPrefix" class="form-control form-control-sm font-monospace text-uppercase"
+                   maxlength="2" placeholder="{% trans 'auto' %}" pattern="PK|ST|QA|FL|TH|RP|WP"
+                   oninput="this.value=this.value.toUpperCase()">
+            <div class="invalid-feedback" style="font-size:.75em">{% trans "Must be PK, ST, QA, FL, TH, RP, or WP." %}</div>
+          </div>
+          <div class="col-sm-6">
+            <label class="form-label form-label-sm mb-1">{% trans "Name" %}</label>
+            <input type="text" name="name" id="wpName" class="form-control form-control-sm" maxlength="255">
+          </div>
+        </div>
+
+        <div class="mb-2">
+          <div class="d-flex gap-3 mb-2">
+            <div class="form-check form-check-inline">
+              <input class="form-check-input" type="radio" name="coord_method" id="cmManual" value="manual" checked onchange="wpCoordMethodChange()">
+              <label class="form-check-label small" for="cmManual">{% trans "Manual entry" %}</label>
+            </div>
+            <div class="form-check form-check-inline">
+              <input class="form-check-input" type="radio" name="coord_method" id="cmProject" value="project" onchange="wpCoordMethodChange()">
+              <label class="form-check-label small" for="cmProject">{% trans "Project waypoint" %}</label>
+            </div>
+            <span class="small text-muted align-self-center">{% trans "Tip: click on the map to add a waypoint at a clicked location." %}</span>
+          </div>
+
+          {# Manual coords #}
+          <div id="wpCoordManual" class="row g-2">
+            <div class="col-sm-6">
+              <label class="form-label form-label-sm mb-1">{% trans "Latitude" %}</label>
+              <input type="text" name="latitude" id="wpLat" class="form-control form-control-sm font-monospace" placeholder="{% trans 'e.g. N 48° 18.189 or 48.30315' %}" data-lon-target="wpLon">
+            </div>
+            <div class="col-sm-6">
+              <label class="form-label form-label-sm mb-1">{% trans "Longitude" %}</label>
+              <input type="text" name="longitude" id="wpLon" class="form-control form-control-sm font-monospace" placeholder="{% trans 'e.g. E 8° 58.876 or 8.98127' %}">
+            </div>
+          </div>
+
+          {# Project #}
+          <div id="wpCoordProject" class="d-none">
+            <div class="row g-2 align-items-end">
+              <div class="col-sm-5">
+                <label class="form-label form-label-sm mb-1">{% trans "Basis" %}</label>
+                <select id="wpProjBasis" class="form-select form-select-sm" onchange="wpProjectUpdate()">
+                  <option value="cache">{% trans "Cache coordinates" %}</option>
+                </select>
+              </div>
+              <div class="col-sm-3">
+                <label class="form-label form-label-sm mb-1">{% trans "Bearing (° from N)" %}</label>
+                <input type="number" id="wpProjBearing" class="form-control form-control-sm" min="0" max="360" step="0.1" oninput="wpProjectUpdate()">
+              </div>
+              <div class="col-sm-2">
+                <label class="form-label form-label-sm mb-1">{% trans "Distance" %}</label>
+                <input type="number" id="wpProjDist" class="form-control form-control-sm" min="0" step="0.1" oninput="wpProjectUpdate()">
+              </div>
+              <div class="col-sm-2">
+                <label class="form-label form-label-sm mb-1">{% trans "Unit" %}</label>
+                <select id="wpProjUnit" class="form-select form-select-sm" onchange="wpProjectUpdate()">
+                  <option value="m">m</option>
+                  <option value="ft">ft</option>
+                  <option value="km">km</option>
+                  <option value="mi">mi</option>
+                </select>
+              </div>
+            </div>
+            <div class="mt-2 small text-muted" id="wpProjResult">{% trans "Enter bearing and distance above." %}</div>
+          </div>
+        </div>
+
+        <div class="row g-2">
+          <div class="col-12">
+            <label class="form-label form-label-sm mb-1">{% trans "Note" %}</label>
+            <textarea name="note" id="wpNote" class="form-control form-control-sm" rows="2"></textarea>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer py-2">
+        <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">{% trans "Cancel" %}</button>
+        <button type="submit" class="btn btn-sm btn-primary" id="wpSaveBtn">{% trans "Save" %}</button>
+      </div>
+    </form>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,150 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% trans "FTF Markers" %} — GCForge{% endblock %}
+{% block content %}
+<div class="px-3 py-3" style="max-width:1100px">
+  <h5 class="mb-3">{% trans "Check FTF markers" %}</h5>
+
+  {% if messages %}
+  {% for message in messages %}
+  <div class="alert alert-{{ message.tags|default:'info' }} fade show py-1 px-3 small d-flex align-items-center" role="alert">
+    <span class="me-auto">{{ message }}</span>
+    <button type="button" class="btn-close ms-2 flex-shrink-0" data-bs-dismiss="alert" style="font-size:.6rem"></button>
+  </div>
+  {% endfor %}
+  {% endif %}
+
+  {% if no_accounts %}
+  <div class="card">
+    <div class="card-body">
+      <p class="mb-2">{% trans "No user accounts configured. Add a GC or OC account in Settings to identify your logs." %}</p>
+      <a href="{% url 'preferences:settings' %}#accounts" class="btn btn-primary btn-sm">{% trans "Go to Settings" %}</a>
+    </div>
+  </div>
+  {% elif total == 0 %}
+  <div class="card">
+    <div class="card-body">
+      <p class="mb-2">{% trans "No FTF candidates found. To improve detection, run „Check FTF candidates\" first to fetch recent logs." %}</p>
+      <a href="{% url 'geocaches:list' %}" class="btn btn-primary btn-sm">{% trans "Back to list" %}</a>
+    </div>
+  </div>
+  {% else %}
+  <p class="text-muted small mb-2">
+    {% blocktrans count n=total %}Found {{ n }} FTF candidate.{% plural %}Found {{ n }} FTF candidates.{% endblocktrans %}
+    {% trans 'Detection is based on: FTF flag already set, "[FTF]" marker in log text, or your log being the first found log.' %}
+    {% if verify_count %}
+    {% blocktrans count n=verify_count %}<strong>{{ n }}</strong> candidate detected by „first found log" needs verification (earlier logs may exist on the server).{% plural %}<strong>{{ n }}</strong> candidates detected by „first found log" need verification (earlier logs may exist on the server).{% endblocktrans %}
+    {% endif %}
+  </p>
+
+  <div class="d-flex gap-2 mb-3 align-items-center">
+    {% if verify_count %}
+    <button type="button" id="btn-verify-all" class="btn btn-info btn-sm"
+            onclick="gcfVerifyAllFTF()">
+      {% blocktrans with n=verify_count %}Verify all ({{ n }}){% endblocktrans %}
+    </button>
+    {% endif %}
+
+    <form method="post" class="d-inline">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="apply_all">
+      <input type="hidden" name="set_pks" value="{% for item in items %}{% if item.suggestion == 'set' %}{{ item.cache.pk }}{% if not forloop.last %},{% endif %}{% endif %}{% endfor %}">
+      <input type="hidden" name="unset_pks" value="{% for item in items %}{% if item.suggestion == 'unset' %}{{ item.cache.pk }}{% if not forloop.last %},{% endif %}{% endif %}{% endfor %}">
+      <button type="submit" class="btn btn-primary btn-sm"
+              onclick="return confirm('{% trans "Apply all suggested FTF changes?" %}')">
+        {% trans "Apply all suggestions" %}
+      </button>
+    </form>
+
+    <a href="{% url 'geocaches:list' %}" class="btn btn-secondary btn-sm">{% trans "Back to list" %}</a>
+
+    <span id="verify-progress" class="small text-muted d-none">
+      <span class="spinner-border spinner-border-sm me-1" style="width:0.7rem;height:0.7rem"></span>
+      {% trans "Verifying" %} <span id="verify-done">0</span> / <span id="verify-total">0</span>...
+    </span>
+    <span id="verify-complete" class="small text-success d-none">{% trans "Verification complete." %}</span>
+  </div>
+
+  <table class="table table-sm table-bordered align-middle">
+    <thead class="table-light">
+      <tr>
+        <th>{% trans "Code" %}</th>
+        <th>{% trans "Name" %}</th>
+        <th>{% trans "Current FTF" %}</th>
+        <th>{% trans "Detection" %}</th>
+        <th>{% trans "Suggested Action" %}</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody id="ftf-tbody">
+      {% for item in items %}
+      {% include "geocaches/partials/_ftf_row.html" %}
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+</div>
+
+<script>
+function _ftfGetCsrf() {
+  const el = document.querySelector('[name=csrfmiddlewaretoken]');
+  return el ? el.value : '';
+}
+
+async function _ftfVerifyOne(btn) {
+  const pk = btn.dataset.pk;
+  const url = btn.dataset.url;
+  const target = document.getElementById('ftf-row-' + pk);
+  const spinner = document.getElementById('verify-spinner-' + pk);
+  if (spinner) spinner.classList.remove('d-none');
+  btn.disabled = true;
+  try {
+    const resp = await fetch(url, {
+      method: 'POST',
+      headers: {'X-CSRFToken': _ftfGetCsrf()},
+      credentials: 'same-origin',
+    });
+    if (resp.ok) {
+      target.outerHTML = await resp.text();
+    }
+  } catch (e) {
+    console.error('FTF verify failed for pk=' + pk, e);
+    btn.disabled = false;
+    if (spinner) spinner.classList.add('d-none');
+  }
+}
+
+function gcfVerifySingleFTF(btn) {
+  _ftfVerifyOne(btn);
+}
+
+async function gcfVerifyAllFTF() {
+  const btns = Array.from(document.querySelectorAll('.ftf-verify-btn'));
+  if (!btns.length) return;
+
+  const masterBtn = document.getElementById('btn-verify-all');
+  masterBtn.disabled = true;
+
+  const progress = document.getElementById('verify-progress');
+  const doneEl = document.getElementById('verify-done');
+  const totalEl = document.getElementById('verify-total');
+  const completeEl = document.getElementById('verify-complete');
+
+  totalEl.textContent = btns.length;
+  doneEl.textContent = '0';
+  progress.classList.remove('d-none');
+  completeEl.classList.add('d-none');
+
+  let done = 0;
+  for (const b of btns) {
+    await _ftfVerifyOne(b);
+    done++;
+    doneEl.textContent = done;
+  }
+
+  progress.classList.add('d-none');
+  completeEl.classList.remove('d-none');
+  masterBtn.textContent = '{% trans "Done" %}';
+}
+</script>
+{% endblock %}

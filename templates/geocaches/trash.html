@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% trans "Trash" %} — GCForge{% endblock %}
+
+{% block content %}
+<div class="px-3 py-4">
+  <div class="d-flex align-items-center gap-3 mb-3">
+    <h5 class="mb-0">{% trans "Trash" %}</h5>
+    {% if caches %}
+    <form method="post" action="{% url 'geocaches:trash_empty' %}"
+          onsubmit="return confirm('{% trans "Permanently delete all caches in Trash? This cannot be undone." %}')">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-sm btn-outline-danger">{% trans "Empty Trash" %}</button>
+    </form>
+    {% endif %}
+    <a href="{% url 'geocaches:list' %}" class="btn btn-sm btn-secondary ms-auto">{% trans "Back to list" %}</a>
+  </div>
+
+  <p class="text-muted small mb-3">
+    {% trans "Caches in Trash can be restored or permanently deleted. Re-importing a cache removes its Trash entry and creates a fresh record." %}
+  </p>
+
+  {% if not caches %}
+  <div class="alert alert-info">{% trans "Trash is empty." %}</div>
+
+  {% else %}
+  <table class="table table-sm table-hover">
+    <thead class="table-light">
+      <tr>
+        <th>{% trans "Code" %}</th>
+        <th>{% trans "Name" %}</th>
+        <th>{% trans "Type" %}</th>
+        <th>{% trans "Deleted" %}</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for cache in caches %}
+      <tr>
+        <td class="font-monospace small">{{ cache.display_code }}</td>
+        <td>{{ cache.name }}</td>
+        <td><small class="text-muted">{{ cache.cache_type }}</small></td>
+        <td><small class="text-muted">{{ cache.deleted_at|date:"Y-m-d H:i" }}</small></td>
+        <td class="text-end">
+          <form method="post" action="{% url 'geocaches:trash_restore' cache.pk %}"
+                class="d-inline">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-sm btn-outline-success py-0">{% trans "Restore" %}</button>
+          </form>
+          <form method="post" action="{% url 'geocaches:trash_purge' cache.pk %}"
+                class="d-inline"
+                onsubmit="return confirm('{% trans "Permanently delete this cache and all its data? This cannot be undone." %}')">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-sm btn-outline-danger py-0">{% trans "Delete permanently" %}</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,29 @@
+{% load i18n static %}
+{% if error %}
+<div class="alert alert-danger py-1 small mt-1">{{ error }}</div>
+
+{% elif task.state == "completed" %}
+<div class="alert alert-success py-1 small mt-1">
+  {% trans "Import complete." %}
+  {% url 'geocaches:list' as list_url %}
+  <a href="{{ list_url }}?cache_type=Adventure+Lab">{% trans "View Adventure Lab caches →" %}</a>
+</div>
+
+{% elif task.state == "failed" %}
+<div class="alert alert-danger py-1 small mt-1">
+  {% blocktrans with err=task.error|default:"unknown error" %}Import failed: {{ err }}{% endblocktrans %}
+</div>
+
+{% else %}
+{# running / pending / unknown: spin and keep polling #}
+<div id="al-import-status"
+     hx-get="{% url 'geocaches:import_al_founds_status' task_id %}"
+     hx-trigger="every 2s"
+     hx-swap="outerHTML"
+     class="d-flex align-items-center gap-2 mt-1">
+  <div class="spinner-border spinner-border-sm text-success" role="status"></div>
+  <small class="text-success">
+    {% if count %}{% blocktrans count n=count %}Importing {{ n }} lab{% plural %}Importing {{ n }} labs{% endblocktrans %}{% else %}{% trans "Importing" %}{% endif %}{% if task.phase %} — {{ task.phase }}{% endif %}…
+  </small>
+</div>
+{% endif %}

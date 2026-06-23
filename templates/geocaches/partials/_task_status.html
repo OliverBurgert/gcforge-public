@@ -1,0 +1,25 @@
+{% load i18n %}
+{% for task in tasks %}
+{% if task.state == "running" %}
+<div class="gcf-task-card is-running">
+  <span class="spinner-border spinner-border-sm text-warning" role="status" aria-hidden="true"></span>
+  <span class="gcf-task-text text-warning">{{ task.name }}{% if task.phase %} — {{ task.phase }}{% endif %} {{ task.progress_pct }}%</span>
+  <a href="{% url 'geocaches:enrich_cancel' %}" hx-post="{% url 'geocaches:enrich_cancel' %}" hx-swap="none"
+     class="gcf-task-cancel" title="{% trans 'Cancel' %}">✕</a>
+</div>
+{% elif task.state == "failed" %}
+<div class="gcf-task-card is-failed">
+  <span class="gcf-task-text text-danger">{% blocktrans with name=task.name %}{{ name }} failed{% endblocktrans %}{% if task.error %}: {{ task.error|truncatechars:40 }}{% endif %}</span>
+  <script>(function(){var n="{{task.name|escapejs}}";if(n.startsWith("Preview ")||n.startsWith("Sync "))return;var k="gcf_reloaded_{{task.id}}";if(!sessionStorage.getItem(k)&&(document.getElementById('filter-form')||document.querySelector('[data-task-reload]'))){sessionStorage.setItem(k,"1");window.location.reload();}})();</script>
+</div>
+{% elif task.state == "completed" %}
+<div class="gcf-task-card is-completed">
+  <span class="gcf-task-text text-success">{% blocktrans with name=task.name done=task.completed t=task.total %}{{ name }} done ({{ done }}/{{ t }}){% endblocktrans %}</span>
+  <script>(function(){var n="{{task.name|escapejs}}";if(n.startsWith("Preview ")||n.startsWith("Sync "))return;var k="gcf_reloaded_{{task.id}}";if(!sessionStorage.getItem(k)&&(document.getElementById('filter-form')||document.querySelector('[data-task-reload]'))){sessionStorage.setItem(k,"1");window.location.reload();}})();</script>
+</div>
+{% elif task.state == "cancelled" %}
+<div class="gcf-task-card is-cancelled">
+  <span class="gcf-task-text text-muted">{% blocktrans with name=task.name %}{{ name }} cancelled{% endblocktrans %}</span>
+</div>
+{% endif %}
+{% endfor %}

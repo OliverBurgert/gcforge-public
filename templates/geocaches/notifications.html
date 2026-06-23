@@ -1,0 +1,279 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% load l10n %}
+{% block title %}{% trans "Instant Notifications" %} — GCForge{% endblock %}
+
+{% block content %}
+<div class="px-3 py-3" style="max-width:1400px" data-task-reload>
+  <h5 class="mb-3">{% trans "Instant Notifications" %}</h5>
+
+  {% if messages %}
+    {% for m in messages %}
+      <div class="alert alert-{{ m.tags|default:'info' }} py-2">{{ m }}</div>
+    {% endfor %}
+  {% endif %}
+
+  <ul class="nav nav-tabs mb-3" role="tablist">
+    <li class="nav-item" role="presentation">
+      <button class="nav-link {% if active_tab == 'gc' %}active{% endif %}"
+              id="tab-gc" data-bs-toggle="tab" data-bs-target="#pane-gc"
+              type="button" role="tab">
+        {% trans "geocaching.com" %}
+        <span class="badge text-bg-secondary ms-1">{{ total }}</span>
+      </button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link {% if active_tab == 'oc' %}active{% endif %}"
+              id="tab-oc" data-bs-toggle="tab" data-bs-target="#pane-oc"
+              type="button" role="tab">
+        {% trans "OpenCaching" %}
+        <span class="badge text-bg-secondary ms-1">{{ oc_cards|length }}</span>
+      </button>
+    </li>
+  </ul>
+
+<div class="tab-content">
+<div class="tab-pane {% if active_tab == 'gc' %}show active{% endif %}" id="pane-gc" role="tabpanel">
+
+  <div class="d-flex align-items-center mb-3 gap-2 flex-wrap">
+    <span class="text-muted small">{% blocktrans count counter=total %}{{ counter }} notification{% plural %}{{ counter }} notifications{% endblocktrans %}</span>
+    <div class="ms-auto d-flex gap-2">
+      <form method="post" action="{% url 'geocaches:notifications_sync' %}" class="d-inline">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-sm btn-primary" title="{% trans 'Pull notifications from geocaching.com and reconcile with local DB' %}">
+          {% trans "Sync with server" %}
+        </button>
+      </form>
+      <button type="button" class="btn btn-sm btn-outline-primary"
+              data-bs-toggle="modal" data-bs-target="#bulkCreateModal">
+        {% trans "Bulk create…" %}
+      </button>
+    </div>
+  </div>
+
+  {% if not groups %}
+    <div class="alert alert-secondary">
+      {% blocktrans %}No notifications yet. Click <strong>Sync with server</strong> to pull existing notifications from geocaching.com, or <strong>Bulk create</strong> to create a new batch.{% endblocktrans %}
+    </div>
+  {% endif %}
+
+  {% for group in groups %}
+    <div class="card mb-3">
+      <div class="card-header d-flex align-items-center gap-2 py-2">
+        <strong>
+          {% if group.location %}
+            {{ group.location.name }}
+          {% else %}
+            {% trans "Unassigned" %}
+          {% endif %}
+        </strong>
+        <span class="text-muted small">
+          {% blocktrans with on=group.enabled_count total=group.total_count %}{{ on }} of {{ total }} enabled{% endblocktrans %}
+        </span>
+        <div class="ms-auto d-flex gap-1">
+          <form method="post" action="{% url 'geocaches:notifications_region_set_enabled' %}" class="d-inline">
+            {% csrf_token %}
+            <input type="hidden" name="location_id" value="{{ group.location_id|default_if_none:'' }}">
+            <input type="hidden" name="enabled" value="1">
+            <button type="submit" class="btn btn-sm btn-outline-success"
+                    {% if group.enabled_count == group.total_count %}disabled{% endif %}>
+              {% trans "Enable all" %}
+            </button>
+          </form>
+          <form method="post" action="{% url 'geocaches:notifications_region_set_enabled' %}" class="d-inline">
+            {% csrf_token %}
+            <input type="hidden" name="location_id" value="{{ group.location_id|default_if_none:'' }}">
+            <input type="hidden" name="enabled" value="0">
+            <button type="submit" class="btn btn-sm btn-outline-warning"
+                    {% if group.enabled_count == 0 %}disabled{% endif %}>
+              {% trans "Disable all" %}
+            </button>
+          </form>
+          <form method="post" action="{% url 'geocaches:notifications_region_pull' %}" class="d-inline"
+                onsubmit="return confirm('{% trans 'Refresh every notification in this group with the server-side state? Local changes will be overwritten.' %}');">
+            {% csrf_token %}
+            <input type="hidden" name="location_id" value="{{ group.location_id|default_if_none:'' }}">
+            <button type="submit" class="btn btn-sm btn-outline-primary" title="{% trans 'Refresh all local from server' %}">
+              <span aria-hidden="true">&#x2B07;</span> {% trans "Pull all" %}
+            </button>
+          </form>
+          <form method="post" action="{% url 'geocaches:notifications_region_push' %}" class="d-inline"
+                onsubmit="return confirm('{% trans 'Send the local state of every notification in this group to the server? Server-side changes will be overwritten.' %}');">
+            {% csrf_token %}
+            <input type="hidden" name="location_id" value="{{ group.location_id|default_if_none:'' }}">
+            <button type="submit" class="btn btn-sm btn-outline-primary" title="{% trans 'Push all local to server' %}">
+              <span aria-hidden="true">&#x2B06;</span> {% trans "Push all" %}
+            </button>
+          </form>
+          <form method="post" action="{% url 'geocaches:notifications_region_delete' %}" class="d-inline"
+                onsubmit="return confirm('{% trans 'Delete every notification in this group? This also removes them on geocaching.com.' %}');">
+            {% csrf_token %}
+            <input type="hidden" name="location_id" value="{{ group.location_id|default_if_none:'' }}">
+            <button type="submit" class="btn btn-sm btn-outline-danger">{% trans "Delete all" %}</button>
+          </form>
+        </div>
+      </div>
+
+      <div class="table-responsive">
+        <table class="table table-sm align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th style="width:1%"></th>
+              <th>{% trans "Name" %}</th>
+              <th>{% trans "Location" %}</th>
+              <th>{% trans "Cache type" %}</th>
+              <th class="text-end">{% trans "Radius" %}</th>
+              <th>{% trans "Log events" %}</th>
+              <th>{% trans "Recipient" %}</th>
+              <th class="text-end">{% trans "Server" %}</th>
+              <th class="text-end">{% trans "Actions" %}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for n in group.notifications %}
+              <tr class="{% if not n.enabled %}text-muted{% endif %}">
+                <td class="text-center">
+                  <form method="post" action="{% url 'geocaches:notification_toggle' n.pk %}" class="d-inline">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-sm p-0 border-0 bg-transparent"
+                            title="{% if n.enabled %}{% trans 'Click to disable' %}{% else %}{% trans 'Click to enable' %}{% endif %}">
+                      {% if n.enabled %}
+                        <span class="text-success">&#9679;</span>
+                      {% else %}
+                        <span class="text-secondary">&#9675;</span>
+                      {% endif %}
+                    </button>
+                  </form>
+                </td>
+                <td>
+                  <div>{{ n.name }}</div>
+                  <div class="text-muted small">
+                    {{ n.latitude|unlocalize|floatformat:5 }}, {{ n.longitude|unlocalize|floatformat:5 }}
+                  </div>
+                </td>
+                <td>
+                  <form method="post" action="{% url 'geocaches:notification_set_location' n.pk %}" class="d-inline">
+                    {% csrf_token %}
+                    <select name="location_id" class="form-select form-select-sm py-0"
+                            onchange="this.form.submit()" style="min-width:11em">
+                      <option value="" {% if not n.location_id %}selected{% endif %}>{% trans "— none —" %}</option>
+                      {% for loc in locations %}
+                        <option value="{{ loc.id }}" {% if n.location_id == loc.id %}selected{% endif %}>{{ loc.name }}</option>
+                      {% endfor %}
+                    </select>
+                  </form>
+                </td>
+                <td>{{ n.type_name }}</td>
+                <td class="text-end">{{ n.radius_km }} km</td>
+                <td>
+                  <span class="small">{{ n.log_event_names }}</span>
+                </td>
+                <td class="small">{{ n.recipient_email }}</td>
+                <td class="text-end small">
+                  {% if n.server_id %}
+                    <a href="https://www.geocaching.com/notify/edit.aspx?NID={{ n.server_id }}" target="_blank" rel="noopener" class="text-decoration-none" title="{% trans 'Open on geocaching.com' %}">
+                      NID&nbsp;{{ n.server_id }} <span aria-hidden="true">&rarr;</span>
+                    </a>
+                  {% else %}
+                    <span class="badge text-bg-warning">{% trans "local only" %}</span>
+                  {% endif %}
+                </td>
+                <td class="text-end text-nowrap">
+                  {% if n.server_id %}
+                    <form method="post" action="{% url 'geocaches:notification_pull' n.pk %}" class="d-inline"
+                          onsubmit="return confirm('{% trans 'Overwrite local row with the server-side state?' %}');">
+                      {% csrf_token %}
+                      <button type="submit" class="btn btn-sm btn-outline-primary py-0"
+                              title="{% trans 'Refresh local from server' %}"><span aria-hidden="true">&#x2B07;</span></button>
+                    </form>
+                  {% endif %}
+                  <form method="post" action="{% url 'geocaches:notification_push' n.pk %}" class="d-inline"
+                        onsubmit="return confirm('{% trans 'Send local state to the server?' %}');">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-sm btn-outline-primary py-0"
+                            title="{% trans 'Push local to server' %}"><span aria-hidden="true">&#x2B06;</span></button>
+                  </form>
+                  <button type="button" class="btn btn-sm btn-outline-secondary py-0"
+                          data-bs-toggle="modal" data-bs-target="#editModal"
+                          data-pk="{{ n.pk }}"
+                          data-name="{{ n.name }}"
+                          data-radius="{{ n.radius_km }}"
+                          data-latitude="{{ n.latitude|unlocalize }}"
+                          data-longitude="{{ n.longitude|unlocalize }}"
+                          data-location-id="{{ n.location_id|default_if_none:'' }}"
+                          data-recipient="{{ n.recipient_email }}"
+                          data-log-events="{{ n.log_event_ids_csv }}">
+                    {% trans "Edit" %}
+                  </button>
+                  <form method="post" action="{% url 'geocaches:notification_delete' n.pk %}" class="d-inline"
+                        onsubmit="return confirm('{% trans 'Delete this notification on the server and locally?' %}');">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-sm btn-outline-danger py-0">{% trans "Delete" %}</button>
+                  </form>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  {% endfor %}
+
+</div><!-- /pane-gc -->
+
+<div class="tab-pane {% if active_tab == 'oc' %}show active{% endif %}" id="pane-oc" role="tabpanel">
+  {% include "geocaches/partials/_notify_oc_tab.html" %}
+</div><!-- /pane-oc -->
+
+</div><!-- /tab-content -->
+</div><!-- /wrapper -->
+
+{% include "geocaches/partials/_notify_bulk_create.html" %}
+{% include "geocaches/partials/_notify_edit.html" %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+  // Edit modal — populate fields from the row's data-* attributes when opened.
+  const editModal = document.getElementById("editModal");
+  if (editModal) {
+    editModal.addEventListener("show.bs.modal", function (event) {
+      const btn = event.relatedTarget;
+      const pk = btn.dataset.pk;
+      const editUrlTemplate = editModal.dataset.editUrlTemplate;
+      editModal.querySelector("form").action = editUrlTemplate.replace("/0/", "/" + pk + "/");
+      editModal.querySelector("[name=name]").value = btn.dataset.name || "";
+      editModal.querySelector("[name=radius_km]").value = btn.dataset.radius || "20";
+      editModal.querySelector("[name=latitude]").value = btn.dataset.latitude || "";
+      editModal.querySelector("[name=longitude]").value = btn.dataset.longitude || "";
+      editModal.querySelector("[name=recipient_email]").value = btn.dataset.recipient || "";
+
+      const locId = btn.dataset.locationId || "";
+      const locSel = editModal.querySelector("[name=location_id]");
+      if (locSel) locSel.value = locId;
+
+      const checked = (btn.dataset.logEvents || "").split(",").map(s => s.trim()).filter(Boolean);
+      editModal.querySelectorAll("[name=log_event_ids]").forEach(cb => {
+        cb.checked = checked.includes(cb.value);
+      });
+    });
+  }
+
+  // Bulk-create modal: location dropdown pre-fills lat/lon when a location is picked.
+  const bulkModal = document.getElementById("bulkCreateModal");
+  if (bulkModal) {
+    const locSel = bulkModal.querySelector("[name=location_id]");
+    if (locSel) {
+      locSel.addEventListener("change", function () {
+        const opt = locSel.selectedOptions[0];
+        if (opt && opt.dataset.lat && opt.dataset.lon) {
+          bulkModal.querySelector("[name=latitude]").value = opt.dataset.lat;
+          bulkModal.querySelector("[name=longitude]").value = opt.dataset.lon;
+        }
+      });
+    }
+  }
+})();
+</script>
+{% endblock %}

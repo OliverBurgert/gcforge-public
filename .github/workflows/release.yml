@@ -1,0 +1,88 @@
+﻿name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            artifact: GCForge-windows.zip
+          - os: ubuntu-latest
+            artifact: GCForge-linux.tar.gz
+          - os: macos-latest
+            artifact: GCForge-macos.zip
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Install dependencies
+        run: uv sync --frozen
+
+      - name: Install PyInstaller
+        run: uv pip install pyinstaller
+
+      - name: Build with PyInstaller
+        run: uv run pyinstaller gcforge.spec --noconfirm
+
+      - name: Smoke test — app starts
+        # Launch the built bundle and confirm the bundled server comes up on this
+        # OS before we package/release it. Runs identically on Win/Linux/macOS.
+        run: python .github/ci_smoke.py
+
+      - name: Package (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: Compress-Archive -Path dist/GCForge -DestinationPath GCForge-windows.zip
+
+      - name: Package (Linux)
+        if: runner.os == 'Linux'
+        run: tar -czf GCForge-linux.tar.gz -C dist GCForge
+
+      - name: Package (macOS)
+        if: runner.os == 'macOS'
+        run: cd dist && zip -r ../GCForge-macos.zip GCForge
+
+      - name: Upload to Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ matrix.artifact }}
+          draft: true
+          generate_release_notes: false
+          name: "GCForge ${{ github.ref_name }}"
+          body: |
+            ## GCForge ${{ github.ref_name }} — Beta
+
+            Early beta release for testing. Expect rough edges.
+
+            ### Install
+            - **Windows:** extract the zip, run `GCForge.exe`. If SmartScreen warns ("Windows protected your PC"), click **More info → Run anyway**.
+            - **Linux:** extract the tar.gz, run `./GCForge`
+            - **macOS:** extract the zip, then in **Terminal** `cd` into the extracted `GCForge` folder and run `xattr -dr com.apple.quarantine .` once, then `./GCForge`.
+
+            The app starts a local server and opens your browser automatically.
+            Your data is stored in `~/.gcforge/`.
+
+            > **macOS note:** the app is not yet Apple-signed, so macOS quarantines it. Without the `xattr` step above you'll get repeated "unidentified developer" warnings — one per bundled library (e.g. `_struct.cpython-314-darwin.so`). The `xattr -dr` command clears them all at once; you only need it the first time after downloading.
+
+            ### Feedback
+            Please report issues and share feedback in [Discussions](https://github.com/OliverBurgert/gcforge-public/discussions).

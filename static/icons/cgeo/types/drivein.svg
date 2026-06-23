@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36">
+  <!-- Car silhouette -->
+  <path d="M10 22h16v4H10zM12.5 16l2-4h7l2 4z" fill="none" stroke="#ffffff" stroke-width="1.3"/>
+  <path d="M10 22h16l-1.5-6h-13z" fill="none" stroke="#ffffff" stroke-width="1.3"/>
+  <circle cx="13" cy="26" r="1.5" fill="#ffffff"/>
+  <circle cx="23" cy="26" r="1.5" fill="#ffffff"/>
+</svg>

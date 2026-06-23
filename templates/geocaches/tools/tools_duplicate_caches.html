@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% trans "Find duplicate GC/OC caches" %} — GCForge{% endblock %}
+{% block content %}
+<div class="px-3 py-3" style="max-width:1200px">
+  <h5 class="mb-3">{% trans "Find duplicate GC/OC caches" %}</h5>
+
+  {% if total == 0 %}
+  <div class="card">
+    <div class="card-body">
+      <p class="mb-2">{% trans "No duplicate GC/OC pairs found. All caches appear to be unique entries." %}</p>
+      <a href="{% url 'geocaches:list' %}" class="btn btn-primary btn-sm">{% trans "Back to list" %}</a>
+    </div>
+  </div>
+  {% else %}
+  <p class="text-muted small mb-2">
+    {% url 'preferences:log' as log_url %}
+    {% url 'geocaches:tools_manage_fused' as manage_fused_url %}
+    {% blocktrans count n=total %}Found {{ n }} potential duplicate: caches that exist as both a GC and OC record within 15 m of each other.{% plural %}Found {{ n }} potential duplicates: caches that exist as both a GC and OC record within 15 m of each other.{% endblocktrans %}
+    {% trans "Merging keeps the GC record and adds the OC code, logs, and waypoints to it." %}
+    {% blocktrans %}All merge actions are logged in <a href="{{ log_url }}">the log</a>.{% endblocktrans %}
+    {% blocktrans %}Pairs marked „don't fuse" are hidden here — manage them in
+    <a href="{{ manage_fused_url }}">Manage fused caches</a>.{% endblocktrans %}
+  </p>
+
+  <form method="post" class="mb-3">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="merge_all">
+    <button type="submit" class="btn btn-primary btn-sm"
+            onclick="return confirm('{% blocktrans %}Merge all {{ total }} duplicate pairs?{% endblocktrans %}')">
+      {% blocktrans with n=total %}Merge all ({{ n }}){% endblocktrans %}
+    </button>
+    <a href="{% url 'geocaches:list' %}" class="btn btn-secondary btn-sm ms-1">{% trans "Back to list" %}</a>
+  </form>
+
+  <table class="table table-sm table-bordered align-middle">
+    <thead class="table-light">
+      <tr>
+        <th>{% trans "GC code" %}</th>
+        <th>{% trans "GC name" %}</th>
+        <th>{% trans "GC owner" %}</th>
+        <th>{% trans "OC code" %}</th>
+        <th>{% trans "OC name" %}</th>
+        <th>{% trans "OC owner" %}</th>
+        <th class="text-end">{% trans "Distance" %}</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for d in duplicates %}
+      <tr>
+        <td class="font-monospace small">
+          <a href="{% url 'geocaches:detail' d.gc_code %}">{{ d.gc_code }}</a>
+        </td>
+        <td class="small desc-cell" title="{{ d.gc_name }}">{{ d.gc_name }}</td>
+        <td class="small">{{ d.gc_owner }}</td>
+        <td class="font-monospace small">
+          <a href="{% url 'geocaches:detail' d.oc_code %}">{{ d.oc_code }}</a>
+        </td>
+        <td class="small desc-cell" title="{{ d.oc_name }}">{{ d.oc_name }}</td>
+        <td class="small">{{ d.oc_owner }}</td>
+        <td class="small text-end font-monospace">{{ d.distance_m }} m</td>
+        <td class="text-nowrap">
+          <form method="post" class="d-inline">
+            {% csrf_token %}
+            <input type="hidden" name="gc_pk" value="{{ d.gc_pk }}">
+            <input type="hidden" name="oc_pk" value="{{ d.oc_pk }}">
+            <input type="hidden" name="action" value="merge">
+            <button type="submit" class="btn btn-outline-primary btn-sm py-0 px-2"
+                    style="font-size:0.75rem">{% trans "Merge" %}</button>
+          </form>
+          <form method="post" class="d-inline ms-1">
+            {% csrf_token %}
+            <input type="hidden" name="gc_code" value="{{ d.gc_code }}">
+            <input type="hidden" name="oc_code" value="{{ d.oc_code }}">
+            <input type="hidden" name="action" value="dont_fuse">
+            <button type="submit" class="btn btn-outline-danger btn-sm py-0 px-2"
+                    style="font-size:0.75rem"
+                    onclick="return confirm(&quot;{% blocktrans with gc=d.gc_code oc=d.oc_code %}Mark {{ gc }}/{{ oc }} as „don't fuse"? It will be hidden from this list.{% endblocktrans %}&quot;)">
+              {% trans "Don't fuse" %}
+            </button>
+          </form>
+          <form method="post" class="d-inline ms-1">
+            {% csrf_token %}
+            <input type="hidden" name="gc_code" value="{{ d.gc_code }}">
+            <input type="hidden" name="oc_code" value="{{ d.oc_code }}">
+            <input type="hidden" name="action" value="postpone">
+            <button type="submit" class="btn btn-outline-secondary btn-sm py-0 px-2"
+                    style="font-size:0.75rem">{% trans "Postpone" %}</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+</div>
+{% endblock %}

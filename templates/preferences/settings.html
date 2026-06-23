@@ -1,0 +1,2419 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% trans "Settings" %} — GCForge{% endblock %}
+
+{% block content %}
+<div class="px-3 py-3" id="settings-wrapper" style="max-width:900px">
+  <h5 class="mb-3">{% trans "Settings" %}</h5>
+
+  <ul class="nav nav-tabs mb-4" id="settingsTabs">
+    <li class="nav-item"><a class="nav-link{% if active_tab == 'general' %} active{% endif %}"           href="#general"           data-bs-toggle="tab">{% trans "General" %}</a></li>
+    <li class="nav-item"><a class="nav-link{% if active_tab == 'list-view' %} active{% endif %}"         href="#list-view"         data-bs-toggle="tab">{% trans "List View" %}</a></li>
+    <li class="nav-item"><a class="nav-link{% if active_tab == 'cache-detail-view' %} active{% endif %}" href="#cache-detail-view" data-bs-toggle="tab">{% trans "Cache Details View" %}</a></li>
+    <li class="nav-item"><a class="nav-link{% if active_tab == 'logging' %} active{% endif %}"           href="#logging"           data-bs-toggle="tab">{% trans "Logging" %}</a></li>
+    <li class="nav-item"><a class="nav-link{% if active_tab == 'enrichment' %} active{% endif %}"        href="#enrichment"        data-bs-toggle="tab">{% trans "Enrichment" %}</a></li>
+    <li class="nav-item"><a class="nav-link{% if active_tab == 'platforms' %} active{% endif %}"         href="#platforms"         data-bs-toggle="tab">{% trans "Platforms" %}</a></li>
+    <li class="nav-item"><a class="nav-link{% if active_tab == 'accounts' %} active{% endif %}"          href="#accounts"          data-bs-toggle="tab">{% trans "Accounts" %}</a></li>
+    <li class="nav-item"><a class="nav-link{% if active_tab == 'reference-points' %} active{% endif %}"  href="#reference-points"  data-bs-toggle="tab">{% trans "Locations" %}</a></li>
+    <li class="nav-item"><a class="nav-link{% if active_tab == 'map' %} active{% endif %}"               href="#map"               data-bs-toggle="tab">{% trans "Map" %}</a></li>
+    <li class="nav-item"><a class="nav-link{% if active_tab == 'dashboard' %} active{% endif %}"         href="#dashboard"         data-bs-toggle="tab">{% trans "Dashboard" %}</a></li>
+    <li class="nav-item"><a class="nav-link{% if active_tab == 'gpx-export' %} active{% endif %}"        href="#gpx-export"        data-bs-toggle="tab">{% trans "GPX Export" %}</a></li>
+    <li class="nav-item"><a class="nav-link{% if active_tab == 'database' %} active{% endif %}"          href="#database"          data-bs-toggle="tab">{% trans "Database" %}</a></li>
+    <li class="nav-item"><a class="nav-link{% if active_tab == 'offline' %} active{% endif %}" id="offline-tab" href="#offline" data-bs-toggle="tab">{% trans "Offline Maps" %}</a></li>
+    <li class="nav-item"><a class="nav-link{% if active_tab == 'images' %} active{% endif %}"            href="#images"            data-bs-toggle="tab">{% trans "Images" %}</a></li>
+  </ul>
+
+  <div class="tab-content">
+
+    {# ===== GENERAL ===== #}
+    <div class="tab-pane{% if active_tab == 'general' %} active show{% endif %}" id="general">
+      <div class="card">
+        <div class="card-body">
+          <form method="post" action="{% url 'preferences:save_prefs' %}">
+            {% csrf_token %}
+
+            <div class="row g-4">
+
+              <div class="col-md-6">
+                <h6>{% trans "Coordinate format" %}</h6>
+                <div class="d-flex flex-column gap-2">
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" name="coord_format" id="coord_dd"
+                           value="dd" {% if coord_format == "dd" %}checked{% endif %}>
+                    <label class="form-check-label font-monospace" for="coord_dd">DD &nbsp;&nbsp;48.303150 &nbsp; 8.981267</label>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" name="coord_format" id="coord_dmm"
+                           value="dmm" {% if coord_format == "dmm" %}checked{% endif %}>
+                    <label class="form-check-label font-monospace" for="coord_dmm">DMM &nbsp;N 48° 18.189' &nbsp; E 8° 58.876'</label>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" name="coord_format" id="coord_dms"
+                           value="dms" {% if coord_format == "dms" %}checked{% endif %}>
+                    <label class="form-check-label font-monospace" for="coord_dms">DMS &nbsp;N 48° 18' 11.3" &nbsp; E 8° 58' 52.6"</label>
+                  </div>
+                </div>
+                <p class="text-muted small mt-2 mb-0">
+                  {% trans "Coordinate input always accepts DD, DMM, and DMS regardless of this setting." %}
+                </p>
+              </div>
+
+              <div class="col-md-6">
+                <h6>{% trans "Distance unit" %}</h6>
+                <div class="d-flex flex-column gap-2">
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" name="distance_unit" id="unit_km"
+                           value="km" {% if distance_unit == "km" %}checked{% endif %}>
+                    <label class="form-check-label" for="unit_km">{% trans "Kilometres (km)" %}</label>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" name="distance_unit" id="unit_mi"
+                           value="mi" {% if distance_unit == "mi" %}checked{% endif %}>
+                    <label class="form-check-label" for="unit_mi">{% trans "Miles (mi)" %}</label>
+                  </div>
+                </div>
+              </div>
+
+
+              <div class="col-md-6">
+                <h6>{% trans "Default map layout" %}</h6>
+                <select name="map_layout" class="form-select form-select-sm" style="max-width:160px">
+                  <option value="list" {% if map_layout == "list" %}selected{% endif %}>{% trans "List only" %}</option>
+                  <option value="split" {% if map_layout == "split" %}selected{% endif %}>{% trans "List/Map" %}</option>
+                  <option value="split-detail" {% if map_layout == "split-detail" %}selected{% endif %}>{% trans "List/Detail" %}</option>
+                  <option value="map" {% if map_layout == "map" %}selected{% endif %}>{% trans "Map only" %}</option>
+                </select>
+                <p class="text-muted small mt-1 mb-0">{% trans "Layout shown when opening the cache list." %}</p>
+              </div>
+
+              <div class="col-md-6">
+                <h6>{% trans "Split view divider position" %}</h6>
+                <div class="d-flex align-items-center gap-2">
+                  <input type="range" name="map_split_pct" class="form-range"
+                         style="max-width:200px" min="20" max="80" step="5"
+                         value="{{ map_split_pct }}"
+                         oninput="document.getElementById('split-pct-label').textContent = this.value + '%'">
+                  <span id="split-pct-label" class="small text-muted">{{ map_split_pct }}%</span>
+                </div>
+                <p class="text-muted small mt-1 mb-0">{% trans "Width of the list panel in split view (20–80%)." %}</p>
+              </div>
+
+              <div class="col-md-6">
+                <h6>{% trans "Icon set" %}</h6>
+                <select name="icon_set" class="form-select form-select-sm" style="max-width:200px">
+                  <option value="text" {% if icon_set == "text" %}selected{% endif %}>{% trans "Text (no icons)" %}</option>
+                  <option value="cgeo" {% if icon_set == "cgeo" %}selected{% endif %}>{% trans "c:geo icons" %}</option>
+                </select>
+                {% url 'preferences:about' as about_url %}
+                <p class="text-muted small mt-1 mb-0">
+                  {% blocktrans %}Icon set for cache types, waypoints, and attributes.
+                  See <a href="{{ about_url }}">About</a> for license info.{% endblocktrans %}
+                </p>
+              </div>
+
+            </div>
+
+            <hr class="my-3">
+            <h6 class="small fw-semibold text-muted">{% trans "Import" %}</h6>
+            <div class="form-check mb-2">
+              <input type="checkbox" class="form-check-input" name="delete_after_import"
+                     id="pref-delete-after-import" {% if delete_after_import %}checked{% endif %}>
+              <label class="form-check-label small" for="pref-delete-after-import">
+                {% trans "Delete GPX files after successful import" %}
+              </label>
+            </div>
+
+            <button type="submit" class="btn btn-sm btn-primary mt-3">{% trans "Save" %}</button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    {# ===== LIST VIEW ===== #}
+    <div class="tab-pane{% if active_tab == 'list-view' %} active show{% endif %}" id="list-view">
+
+      {# --- Sub-card: Type column display + Default sort order (one form) --- #}
+      <div class="card mb-3">
+        <div class="card-body">
+          <form method="post" action="{% url 'preferences:save_list_view' %}">
+            {% csrf_token %}
+
+            <div class="row g-4">
+
+              <div class="col-md-6">
+                <h6>{% trans "Type column display" %}</h6>
+                <div class="d-flex flex-column gap-2">
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" name="cache_type_display" id="ctd_icon"
+                           value="icon" {% if cache_type_display == "icon" %}checked{% endif %}>
+                    <label class="form-check-label" for="ctd_icon">{% trans "Icon only" %}</label>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" name="cache_type_display" id="ctd_icon_text"
+                           value="icon_text" {% if cache_type_display == "icon_text" %}checked{% endif %}>
+                    <label class="form-check-label" for="ctd_icon_text">{% trans "Icon and text" %}</label>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" name="cache_type_display" id="ctd_text"
+                           value="text" {% if cache_type_display == "text" %}checked{% endif %}>
+                    <label class="form-check-label" for="ctd_text">{% trans "Text only" %}</label>
+                  </div>
+                </div>
+                <p class="text-muted small mt-2 mb-0">
+                  {% blocktrans %}Controls how the <strong>Type</strong> column is rendered in the cache list.{% endblocktrans %}
+                </p>
+              </div>
+
+              <div class="col-md-6">
+                <h6>{% trans "Default sort order" %}</h6>
+                <div class="d-flex gap-2 align-items-center">
+                  <select name="default_sort" class="form-select form-select-sm" style="max-width:180px">
+                    <option value="gc_code" {% if default_sort == "gc_code" %}selected{% endif %}>{% trans "Code" %}</option>
+                    <option value="name" {% if default_sort == "name" %}selected{% endif %}>{% trans "Name" %}</option>
+                    <option value="cache_type" {% if default_sort == "cache_type" %}selected{% endif %}>{% trans "Type" %}</option>
+                    <option value="size" {% if default_sort == "size" %}selected{% endif %}>{% trans "Size" %}</option>
+                    <option value="difficulty" {% if default_sort == "difficulty" %}selected{% endif %}>{% trans "Difficulty" %}</option>
+                    <option value="terrain" {% if default_sort == "terrain" %}selected{% endif %}>{% trans "Terrain" %}</option>
+                    <option value="status" {% if default_sort == "status" %}selected{% endif %}>{% trans "Status" %}</option>
+                    <option value="hidden_date" {% if default_sort == "hidden_date" %}selected{% endif %}>{% trans "Hidden date" %}</option>
+                    <option value="last_found_date" {% if default_sort == "last_found_date" %}selected{% endif %}>{% trans "Last found" %}</option>
+                    <option value="found_date" {% if default_sort == "found_date" %}selected{% endif %}>{% trans "Found date" %}</option>
+                    <option value="fav_points" {% if default_sort == "fav_points" %}selected{% endif %}>{% trans "Favourites" %}</option>
+                    <option value="distance_km" {% if default_sort == "distance_km" %}selected{% endif %}>{% trans "Distance" %}</option>
+                    <option value="bearing_deg" {% if default_sort == "bearing_deg" %}selected{% endif %}>{% trans "Bearing" %}</option>
+                  </select>
+                  <select name="default_order" class="form-select form-select-sm" style="max-width:120px">
+                    <option value="asc" {% if default_order == "asc" %}selected{% endif %}>{% trans "Ascending" %}</option>
+                    <option value="desc" {% if default_order == "desc" %}selected{% endif %}>{% trans "Descending" %}</option>
+                  </select>
+                </div>
+                <p class="text-muted small mt-1 mb-0">{% trans "Sort order used when opening the cache list without explicit sort params." %}</p>
+              </div>
+
+              <div class="col-md-6">
+                <h6>{% trans "Page size" %}</h6>
+                <input type="number" name="page_size" class="form-control form-control-sm"
+                       style="max-width:120px" min="10" max="500" value="{{ page_size }}">
+                <p class="text-muted small mt-1 mb-0">{% trans "Caches per page in the list view (10–500)." %}</p>
+              </div>
+
+            </div>
+
+            <button type="submit" class="btn btn-sm btn-primary mt-3">{% trans "Save" %}</button>
+          </form>
+        </div>
+      </div>
+
+      {# --- Sub-card: Columns --- #}
+      <div class="card">
+        <div class="card-body">
+          <h6 class="mb-2">{% trans "Columns" %}</h6>
+          <p class="text-muted small mb-3">
+            {% blocktrans %}Active preset is selected per-session via the <strong>Columns</strong> dropdown in the list view.
+            Built-in presets cannot be deleted.{% endblocktrans %}
+          </p>
+
+          <table class="table table-sm mb-4">
+            <thead><tr><th>{% trans "Name" %}</th><th>{% trans "Columns" %}</th><th></th></tr></thead>
+            <tbody>
+              {% for preset in presets %}
+              <tr {% if preset.name == active_preset_name %}class="table-primary"{% endif %}>
+                <td class="small fw-semibold">
+                  {{ preset.name }}
+                  {% if preset.name == active_preset_name %}<span class="badge bg-primary ms-1">{% trans "active" %}</span>{% endif %}
+                </td>
+                <td class="small text-muted">{{ preset.columns|join:", " }}</td>
+                <td class="text-end">
+                  {% if not preset.is_builtin %}
+                  <form method="post" action="{% url 'preferences:delete_preset' %}" class="d-inline">
+                    {% csrf_token %}
+                    <input type="hidden" name="preset_id" value="{{ preset.id }}">
+                    <button type="submit" class="btn btn-sm btn-outline-danger py-0"
+                            onclick="return confirm('{% blocktrans with name=preset.name %}Delete preset \'{{ name }}\'?{% endblocktrans %}')">{% trans "Delete" %}</button>
+                  </form>
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+
+          <details class="border rounded p-3 bg-light">
+            <summary class="fw-semibold small">{% trans "Create custom preset" %}</summary>
+            <form method="post" action="{% url 'preferences:add_preset' %}" class="mt-3">
+              {% csrf_token %}
+              <div class="mb-2">
+                <input type="text" name="preset_name" class="form-control form-control-sm"
+                       placeholder="{% trans 'Preset name' %}" style="max-width:200px" required>
+              </div>
+              <div class="d-flex flex-wrap gap-3 mb-3">
+                {% for col in available_columns %}
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" name="columns"
+                         value="{{ col.key }}" id="col_{{ col.key }}">
+                  <label class="form-check-label small" for="col_{{ col.key }}">{{ col.label }}</label>
+                </div>
+                {% endfor %}
+              </div>
+              <button type="submit" class="btn btn-sm btn-success">{% trans "Create preset" %}</button>
+            </form>
+          </details>
+        </div>
+      </div>
+    </div>
+
+    {# ===== CACHE DETAILS VIEW ===== #}
+    <div class="tab-pane{% if active_tab == 'cache-detail-view' %} active show{% endif %}" id="cache-detail-view">
+      <div class="card">
+        <div class="card-body">
+          <form method="post" action="{% url 'preferences:save_cache_detail' %}">
+            {% csrf_token %}
+
+            <div class="row g-4">
+
+              <div class="col-md-6">
+                <h6>{% trans "Hint display" %}</h6>
+                <div class="d-flex flex-column gap-2">
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" name="hint_display" id="hint_hidden"
+                           value="hidden" {% if hint_display == "hidden" %}checked{% endif %}>
+                    <label class="form-check-label" for="hint_hidden">
+                      {% blocktrans %}<strong>Hidden</strong> — collapsed; click to reveal{% endblocktrans %}
+                    </label>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" name="hint_display" id="hint_decrypted"
+                           value="decrypted" {% if hint_display == "decrypted" %}checked{% endif %}>
+                    <label class="form-check-label" for="hint_decrypted">
+                      {% blocktrans %}<strong>Shown decrypted</strong> — always visible in plain text{% endblocktrans %}
+                    </label>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" name="hint_display" id="hint_encrypted"
+                           value="encrypted" {% if hint_display == "encrypted" %}checked{% endif %}>
+                    <label class="form-check-label" for="hint_encrypted">
+                      {% blocktrans %}<strong>Shown encrypted (ROT13)</strong> — shown as ROT13; click to decode{% endblocktrans %}
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              <div class="col-md-6">
+                <h6>{% trans "Log text truncation" %}</h6>
+                <div class="form-check mb-2">
+                  <input class="form-check-input" type="checkbox" name="log_truncate" value="1"
+                         id="log_truncate" {% if log_truncate %}checked{% endif %}>
+                  <label class="form-check-label" for="log_truncate">
+                    {% blocktrans %}<strong>Truncate long log texts</strong>
+                    <span class="text-muted small ms-1">— show "more" link to expand</span>{% endblocktrans %}
+                  </label>
+                </div>
+                <div class="ms-4 d-flex align-items-center gap-2" id="log-truncate-length-row"
+                     {% if not log_truncate %}style="opacity:.5;pointer-events:none"{% endif %}>
+                  <label class="form-label small mb-0" for="log_truncate_length">{% trans "Max characters:" %}</label>
+                  <input type="number" name="log_truncate_length" id="log_truncate_length"
+                         class="form-control form-control-sm" style="width:90px"
+                         min="50" max="5000" value="{{ log_truncate_length }}">
+                </div>
+                <p class="text-muted small mt-2 mb-0 ms-4">{% trans "Uncheck to always show full log text." %}</p>
+              </div>
+
+            </div>
+
+            <button type="submit" class="btn btn-sm btn-primary mt-3">{% trans "Save" %}</button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    {# ===== LOGGING ===== #}
+    <div class="tab-pane{% if active_tab == 'logging' %} active show{% endif %}" id="logging">
+      <div class="card mb-3">
+        <div class="card-body">
+          <h6 class="mb-2">{% trans "Log templates" %}</h6>
+          <p class="text-muted small mb-3">
+            {% blocktrans %}Reusable log text snippets with <code>[name]</code>-style placeholders.
+            Available placeholders:
+            <code>[name]</code>, <code>[gc_code]</code>, <code>[oc_code]</code>,
+            <code>[type]</code>, <code>[size]</code>, <code>[difficulty]</code>, <code>[terrain]</code>,
+            <code>[owner]</code>, <code>[hidden_date]</code>, <code>[country]</code>, <code>[state]</code>,
+            <code>[lat]</code>, <code>[lon]</code>, <code>[today]</code>, <code>[log_date]</code>,
+            <code>[log_type]</code>, <code>[username]</code>, <code>[find_count]</code>.
+            <br>
+            Templates appear in the compose toolbar's <strong>📋</strong> dropdown,
+            filtered by the selected log type (templates with scope <em>any</em> always show).{% endblocktrans %}
+          </p>
+
+          {% if log_templates %}
+          <table class="table table-sm mb-3">
+            <thead><tr><th>{% trans "Name" %}</th><th>{% trans "Scope" %}</th><th>{% trans "Body" %}</th><th></th></tr></thead>
+            <tbody>
+              {% for tpl in log_templates %}
+              <tr>
+                <td class="small fw-semibold align-top">
+                  {{ tpl.name }}
+                  {% if tpl.is_default %}<span class="badge bg-secondary ms-1" style="font-size:.65rem">{% trans "default" %}</span>{% endif %}
+                </td>
+                <td class="small text-muted align-top">{{ tpl.get_scope_display }}</td>
+                <td class="small text-muted">
+                  <pre class="mb-0" style="white-space:pre-wrap;font-family:inherit;font-size:.8rem">{{ tpl.body|truncatechars:280 }}</pre>
+                </td>
+                <td class="text-end align-top">
+                  <form method="post" action="{% url 'preferences:delete_log_template' %}" class="d-inline">
+                    {% csrf_token %}
+                    <input type="hidden" name="template_id" value="{{ tpl.id }}">
+                    <button type="submit" class="btn btn-sm btn-outline-danger py-0"
+                            onclick="return confirm('{% blocktrans with name=tpl.name %}Delete template &#39;{{ name }}&#39;?{% endblocktrans %}')">{% trans "Delete" %}</button>
+                  </form>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+          {% else %}
+          <p class="text-muted small fst-italic">{% trans "No templates yet — add one below." %}</p>
+          {% endif %}
+
+          <details class="border rounded p-3 bg-light" {% if not log_templates %}open{% endif %}>
+            <summary class="fw-semibold small">{% trans "Add or update a template" %}</summary>
+            <form method="post" action="{% url 'preferences:add_log_template' %}" class="mt-3">
+              {% csrf_token %}
+              <div class="row g-2 mb-2">
+                <div class="col-md-6">
+                  <label class="form-label small mb-0">{% trans "Name" %}</label>
+                  <input type="text" name="template_name" class="form-control form-control-sm"
+                         placeholder="{% trans 'e.g. Quick TFTC' %}" required>
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label small mb-0">{% trans "Scope" %}</label>
+                  <select name="template_scope" class="form-select form-select-sm">
+                    {% for value, label in log_template_scopes %}
+                    <option value="{{ value }}">{{ label }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                  <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="template_default" value="1" id="template_default">
+                    <label class="form-check-label small" for="template_default">{% trans "Default" %}</label>
+                  </div>
+                </div>
+              </div>
+              <div class="mb-2">
+                <label class="form-label small mb-0">{% trans "Body" %}</label>
+                {% include "geocaches/partials/_log_compose_toolbar.html" with textarea_id="template_body" show_templates=False %}
+                <textarea name="template_body" id="template_body" class="form-control form-control-sm" rows="5"
+                          placeholder="{% trans 'Thanks [owner] for [name]! This was my [find_count]th find.' %}"></textarea>
+              </div>
+              <button type="submit" class="btn btn-sm btn-success">{% trans "Save template" %}</button>
+              <span class="text-muted small ms-2">{% trans "A name that already exists will be updated in place." %}</span>
+            </form>
+          </details>
+        </div>
+      </div>
+
+      <div class="card mb-3">
+        <div class="card-body">
+          <form method="post" action="{% url 'preferences:save_logging_prefs' %}">
+            {% csrf_token %}
+            <h6 class="mb-2">{% trans "Log image upload" %}</h6>
+            <div class="row g-3 mb-3">
+              <div class="col-auto">
+                <label class="form-label small mb-1">{% trans "Default max size" %}</label>
+                <select name="log_image_max_px" class="form-select form-select-sm" style="width:auto">
+                  <option value="512"  {% if log_image_max_px == 512  %}selected{% endif %}>512 px</option>
+                  <option value="1024" {% if log_image_max_px == 1024 %}selected{% endif %}>1024 px</option>
+                  <option value="1600" {% if log_image_max_px == 1600 %}selected{% endif %}>1600 px</option>
+                  <option value="2048" {% if log_image_max_px == 2048 %}selected{% endif %}>2048 px</option>
+                  <option value="0"    {% if log_image_max_px == 0    %}selected{% endif %}>{% trans "Original (no resize)" %}</option>
+                </select>
+              </div>
+              <div class="col-auto d-flex align-items-end pb-1">
+                <div class="form-check mb-0">
+                  <input type="checkbox" class="form-check-input" name="log_image_strip_exif"
+                         id="pref-strip-exif" {% if log_image_strip_exif %}checked{% endif %}>
+                  <label class="form-check-label small" for="pref-strip-exif">
+                    {% trans "Strip EXIF by default (recommended for privacy)" %}
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <hr class="my-3">
+            <h6 class="mb-2">{% trans "Trackables" %}</h6>
+            <div class="form-check mb-2">
+              <input type="checkbox" class="form-check-input" name="auto_fetch_tb_on_log"
+                     id="pref-auto-fetch-tb" {% if auto_fetch_tb_on_log %}checked{% endif %}>
+              <label class="form-check-label small" for="pref-auto-fetch-tb">
+                {% trans "Auto-fetch trackables during logging" %}
+              </label>
+              <div class="form-text">
+                {% blocktrans %}When a cache log includes a TB action with a tracking code (discover /
+                retrieve / grab), automatically fetch the TB's metadata + images from GC
+                and store the tracking code locally. Off by default — turn on if you want
+                ad-hoc discoveries to populate your trackable list without a separate sync.{% endblocktrans %}
+              </div>
+            </div>
+
+            <button type="submit" class="btn btn-sm btn-primary mt-2">{% trans "Save" %}</button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    {# ===== ENRICHMENT ===== #}
+    <div class="tab-pane{% if active_tab == 'enrichment' %} active show{% endif %}" id="enrichment">
+      <div class="card">
+        <div class="card-body">
+          <p class="text-muted small mb-3">
+            {% blocktrans %}Fills fields not provided by import sources.
+            <strong>Elevation</strong> uses offline SRTM tiles (downloaded once, then no internet required).
+            <strong>Location</strong> (country, state, county) uses
+            <a href="https://nominatim.openstreetmap.org/" target="_blank" rel="noopener">OpenStreetMap Nominatim</a>
+            (requires internet; 1 request/s rate limit).
+            Only blank fields are ever filled — existing values are never overwritten.{% endblocktrans %}
+          </p>
+          <form method="post" action="{% url 'preferences:save_enrich' %}">
+            {% csrf_token %}
+            <div class="d-flex flex-column gap-2 mb-3">
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="enrich_auto" value="1"
+                       id="enrich_auto" {% if enrich_auto %}checked{% endif %}>
+                <label class="form-check-label" for="enrich_auto">
+                  {% blocktrans %}<strong>Auto-enrich after import</strong>
+                  <span class="text-muted small ms-1">— run enrichment automatically when new caches are imported</span>{% endblocktrans %}
+                </label>
+              </div>
+              <div class="ms-4 d-flex flex-column gap-1">
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" name="enrich_elevation" value="1"
+                         id="enrich_elevation" {% if enrich_elevation %}checked{% endif %}>
+                  <label class="form-check-label small" for="enrich_elevation">{% trans "Fill elevation from SRTM" %}</label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" name="enrich_location" value="1"
+                         id="enrich_location" {% if enrich_location %}checked{% endif %}>
+                  <label class="form-check-label small" for="enrich_location">{% trans "Fill country / state / county from OpenStreetMap" %}</label>
+                </div>
+              </div>
+            </div>
+            <hr class="my-3">
+            <h6 class="mb-2">{% trans "Import behaviour" %}</h6>
+            <div class="form-check mb-2">
+              <input class="form-check-input" type="checkbox" name="drop_zero_waypoints" value="1"
+                     id="drop_zero_waypoints" {% if drop_zero_waypoints %}checked{% endif %}>
+              <label class="form-check-label small" for="drop_zero_waypoints">
+                {% blocktrans %}<strong>Drop lat/lon 0°/0° waypoints during import</strong>
+                <span class="text-muted ms-1">— some CO use 0,0 as a placeholder; these break the map</span>{% endblocktrans %}
+              </label>
+            </div>
+            <button type="submit" class="btn btn-sm btn-primary">{% trans "Save" %}</button>
+          </form>
+        </div>
+      </div>
+
+      <div class="card mt-3">
+        <div class="card-body">
+          <h6 class="mb-2">{% trans "Fill location gaps from downloaded boundaries" %}</h6>
+          <p class="text-muted small mb-2">
+            {% trans "Walks every cache with coordinates and assigns country (always), state and county (where you've downloaded the matching boundary). Pure point-in-polygon — no internet needed." %}
+          </p>
+          {% if enrich_offline_msg %}
+          <div class="alert alert-{% if enrich_offline_msg.ok %}success{% else %}danger{% endif %} small py-2 mb-3">
+            {{ enrich_offline_msg.text }}
+          </div>
+          {% endif %}
+          <form method="post" action="{% url 'preferences:enrich_locations_offline' %}">
+            {% csrf_token %}
+            <div class="form-check mb-2">
+              <input class="form-check-input" type="checkbox" name="override" value="1" id="enrich_offline_override">
+              <label class="form-check-label small" for="enrich_offline_override">
+                {% trans "Also overwrite existing values (default is fill-only)" %}
+              </label>
+            </div>
+            <button type="submit" class="btn btn-sm btn-primary">{% trans "Run now" %}</button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    {# ===== ACCOUNTS ===== #}
+    <div class="tab-pane{% if active_tab == 'accounts' %} active show{% endif %}" id="accounts">
+
+      {# ---- Geocaching username ---- #}
+      <div class="card mb-3">
+        <div class="card-body">
+          <h6 class="mb-2">{% trans "Geocaching username" %}</h6>
+          <form method="post" action="{% url 'preferences:save_gc_username' %}">
+            {% csrf_token %}
+            <div class="d-flex align-items-end gap-3">
+              <div>
+                <input type="text" name="gc_username" class="form-control form-control-sm"
+                       style="max-width:260px" placeholder="{% trans 'e.g. YourGCName' %}"
+                       value="{{ gc_username }}">
+                <p class="text-muted small mt-1 mb-0">
+                  {% trans "Used to identify your logs in GPX exports (your logs appear first)." %}
+                </p>
+              </div>
+              <button type="submit" class="btn btn-sm btn-primary">{% trans "Save" %}</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      {# ---- Platform accounts ---- #}
+      <div class="card">
+        <div class="card-body">
+          <p class="text-muted small mb-3">
+            {% blocktrans %}Accounts identify you on geocaching platforms.
+            GCForge uses them to detect caches you own and logs you wrote.
+            Use the Authorize button to grant API access (needed for found status, log submission, etc.).{% endblocktrans %}
+          </p>
+
+          {% if account_msg %}
+          <div class="alert alert-{% if account_msg.ok %}success{% else %}danger{% endif %} fade show py-2 d-flex align-items-center justify-content-between" role="alert">
+            <span>{{ account_msg.text }}</span>
+            <button type="button" class="btn-close ms-2 flex-shrink-0" data-bs-dismiss="alert"></button>
+          </div>
+          {% endif %}
+
+          {% if user_accounts %}
+          <table class="table table-sm table-bordered mb-4" style="min-width:700px">
+            <thead class="table-light">
+              <tr>
+                <th>{% trans "Platform" %}</th>
+                <th>{% trans "Username" %}</th>
+                <th>{% trans "OAuth" %}</th>
+                <th>{% trans "Password" %}</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for row in user_accounts %}{% with acct=row.acct %}
+              <tr>
+                <td>{{ acct.get_platform_display }}</td>
+                <td>
+                  {{ acct.username }}
+                  {% if acct.is_default %}
+                    <span class="text-warning" title="{% trans 'Default account' %}">★</span>
+                  {% else %}
+                    <form method="post" action="{% url 'accounts:set_default_account' %}" class="d-inline">{% csrf_token %}
+                      <input type="hidden" name="acct_id" value="{{ acct.pk }}">
+                      <button class="btn btn-link p-0 text-secondary border-0"
+                              style="font-size:1em;vertical-align:baseline;"
+                              title="{% trans 'Set as default' %}">★</button>
+                    </form>
+                  {% endif %}
+                  {% if acct.user_id %}<br><small class="text-muted font-monospace">{{ acct.user_id }}</small>{% endif %}
+                </td>
+
+                {# OAuth / API token status #}
+                <td class="small">
+                  {% if acct.platform == 'gc' and row.has_gc_api %}
+                  {% if row.gc_api_verified %}
+                  <span id="gc-api-status" class="text-success small">&#10003; {% trans "Verified" %}</span>
+                  {% else %}
+                  <span id="gc-api-status" class="text-warning small">{% trans "Token file present — not verified" %}</span>
+                  {% endif %}
+                  <button class="btn btn-xs btn-outline-secondary py-0 px-1 ms-1"
+                          hx-post="{% url 'accounts:account_validate_gc' %}"
+                          hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
+                          hx-target="#gc-api-status"
+                          hx-swap="outerHTML"
+                          title="{% trans 'Validate GC API token by calling /users/me' %}">{% trans "Validate" %}</button>
+                  {% elif acct.platform == 'gc' %}
+                  <span class="text-muted">{% trans "No API tokens" %}</span>
+                  {% elif row.has_oauth %}
+                  <span id="oauth-status-{{ acct.pk }}" class="text-success">{% trans "Active" %}</span>
+                  <button class="btn btn-xs btn-outline-secondary py-0 px-1 ms-1"
+                          hx-post="{% url 'accounts:account_validate_oauth' %}"
+                          hx-vals='{"acct_id": "{{ acct.pk }}"}'
+                          hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
+                          hx-target="#oauth-status-{{ acct.pk }}"
+                          hx-swap="outerHTML"
+                          title="{% trans 'Check if token is still valid' %}">{% trans "Validate" %}</button>
+                  {% else %}
+                  <form method="post" action="{% url 'accounts:oauth_start' %}" class="d-inline">
+                    {% csrf_token %}
+                    <input type="hidden" name="acct_id" value="{{ acct.pk }}">
+                    <button class="btn btn-sm btn-outline-warning py-0">{% trans "Inactive — Authorize" %}</button>
+                  </form>
+                  {% endif %}
+                </td>
+
+                {# Password status #}
+                <td class="small">
+                  {% if row.has_password %}
+                  <span class="text-muted">{% trans "Stored in keyring" %}</span>
+                  <span id="pw-result-{{ acct.pk }}"></span>
+                  <button class="btn btn-xs btn-outline-secondary py-0 px-1 ms-1"
+                          hx-post="{% url 'accounts:account_test_password' %}"
+                          hx-vals='{"acct_id": "{{ acct.pk }}"}'
+                          hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
+                          hx-target="#pw-result-{{ acct.pk }}"
+                          hx-swap="innerHTML"
+                          title="{% trans 'Test credentials against the platform' %}">{% trans "Test" %}</button>
+                  {% else %}
+                  <span class="text-muted">{% trans "Not stored" %}</span>
+                  {% endif %}
+                </td>
+
+                {# Actions #}
+                <td class="text-nowrap">
+                  <button type="button" class="btn btn-sm btn-outline-primary py-0"
+                          data-bs-toggle="collapse" data-bs-target="#edit-acct-{{ acct.pk }}">{% trans "Edit" %}</button>
+                  {% if acct.platform != 'gc' and row.has_oauth %}
+                  <form method="post" action="{% url 'accounts:oauth_start' %}" class="d-inline">
+                    {% csrf_token %}
+                    <input type="hidden" name="acct_id" value="{{ acct.pk }}">
+                    <button class="btn btn-sm btn-outline-success py-0" title="{% trans 'Re-authorize' %}">{% trans "Re-auth" %}</button>
+                  </form>
+                  {% endif %}
+                  <form method="post" action="{% url 'accounts:delete_account' %}" class="d-inline">{% csrf_token %}
+                    <input type="hidden" name="acct_id" value="{{ acct.pk }}">
+                    <button class="btn btn-sm btn-outline-danger py-0"
+                            onclick="return confirm('{% blocktrans with label=acct.get_label %}Delete account {{ label }}?{% endblocktrans %}')">{% trans "Delete" %}</button>
+                  </form>
+                </td>
+              </tr>
+              <tr class="collapse" id="edit-acct-{{ acct.pk }}">
+                <td colspan="5" class="bg-light py-2 px-3">
+                  <form method="post" action="{% url 'accounts:edit_account' %}" class="row g-2 align-items-end flex-wrap">
+                    {% csrf_token %}
+                    <input type="hidden" name="acct_id" value="{{ acct.pk }}">
+                    <div class="col-auto">
+                      <label class="form-label small mb-0">{% trans "Platform" %}</label>
+                      <select name="acct_platform" class="form-select form-select-sm">
+                        {% for val, label in acct.PLATFORM_CHOICES %}
+                        <option value="{{ val }}" {% if acct.platform == val %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                      </select>
+                    </div>
+                    <div class="col-auto">
+                      <label class="form-label small mb-0">{% trans "User ID" %}</label>
+                      <input type="text" name="acct_user_id" class="form-control form-control-sm"
+                             value="{{ acct.user_id }}" style="max-width:120px">
+                    </div>
+                    <div class="col-auto">
+                      <label class="form-label small mb-0">{% trans "Username" %}</label>
+                      <input type="text" name="acct_username" class="form-control form-control-sm"
+                             value="{{ acct.username }}" style="max-width:180px" required>
+                    </div>
+                    <div class="col-auto">
+                      <label class="form-label small mb-0">{% trans "Label" %}</label>
+                      <input type="text" name="acct_label" class="form-control form-control-sm"
+                             value="{{ acct.label }}" style="max-width:180px">
+                    </div>
+                    <div class="col-auto">
+                      <label class="form-label small mb-0">{% trans "Profile URL" %}</label>
+                      <input type="url" name="acct_profile_url" class="form-control form-control-sm"
+                             value="{{ acct.profile_url }}" style="max-width:240px">
+                    </div>
+                    <div class="col-auto">
+                      <label class="form-label small mb-0">{% trans "Notes" %}</label>
+                      <input type="text" name="acct_notes" class="form-control form-control-sm"
+                             value="{{ acct.notes }}" style="max-width:200px">
+                    </div>
+                    <div class="w-100 mt-2"><small class="text-muted">{% trans "Password" %}</small></div>
+                    <div class="col-auto">
+                      <label class="form-label small mb-0">{% trans "New password" %}</label>
+                      <input type="password" name="acct_new_password" class="form-control form-control-sm"
+                             style="max-width:200px" autocomplete="new-password"
+                             placeholder="{% trans 'leave blank to keep current' %}">
+                    </div>
+                    <div class="col-auto align-self-end pb-1">
+                      <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="acct_store_password" value="1"
+                               id="store-pw-{{ acct.pk }}">
+                        <label class="form-check-label small" for="store-pw-{{ acct.pk }}">{% trans "Store in keystore" %}</label>
+                      </div>
+                    </div>
+                    {% if row.has_oauth %}
+                    <div class="col-12">
+                      <small class="text-muted">{% trans "Entering a new password will trigger re-authorization." %}</small>
+                    </div>
+                    {% endif %}
+                    {% if acct.platform != 'gc' %}
+                    <div class="w-100 mt-1"><small class="text-muted">{% trans "OKAPI credentials (opencaching only)" %}</small></div>
+                    <div class="col-auto">
+                      <label class="form-label small mb-0">{% trans "Consumer key" %}</label>
+                      <input type="text" name="acct_consumer_key" class="form-control form-control-sm font-monospace"
+                             value="{{ acct.consumer_key }}" style="max-width:280px" autocomplete="off">
+                    </div>
+                    <div class="col-auto">
+                      <small class="text-muted">{% trans "OAuth tokens stored securely in OS keyring" %}</small>
+                    </div>
+                    {% endif %}
+                    <div class="col-auto">
+                      <button type="submit" class="btn btn-sm btn-primary">{% trans "Save" %}</button>
+                      <button type="button" class="btn btn-sm btn-outline-secondary ms-1"
+                              data-bs-toggle="collapse" data-bs-target="#edit-acct-{{ acct.pk }}">{% trans "Cancel" %}</button>
+                    </div>
+                  </form>
+                </td>
+              </tr>
+              {% endwith %}{% endfor %}
+            </tbody>
+          </table>
+          {% else %}
+          <p class="text-muted small">{% trans "No accounts configured yet." %}</p>
+          {% endif %}
+
+          {# ---- Add account ---- #}
+          <h6 class="mt-3 mb-1">{% trans "Provide user information for a geocaching platform" %}</h6>
+          {% if registered_platforms|length >= 6 %}
+          <p class="text-muted small">{% trans "All platforms are already registered. Use the edit button above to update an account." %}</p>
+          {% else %}
+          <p class="text-muted small mb-2">
+            {% blocktrans %}For OpenCaching platforms, looks up your user ID and profile URL from the platform API.
+            For geocaching.com, enter your username and password. Use the Authorize button afterwards to grant API access (OC only).{% endblocktrans %}
+          </p>
+          <form method="post" action="{% url 'accounts:login_account' %}" class="row g-2 align-items-end flex-wrap">
+            {% csrf_token %}
+            <div class="col-auto">
+              <label class="form-label form-label-sm mb-1">{% trans "Platform" %}</label>
+              <select name="login_platform" class="form-select form-select-sm">
+                {% if "gc"    not in registered_platforms %}<option value="gc">geocaching.com</option>{% endif %}
+                {% if "oc_de" not in registered_platforms %}<option value="oc_de">opencaching.de</option>{% endif %}
+                {% if "oc_pl" not in registered_platforms %}<option value="oc_pl">opencaching.pl</option>{% endif %}
+                {% if "oc_uk" not in registered_platforms %}<option value="oc_uk">opencache.uk</option>{% endif %}
+                {% if "oc_nl" not in registered_platforms %}<option value="oc_nl">opencaching.nl</option>{% endif %}
+                {% if "oc_us" not in registered_platforms %}<option value="oc_us">opencaching.us</option>{% endif %}
+              </select>
+            </div>
+            <div class="col-auto">
+              <label class="form-label form-label-sm mb-1">{% trans "Username" %}</label>
+              <input type="text" name="login_username" class="form-control form-control-sm"
+                     style="max-width:200px" placeholder="{% trans 'Your username' %}" required>
+            </div>
+            <div class="col-auto">
+              <label class="form-label form-label-sm mb-1">{% trans "Password" %}</label>
+              <input type="password" name="login_password" class="form-control form-control-sm"
+                     style="max-width:200px" autocomplete="new-password">
+            </div>
+            <div class="col-auto align-self-end pb-1">
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="login_store_password" value="1"
+                       id="login-store-pw" checked>
+                <label class="form-check-label small" for="login-store-pw">{% trans "Store in keystore" %}</label>
+              </div>
+            </div>
+            <div class="col-12">
+              <details class="mt-1">
+                <summary class="text-muted small" style="cursor:pointer"
+                         title="{% trans 'Not needed for most users' %}">{% trans "Custom consumer key (advanced, OC only)" %}</summary>
+                <div class="row g-2 mt-1">
+                  <div class="col-auto">
+                    <input type="text" name="login_consumer_key" class="form-control form-control-sm font-monospace"
+                           style="max-width:280px" placeholder="{% trans 'overrides platform default' %}" autocomplete="off">
+                  </div>
+                </div>
+              </details>
+            </div>
+            <div class="col-auto">
+              <button type="submit" class="btn btn-sm btn-primary">{% trans "Add" %}</button>
+            </div>
+          </form>
+          {% endif %}
+        </div>
+      </div>
+
+      {# ---- Adventure Lab ---- #}
+      <div class="card mt-3">
+        <div class="card-body">
+          <h6 class="mb-2">{% trans "Adventure Lab" %}</h6>
+          <form method="post" action="{% url 'preferences:save_al_prefs' %}">
+            {% csrf_token %}
+            <div class="mb-2">
+              <label class="form-label small mb-1">{% trans "Your geocaching.com public GUID" %}</label>
+              <div class="d-flex gap-2 align-items-center">
+                <input type="text" name="gc_public_guid" id="gc_public_guid"
+                       class="form-control form-control-sm font-monospace"
+                       style="max-width:340px" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+                       value="{{ gc_public_guid }}">
+                <button type="button" class="btn btn-sm btn-outline-secondary"
+                        id="fetch-guid-btn" onclick="gcfFetchPublicGuid()">{% trans "Look up" %}</button>
+                <span id="fetch-guid-status" class="small text-muted"></span>
+              </div>
+              <p class="text-muted small mt-1 mb-0">
+                {% blocktrans %}Used to fetch your Adventure Lab founds. Click "Look up" to auto-detect it from geocaching.com
+                using your username above. Leave empty to skip found-state sync.{% endblocktrans %}
+              </p>
+            </div>
+            <button type="submit" class="btn btn-sm btn-primary">{% trans "Save" %}</button>
+          </form>
+        </div>
+      </div>
+
+    </div>
+
+    {# ===== PLATFORMS ===== #}
+    <div class="tab-pane{% if active_tab == 'platforms' %} active show{% endif %}" id="platforms">
+      <div class="card">
+        <div class="card-body">
+          <p class="text-muted small mb-3">
+            {% blocktrans %}Application-level API keys for OpenCaching platforms. These are registered once per installation of GCForge
+            and shared by all user accounts on a given platform.<br>
+            GCForge ships with built-in keys for all supported OpenCaching nodes. You only need to enter a key here if you want
+            to override the default with your own registration at <code>&lt;node&gt;/okapi/signup.html</code>. Leave a field blank to use the built-in default.{% endblocktrans %}
+          </p>
+
+          <form method="post" action="{% url 'accounts:save_platform_keys' %}">
+            {% csrf_token %}
+
+            <table class="table table-sm table-bordered align-middle mb-3">
+              <thead class="table-light">
+                <tr>
+                  <th>{% trans "Platform" %}</th>
+                  <th>{% trans "Consumer key" %}</th>
+                  <th>{% trans "Consumer secret" %}</th>
+                  <th>{% trans "Status" %}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for pk in platform_keys %}
+                <tr>
+                  <td class="fw-semibold">{{ pk.label }}<br><small class="text-muted fw-normal">{{ pk.node_url }}</small></td>
+                  <td>
+                    <input type="text" name="okapi_key_{{ pk.platform }}"
+                           class="form-control form-control-sm font-monospace"
+                           value="{{ pk.custom_key }}"
+                           placeholder="{% if pk.has_bundled %}{% trans 'built-in default' %}{% else %}{% trans 'none — register at signup page' %}{% endif %}"
+                           autocomplete="off">
+                  </td>
+                  <td>
+                    <input type="password" name="okapi_secret_{{ pk.platform }}"
+                           class="form-control form-control-sm font-monospace"
+                           value="{{ pk.custom_secret }}"
+                           placeholder="{% if pk.has_bundled %}{% trans 'built-in default' %}{% else %}—{% endif %}"
+                           autocomplete="off">
+                  </td>
+                  <td class="small">
+                    {% if pk.custom_key %}
+                      <span class="badge bg-info text-dark">{% trans "custom key" %}</span>
+                    {% elif pk.has_bundled %}
+                      <span class="badge bg-success">{% trans "built-in" %}</span>
+                    {% else %}
+                      <span class="badge bg-secondary">{% trans "no key" %}</span>
+                      <a href="{{ pk.signup_url }}" target="_blank" rel="noopener" class="ms-1 small">{% trans "register" %}</a>
+                    {% endif %}
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+
+            <button type="submit" class="btn btn-sm btn-primary">{% trans "Save" %}</button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    {# ===== REFERENCE POINTS ===== #}
+    <div class="tab-pane{% if active_tab == 'reference-points' %} active show{% endif %}" id="reference-points">
+      <div class="d-flex gap-3 align-items-start">
+
+        {# Left: table + add form — fixed at 900px, matching other tabs #}
+        <div style="flex: 0 0 900px; overflow-x: auto;">
+          <div class="card">
+            <div class="card-body">
+              <p class="text-muted small mb-3">
+                {% blocktrans %}Named locations used for distance and bearing calculations. Multiple entries with the same name
+                (e.g. several <em>Home</em> records with different <em>Valid from</em> dates)
+                enable temporal distance statistics — useful when your home location has changed over time.
+                You can also save a cache's coordinates as a location from its detail page.{% endblocktrans %}
+              </p>
+
+              {% if reference_points %}
+              <table class="table table-sm mb-4">
+                <thead>
+                  <tr>
+                    <th style="width:2rem">
+                      <input type="checkbox" id="rp-check-all" class="form-check-input" checked>
+                    </th>
+                    <th>{% trans "Name" %}</th><th>{% trans "Latitude" %}</th><th>{% trans "Longitude" %}</th><th>{% trans "Valid from" %}</th><th>{% trans "Note" %}</th><th>{% trans "Home" %}</th><th>{% trans "Default" %}</th><th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for rp in reference_points %}
+                  <tr>
+                    <td>
+                      <input type="checkbox" id="rp-cb-{{ rp.id }}" class="form-check-input rp-check"
+                             data-rp-id="{{ rp.id }}" {% if rp.is_home %}checked{% endif %}>
+                    </td>
+                    <td class="small fw-semibold">{{ rp.name }}</td>
+                    <td class="small font-monospace">{{ rp.latitude|floatformat:5 }}</td>
+                    <td class="small font-monospace">{{ rp.longitude|floatformat:5 }}</td>
+                    <td class="small">{{ rp.valid_from|date:"Y-m-d"|default:"—" }}</td>
+                    <td class="small text-muted">{{ rp.note }}</td>
+                    <td class="text-center">{% if rp.is_home %}<span class="badge bg-success">{% trans "home" %}</span>{% endif %}</td>
+                    <td class="text-center">
+                      {% if rp.is_default %}
+                        <span class="badge bg-primary">{% trans "default" %}</span>
+                      {% else %}
+                        <form method="post" action="{% url 'preferences:set_default_refpoint' %}" class="d-inline">
+                          {% csrf_token %}
+                          <input type="hidden" name="rp_id" value="{{ rp.id }}">
+                          <button type="submit" class="btn btn-sm btn-outline-secondary py-0">{% trans "Set default" %}</button>
+                        </form>
+                      {% endif %}
+                    </td>
+                    <td class="text-nowrap">
+                      <button type="button" class="btn btn-sm btn-outline-primary py-0"
+                              data-bs-toggle="collapse" data-bs-target="#edit-rp-{{ rp.id }}">{% trans "Edit" %}</button>
+                      <form method="post" action="{% url 'preferences:delete_refpoint' %}" class="d-inline">
+                        {% csrf_token %}
+                        <input type="hidden" name="rp_id" value="{{ rp.id }}">
+                        <button type="submit" class="btn btn-sm btn-outline-danger py-0"
+                                onclick="return confirm('{% blocktrans with name=rp.name %}Delete \'{{ name }}\'?{% endblocktrans %}')">{% trans "Delete" %}</button>
+                      </form>
+                    </td>
+                  </tr>
+                  <tr class="collapse" id="edit-rp-{{ rp.id }}">
+                    <td colspan="9" class="bg-light py-2 px-3">
+                      <div id="finetune-hint-{{ rp.id }}"
+                           class="d-none alert alert-info py-1 px-2 small mb-2">
+                        {% trans "Map active: drag the marker or click on the map to set position." %}
+                      </div>
+                      <form method="post" action="{% url 'preferences:edit_refpoint' %}" class="row g-2 align-items-end flex-wrap">
+                        {% csrf_token %}
+                        <input type="hidden" name="rp_id" value="{{ rp.id }}">
+                        <div class="col-auto">
+                          <label class="form-label small mb-0">{% trans "Name" %}</label>
+                          <input type="text" name="rp_name" class="form-control form-control-sm"
+                                 value="{{ rp.name }}" style="width:140px" required>
+                        </div>
+                        <div class="col-auto">
+                          <label class="form-label small mb-0">{% trans "Latitude" %}</label>
+                          <input type="text" name="rp_lat" id="rp-lat-{{ rp.id }}"
+                                 class="form-control form-control-sm font-monospace"
+                                 data-lon-target="rp-lon-{{ rp.id }}"
+                                 value="{{ rp.latitude|floatformat:6 }}" style="width:120px" required>
+                        </div>
+                        <div class="col-auto">
+                          <label class="form-label small mb-0">{% trans "Longitude" %}</label>
+                          <input type="text" name="rp_lon" id="rp-lon-{{ rp.id }}"
+                                 class="form-control form-control-sm font-monospace"
+                                 value="{{ rp.longitude|floatformat:6 }}" style="width:120px" required>
+                        </div>
+                        <div class="col-auto">
+                          <label class="form-label small mb-0">{% trans "Valid from" %} <span class="text-muted">{% trans "(optional)" %}</span></label>
+                          <input type="date" name="rp_valid_from" class="form-control form-control-sm"
+                                 value="{{ rp.valid_from|date:'Y-m-d'|default:'' }}" style="width:140px">
+                        </div>
+                        <div class="col-auto">
+                          <label class="form-label small mb-0">{% trans "Note" %} <span class="text-muted">{% trans "(optional)" %}</span></label>
+                          <input type="text" name="rp_note" class="form-control form-control-sm"
+                                 value="{{ rp.note }}" style="width:140px">
+                        </div>
+                        <div class="col-auto">
+                          <div class="form-check mt-3">
+                            <input class="form-check-input" type="checkbox" name="rp_home" value="1"
+                                   id="rp_home_{{ rp.id }}" {% if rp.is_home %}checked{% endif %}>
+                            <label class="form-check-label small" for="rp_home_{{ rp.id }}">{% trans "Home" %}</label>
+                          </div>
+                        </div>
+                        <div class="col-auto">
+                          <button type="submit" class="btn btn-sm btn-primary">{% trans "Save" %}</button>
+                          <button type="button" class="btn btn-sm btn-outline-secondary ms-1"
+                                  data-bs-toggle="collapse" data-bs-target="#edit-rp-{{ rp.id }}">{% trans "Cancel" %}</button>
+                        </div>
+                      </form>
+                    </td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+              {% else %}
+              <p class="text-muted small">{% trans "No locations defined yet." %}</p>
+              {% endif %}
+
+              <details class="border rounded p-3 bg-light" id="add-location-details">
+                <summary class="fw-semibold small">{% trans "Add location" %}</summary>
+                <div class="alert alert-info py-1 px-2 small mt-2 mb-2">
+                  {% trans "Click on the map to set position, or type coordinates directly." %}
+                </div>
+                <form method="post" action="{% url 'preferences:add_refpoint' %}" class="mt-2">
+                  {% csrf_token %}
+                  <div class="row g-2 align-items-end flex-wrap">
+                    <div class="col-auto">
+                      <label class="form-label small mb-0">{% trans "Name" %}</label>
+                      <input type="text" name="rp_name" class="form-control form-control-sm"
+                             placeholder="{% trans 'e.g. Home' %}" style="width:140px" required>
+                    </div>
+                    <div class="col-auto">
+                      <label class="form-label small mb-0">{% trans "Latitude" %}</label>
+                      <input type="text" name="rp_lat" id="rp-lat-new"
+                             class="form-control form-control-sm font-monospace"
+                             data-lon-target="rp-lon-new"
+                             placeholder="N 48° 18.189'" style="width:160px" required>
+                    </div>
+                    <div class="col-auto">
+                      <label class="form-label small mb-0">{% trans "Longitude" %}</label>
+                      <input type="text" name="rp_lon" id="rp-lon-new"
+                             class="form-control form-control-sm font-monospace"
+                             placeholder="E 8° 58.876'" style="width:160px" required>
+                    </div>
+                    <div class="col-auto">
+                      <label class="form-label small mb-0">{% trans "Valid from" %} <span class="text-muted">{% trans "(optional)" %}</span></label>
+                      <input type="date" name="rp_valid_from" class="form-control form-control-sm" style="width:140px">
+                    </div>
+                    <div class="col-auto">
+                      <label class="form-label small mb-0">{% trans "Note" %} <span class="text-muted">{% trans "(optional)" %}</span></label>
+                      <input type="text" name="rp_note" class="form-control form-control-sm"
+                             placeholder="{% trans 'e.g. moved house' %}" style="width:160px">
+                    </div>
+                    <div class="col-auto">
+                      <div class="form-check mt-3">
+                        <input class="form-check-input" type="checkbox" name="rp_home" value="1" id="rp_home_new">
+                        <label class="form-check-label small" for="rp_home_new">{% trans "Home" %}</label>
+                      </div>
+                    </div>
+                    <div class="col-auto">
+                      <div class="form-check mt-3">
+                        <input class="form-check-input" type="checkbox" name="rp_default" value="1" id="rp_default_new">
+                        <label class="form-check-label small" for="rp_default_new">{% trans "Set as default" %}</label>
+                      </div>
+                    </div>
+                    <div class="col-auto">
+                      <button type="submit" class="btn btn-sm btn-success">{% trans "Add" %}</button>
+                    </div>
+                  </div>
+                </form>
+              </details>
+            </div>
+          </div>
+        </div>{# end left column #}
+
+        {# Right: map #}
+        <div style="flex: 0 0 360px; position: sticky; top: 1rem;">
+          <div class="btn-group btn-group-sm mb-1" role="group" id="rp-layer-switcher" aria-label="{% trans 'Layer switcher' %}">
+            <button type="button" class="btn btn-outline-secondary" data-layer="street"
+                    onclick="gcfRpSetLayer('street', this)">{% trans "Street" %}</button>
+            <button type="button" class="btn btn-outline-secondary" data-layer="outdoor"
+                    onclick="gcfRpSetLayer('outdoor', this)">{% trans "Outdoor" %}</button>
+            <button type="button" class="btn btn-outline-secondary" data-layer="aerial"
+                    onclick="gcfRpSetLayer('aerial', this)">{% trans "Aerial" %}</button>
+          </div>
+          <div id="rp-map" style="height: 420px; border-radius: .375rem; border: 1px solid #dee2e6;"></div>
+          <p class="text-muted small mt-1 mb-0" id="rp-map-status"></p>
+        </div>
+
+      </div>{# end d-flex #}
+    </div>
+
+    {# ===== MAP ===== #}
+    {# ===== DASHBOARD ===== #}
+    <div class="tab-pane{% if active_tab == 'dashboard' %} active show{% endif %}" id="dashboard">
+
+      {% if dashboard_msg %}
+      <div class="alert alert-{% if dashboard_msg.ok %}success{% else %}danger{% endif %} small py-2 mb-3 d-flex align-items-center justify-content-between">
+        <span>{{ dashboard_msg.text }}</span>
+        <button type="button" class="btn-close ms-2 flex-shrink-0" data-bs-dismiss="alert"></button>
+      </div>
+      {% endif %}
+
+      {% if dashboard_stats_msg %}
+      <div class="alert alert-{% if dashboard_stats_msg.ok %}success{% else %}danger{% endif %} small py-2 mb-3 d-flex align-items-center justify-content-between">
+        <span>{{ dashboard_stats_msg.text }}</span>
+        <button type="button" class="btn-close ms-2 flex-shrink-0" data-bs-dismiss="alert"></button>
+      </div>
+      {% endif %}
+
+      <div class="card mb-3">
+        <div class="card-body">
+          <h6>{% trans "Statistics tab" %}</h6>
+          <p class="text-muted small mb-3">
+            {% trans "Choose which platforms count towards the Statistics tab's find totals (finds-by-day, finds-by-year, D/T matrix, etc.). The 'By platform' summary panel always shows all three counts regardless." %}
+          </p>
+          <form method="post" action="{% url 'preferences:save_dashboard_stats' %}">
+            {% csrf_token %}
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" name="stats_include_oc" value="1"
+                     id="pref_stats_include_oc" {% if stats_include_oc %}checked{% endif %}>
+              <label class="form-check-label" for="pref_stats_include_oc">
+                {% trans "Include OC.xx caches in statistics" %}
+              </label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" name="stats_include_al" value="1"
+                     id="pref_stats_include_al" {% if stats_include_al %}checked{% endif %}>
+              <label class="form-check-label" for="pref_stats_include_al">
+                {% trans "Include Adventure Lab caches in statistics" %}
+              </label>
+            </div>
+            <button type="submit" class="btn btn-primary btn-sm mt-2">{% trans "Save" %}</button>
+          </form>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-body">
+          <h6>{% trans "Maps tab" %}</h6>
+          <p class="text-muted small mb-3">
+            {% trans "Choose which statistics maps appear on the Dashboard's Maps tab, and in what order (lower numbers first)." %}
+          </p>
+
+          {# Single form so visibility/order AND country selection are saved #}
+          {# together; per-row Download + global Update-all override via #}
+          {# formaction so we never nest <form> tags. #}
+          <form method="post" action="{% url 'preferences:save_dashboard_maps' %}">
+            {% csrf_token %}
+            <table class="table table-sm align-middle" style="max-width:520px">
+              <thead>
+                <tr>
+                  <th style="width:5.5rem">{% trans "Order" %}</th>
+                  <th>{% trans "Map" %}</th>
+                  <th style="width:5rem" class="text-center">{% trans "Show" %}</th>
+                </tr>
+              </thead>
+              <tbody>
+              {% for m in dashboard_maps %}
+                {% if m.type in dashboard_map_bundled %}
+                <tr>
+                  <td>
+                    <input type="number" min="0" max="99" name="order_{{ m.type }}" value="{{ m.order }}"
+                           class="form-control form-control-sm" style="width:4.5rem">
+                  </td>
+                  <td>
+                    {% if m.type == 'world' %}{% trans "World — countries" %}{% endif %}
+                    {% if m.type == 'continent' %}{% trans "Continents" %}{% endif %}
+                  </td>
+                  <td class="text-center">
+                    <input class="form-check-input" type="checkbox" name="vis_{{ m.type }}" value="1"
+                           {% if m.visible %}checked{% endif %}>
+                  </td>
+                </tr>
+                {% endif %}
+                {% if m.type == 'country' %}
+                <tr>
+                  <td>
+                    <input type="number" min="0" max="99" name="order_country" value="{{ m.order }}"
+                           class="form-control form-control-sm" style="width:4.5rem">
+                  </td>
+                  <td>{% trans "Countries — regions" %}</td>
+                  <td class="text-center">
+                    <input class="form-check-input" type="checkbox" name="vis_country" value="1"
+                           {% if m.visible %}checked{% endif %}>
+                  </td>
+                </tr>
+                {% endif %}
+                {% if m.type == 'county' %}
+                <tr>
+                  <td>
+                    <input type="number" min="0" max="99" name="order_county" value="{{ m.order }}"
+                           class="form-control form-control-sm" style="width:4.5rem">
+                  </td>
+                  <td>{% trans "Countries — counties" %}</td>
+                  <td class="text-center">
+                    <input class="form-check-input" type="checkbox" name="vis_county" value="1"
+                           {% if m.visible %}checked{% endif %}>
+                  </td>
+                </tr>
+                {% endif %}
+              {% endfor %}
+              </tbody>
+            </table>
+
+            {% if dashboard_country_finds %}
+            <hr class="my-3">
+            <h6>{% trans "Country region boundaries" %}</h6>
+            <p class="text-muted small mb-1">
+              {% trans "Tick the countries to show region maps for. Each one's boundary data must be downloaded first." %}
+            </p>
+            <p class="text-muted small">
+              {% trans "Data" %}: <a href="https://www.geoboundaries.org/" target="_blank" rel="noopener">geoBoundaries</a> (CC-BY 4.0). {% trans "Downloads need internet (~1–3 s per country)." %}
+            </p>
+
+            <table class="table table-sm" style="max-width:820px">
+              <thead>
+                <tr>
+                  <th class="text-center" style="width:3rem" title="{% trans 'Show region map' %}">{% trans "Reg." %}</th>
+                  <th class="text-center" style="width:3rem" title="{% trans 'Show county map' %}">{% trans "Cnty." %}</th>
+                  <th>{% trans "Country" %}</th>
+                  <th class="text-end" style="width:5rem">{% trans "Finds" %}</th>
+                  <th>{% trans "Status" %}</th>
+                  <th style="width:7rem"></th>
+                </tr>
+              </thead>
+              <tbody>
+              {% for row in dashboard_country_finds %}
+                <tr>
+                  <td class="text-center">
+                    <input class="form-check-input" type="checkbox" name="country_iso" value="{{ row.iso }}"
+                           {% if row.selected %}checked{% endif %}>
+                  </td>
+                  <td class="text-center">
+                    <input class="form-check-input" type="checkbox" name="county_iso" value="{{ row.iso }}"
+                           {% if row.county_selected %}checked{% endif %}>
+                  </td>
+                  <td>
+                    <span class="fi fi-{{ row.iso|lower }}"></span>
+                    {{ row.name }}
+                  </td>
+                  <td class="text-end">{{ row.count }}</td>
+                  <td class="small text-muted">
+                    {% if row.downloaded %}
+                      {% blocktrans with cnt=row.download_info.count date=row.download_info.downloaded_at|slice:":10" %}{{ cnt }} regions ({{ date }}){% endblocktrans %}
+                    {% else %}
+                      {% trans "Regions: not downloaded" %}
+                    {% endif %}
+                    <br>
+                    {% if row.county_downloaded %}
+                      {% blocktrans with cnt=row.county_download_info.count date=row.county_download_info.downloaded_at|slice:":10" %}{{ cnt }} counties ({{ date }}){% endblocktrans %}
+                    {% else %}
+                      {% trans "Counties: not downloaded" %}
+                    {% endif %}
+                  </td>
+                  <td>
+                    <button type="submit"
+                            formaction="{% url 'preferences:download_boundary' %}"
+                            name="iso2" value="{{ row.iso }}"
+                            class="btn btn-outline-secondary btn-sm">{% trans "Download" %}</button>
+                  </td>
+                </tr>
+              {% endfor %}
+              </tbody>
+            </table>
+            {% endif %}
+
+            <div class="d-flex gap-2 align-items-center flex-wrap mt-2">
+              <button type="submit" class="btn btn-primary btn-sm">{% trans "Save" %}</button>
+              {% if dashboard_country_finds %}
+              <button type="submit"
+                      formaction="{% url 'preferences:update_all_boundaries' %}"
+                      class="btn btn-outline-secondary btn-sm">{% trans "Update all downloaded boundaries" %}</button>
+              {% endif %}
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    {# ===== MAP ===== #}
+    <div class="tab-pane{% if active_tab == 'map' %} active show{% endif %}" id="map">
+
+      {% if map_display_msg %}
+      <div class="alert alert-{% if map_display_msg.ok %}success{% else %}danger{% endif %} small py-2 mb-3 d-flex align-items-center justify-content-between">
+        <span>{{ map_display_msg.text }}</span>
+        <button type="button" class="btn-close ms-2 flex-shrink-0" data-bs-dismiss="alert"></button>
+      </div>
+      {% endif %}
+
+      <div class="card">
+        <div class="card-body">
+          <form method="post" action="{% url 'preferences:save_map_display' %}">
+            {% csrf_token %}
+
+            <div class="row g-4">
+
+              <div class="col-md-6">
+                <h6>{% trans "Default map style" %}</h6>
+                <select name="map_style" class="form-select form-select-sm" style="max-width:200px">
+                  <option value="street"  {% if map_style == "street" %}selected{% endif %}>OpenFreeMap (Street)</option>
+                  <option value="outdoor" {% if map_style == "outdoor" %}selected{% endif %}>OpenTopoMap (Topo)</option>
+                  <option value="aerial"  {% if map_style == "aerial" %}selected{% endif %}>Esri Aerial</option>
+                </select>
+                <p class="text-muted small mt-1 mb-0">
+                  {% trans "Map style used when opening the map for the first time. Switching styles during a session is remembered until the browser is closed." %}
+                </p>
+              </div>
+
+              <div class="col-md-6">
+                <h6>{% trans "Default boundary overlays" %}</h6>
+                <div class="d-flex flex-column gap-1">
+                  <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="map_boundary_country" value="1"
+                           id="pref_boundary_country" {% if map_boundary_country %}checked{% endif %}>
+                    <label class="form-check-label" for="pref_boundary_country">{% trans "Countries" %}</label>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="map_boundary_state" value="1"
+                           id="pref_boundary_state" {% if map_boundary_state %}checked{% endif %}>
+                    <label class="form-check-label" for="pref_boundary_state">{% trans "States" %}</label>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="map_boundary_county" value="1"
+                           id="pref_boundary_county" {% if map_boundary_county %}checked{% endif %}>
+                    <label class="form-check-label" for="pref_boundary_county">{% trans "Counties" %}</label>
+                  </div>
+                </div>
+                <p class="text-muted small mt-1 mb-0">
+                  {% trans "Boundary layers shown when the map loads. Only available with the Street style." %}
+                </p>
+              </div>
+
+              <div class="col-md-6">
+                <h6>{% trans "Radius filter circle" %}</h6>
+                <div class="d-flex flex-column gap-1">
+                  <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="map_radius_circle" value="1"
+                           id="pref_radius_circle" {% if map_radius_circle %}checked{% endif %}>
+                    <label class="form-check-label" for="pref_radius_circle">{% trans "Show radius circle on map" %}</label>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="map_radius_shade" value="1"
+                           id="pref_radius_shade" {% if map_radius_shade %}checked{% endif %}>
+                    <label class="form-check-label" for="pref_radius_shade">{% trans "Shade circle interior" %}</label>
+                  </div>
+                </div>
+                <p class="text-muted small mt-1 mb-0">
+                  {% trans "When a radius filter is active, show a dashed circle on the map indicating the filter area." %}
+                </p>
+              </div>
+
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label fw-bold">{% trans "Display layers" %}</label>
+              <div class="ms-2">
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" name="map_layer_sep_circles" value="1"
+                         id="pref_layer_sep_circles" {% if map_layer_sep_circles %}checked{% endif %}>
+                  <label class="form-check-label" for="pref_layer_sep_circles">{% if distance_unit == "mi" %}{% trans "0.1 mi separation circles" %}{% else %}{% trans "161m separation circles" %}{% endif %}</label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" name="map_layer_alc_circles" value="1"
+                         id="pref_layer_alc_circles" {% if map_layer_alc_circles %}checked{% endif %}>
+                  <label class="form-check-label" for="pref_layer_alc_circles">{% trans "ALC geofencing circles" %}</label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" name="map_layer_corrected" value="1"
+                         id="pref_layer_corrected" {% if map_layer_corrected %}checked{% endif %}>
+                  <label class="form-check-label" for="pref_layer_corrected">{% trans "Show original WP if corrected coords exist" %}</label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" name="map_layer_waypoints" value="1"
+                         id="pref_layer_waypoints" {% if map_layer_waypoints %}checked{% endif %}>
+                  <label class="form-check-label" for="pref_layer_waypoints">{% trans "Child waypoints" %}</label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" name="map_layer_lod" value="1"
+                         id="pref_layer_lod" {% if map_layer_lod %}checked{% endif %}>
+                  <label class="form-check-label" for="pref_layer_lod">{% trans "LOD sliders" %}</label>
+                </div>
+              </div>
+              <p class="text-muted small mt-1 mb-0">
+                {% trans "Default on/off state for display layers when the map is first opened." %}
+              </p>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label fw-bold">{% trans "Text labels" %}</label>
+              <div class="ms-2">
+                <div class="form-check">
+                  <input class="form-check-input" type="radio" name="map_layer_labels" value=""
+                         id="pref_labels_off" {% if not map_layer_labels %}checked{% endif %}>
+                  <label class="form-check-label" for="pref_labels_off">{% trans "Off" %}</label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input" type="radio" name="map_layer_labels" value="name"
+                         id="pref_labels_name" {% if map_layer_labels == "name" %}checked{% endif %}>
+                  <label class="form-check-label" for="pref_labels_name">{% trans "Cache name" %}</label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input" type="radio" name="map_layer_labels" value="code"
+                         id="pref_labels_code" {% if map_layer_labels == "code" %}checked{% endif %}>
+                  <label class="form-check-label" for="pref_labels_code">{% trans "Cache code" %}</label>
+                </div>
+              </div>
+            </div>
+
+            <hr>
+            <button type="submit" class="btn btn-sm btn-primary">{% trans "Save" %}</button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    {# ===== DATABASE ===== #}
+    <div class="tab-pane{% if active_tab == 'database' %} active show{% endif %}" id="database">
+
+      {% if db_switch_msg %}
+      <div class="alert alert-{% if db_switch_msg.ok %}success{% else %}danger{% endif %} small py-2 mb-3 d-flex align-items-center justify-content-between">
+        <span>{{ db_switch_msg.text }}</span>
+        <button type="button" class="btn-close ms-2 flex-shrink-0" data-bs-dismiss="alert"></button>
+      </div>
+      {% endif %}
+
+      {% if backup_msg %}
+      <div class="alert alert-{% if backup_msg.ok %}success{% else %}danger{% endif %} small py-2 mb-3 d-flex align-items-center justify-content-between">
+        <span>{{ backup_msg.text }}</span>
+        <button type="button" class="btn-close ms-2 flex-shrink-0" data-bs-dismiss="alert"></button>
+      </div>
+      {% endif %}
+
+      {# ----- Active Database ----- #}
+      <div class="card mb-3">
+        <div class="card-header py-1 small fw-semibold">{% trans "Active Database" %}</div>
+        <div class="card-body py-2">
+
+          {% for db in available_databases %}
+            {% if db.active %}
+            <p class="small mb-2">
+              <strong>{% trans "Current:" %}</strong>
+              <span class="font-monospace">{{ db.name }}</span>
+              <span class="text-muted">{{ db.location }}</span>
+              {% if db.exists %}&mdash; {{ db.size|filesizeformat }}{% endif %}
+              <span class="badge bg-success ms-1">{% trans "Active" %}</span>
+            </p>
+            {% endif %}
+          {% endfor %}
+
+          <h6 class="small fw-semibold text-muted text-uppercase mb-2" style="font-size:.7rem;letter-spacing:.05em">{% trans "Available databases" %}</h6>
+          <table class="table table-sm table-bordered mb-3">
+            <thead class="table-light">
+              <tr>
+                <th>{% trans "Name" %}</th>
+                <th>{% trans "Location" %}</th>
+                <th>{% trans "Size" %}</th>
+                <th style="width:10rem"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for db in available_databases %}
+              <tr>
+                <td class="small font-monospace">
+                  {% if db.active %}<strong>{{ db.name }}</strong>{% else %}{{ db.name }}{% endif %}
+                </td>
+                <td class="small text-muted">{{ db.location }}</td>
+                <td class="small text-muted text-end text-nowrap">
+                  {% if db.exists %}{{ db.size|filesizeformat }}{% else %}<em>{% trans "will be created on first use" %}</em>{% endif %}
+                </td>
+                <td class="text-nowrap">
+                  {% if db.active %}
+                    <span class="badge bg-success">{% trans "Active" %}</span>
+                  {% else %}
+                    <form method="post" action="{% url 'preferences:switch_database' %}" class="d-inline">
+                      {% csrf_token %}
+                      <input type="hidden" name="db_path" value="{{ db.path }}">
+                      <button type="submit" class="btn btn-sm btn-outline-primary py-0"
+                              onclick="return confirm('{% blocktrans with name=db.name %}Switch to {{ name }}?\n\nYou will need to restart the server after switching.{% endblocktrans %}')">
+                        {% trans "Switch" %}
+                      </button>
+                    </form>
+                    {% if db.is_backup %}
+                    <span class="text-warning ms-1" title="{% trans 'This is a backup file. Switching will use it as the active database — changes will modify the backup file directly.' %}">&#9888;</span>
+                    {% endif %}
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+
+          <hr class="my-3">
+
+          <h6 class="small fw-semibold text-muted text-uppercase mb-2" style="font-size:.7rem;letter-spacing:.05em">{% trans "Create new database" %}</h6>
+          <form method="post" action="{% url 'preferences:create_database' %}">
+            {% csrf_token %}
+            <div class="row g-2 align-items-end">
+              <div class="col-md-4">
+                <label class="form-label small mb-0">{% trans "Database name" %}</label>
+                <div class="input-group input-group-sm">
+                  <input type="text" name="db_name" class="form-control form-control-sm"
+                         placeholder="{% trans 'e.g. test' %}" pattern="[a-zA-Z0-9_-]+" title="{% trans 'Letters, numbers, dashes, and underscores only' %}">
+                  <span class="input-group-text">.sqlite3</span>
+                </div>
+              </div>
+              <div class="col-auto">
+                <button type="submit" class="btn btn-sm btn-success"
+                        onclick="return confirm('{% trans "Create a new empty database and switch to it?\n\nYou will need to restart the server after creation." %}')">
+                  {% trans "Create" %}
+                </button>
+              </div>
+            </div>
+            <p class="text-muted small mt-1 mb-0">
+              {% blocktrans %}Creates a new empty database in <code>data/databases/</code> and runs migrations on it.{% endblocktrans %}
+            </p>
+          </form>
+
+          <div class="mt-3 small text-muted">
+            <strong>{% trans "&#9888; Switching databases requires a server restart." %}</strong>
+            {% trans "After clicking Switch or Create, restart the Django server." %}
+          </div>
+          {% if has_backup_databases %}
+          <p class="small text-muted mt-1 mb-0">
+            {% blocktrans %}<strong>&#9888; Backup files:</strong> switching to a backup makes it the active database.
+            Changes will modify the backup file directly.{% endblocktrans %}
+          </p>
+          {% endif %}
+
+        </div>
+      </div>
+
+      {# ----- Database information ----- #}
+      <div class="card mb-3">
+        <div class="card-header py-1 small fw-semibold">{% trans "Database information" %}</div>
+        <div class="card-body py-2">
+          <div class="row g-2 small">
+            <div class="col-md-6">
+              <table class="table table-sm table-borderless mb-0">
+                <tbody>
+                  <tr>
+                    <td class="text-muted pe-3" style="width:10rem">{% trans "Geocaches" %}</td>
+                    <td><strong>{{ db_stats.geocache_count }}</strong>
+                      <span class="text-muted ms-1">{% blocktrans with n=db_stats.found_count %}({{ n }} found){% endblocktrans %}</span></td>
+                  </tr>
+                  <tr>
+                    <td class="text-muted">{% trans "Logs" %}</td>
+                    <td><strong>{{ db_stats.log_count }}</strong></td>
+                  </tr>
+                  <tr>
+                    <td class="text-muted">{% trans "Waypoints" %}</td>
+                    <td><strong>{{ db_stats.waypoint_count }}</strong></td>
+                  </tr>
+                  <tr>
+                    <td class="text-muted">{% trans "Tags" %}</td>
+                    <td><strong>{{ db_stats.tag_count }}</strong></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="col-md-6">
+              <table class="table table-sm table-borderless mb-0">
+                <tbody>
+                  <tr>
+                    <td class="text-muted pe-3" style="width:10rem">{% trans "File size on disk" %}</td>
+                    <td><strong>{{ db_stats.file_size|filesizeformat }}</strong></td>
+                  </tr>
+                  <tr>
+                    <td class="text-muted">{% trans "Reclaimable (free pages)" %}</td>
+                    <td>
+                      {% if frag.fragmentation_pct >= 10 %}
+                        <strong class="text-warning">{{ frag.free_bytes|filesizeformat }} ({{ frag.fragmentation_pct|floatformat:0 }}%)</strong>
+                      {% else %}
+                        <strong>{{ frag.free_bytes|filesizeformat }} ({{ frag.fragmentation_pct|floatformat:0 }}%)</strong>
+                      {% endif %}
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="text-muted">{% trans "SQLite version" %}</td>
+                    <td><strong class="font-monospace">{{ db_stats.sqlite_version }}</strong></td>
+                  </tr>
+                  <tr>
+                    <td class="text-muted">{% trans "File location" %}</td>
+                    <td class="font-monospace text-muted" style="word-break:break-all">{{ db_stats.db_path }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {# ----- Database Backup and Restore ----- #}
+      <div class="card mb-3">
+        <div class="card-header py-1 small fw-semibold">{% trans "Database Backup and Restore" %}</div>
+        <div class="card-body py-2">
+
+          {# Auto-backup settings #}
+          <h6 class="small fw-semibold text-muted text-uppercase mb-2" style="font-size:.7rem;letter-spacing:.05em">{% trans "Automatic daily backup" %}</h6>
+          <p class="text-muted small mb-2">
+            {% blocktrans %}A backup is created automatically once per day when the server starts.
+            Auto-backups are named <code>auto_rotate_gcforge_backup_YYYY-MM-DD.sqlite3</code> and are
+            subject to the rotation limit below — the oldest ones are deleted when the limit is exceeded.
+            Files without the <code>auto_rotate_</code> prefix are never deleted automatically.{% endblocktrans %}
+          </p>
+          <form method="post" action="{% url 'preferences:save_backup_prefs' %}" class="mb-4">
+            {% csrf_token %}
+            <div class="row g-3 align-items-end">
+              <div class="col-12">
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" name="backup_auto_enabled" value="1"
+                         id="backup_auto_enabled" {% if backup_auto_enabled %}checked{% endif %}>
+                  <label class="form-check-label" for="backup_auto_enabled">
+                    <strong>{% trans "Enable automatic daily backup" %}</strong>
+                  </label>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label small mb-0">{% trans "Backup folder" %}</label>
+                <input type="text" name="backup_dir" class="form-control form-control-sm font-monospace"
+                       value="{{ backup_dir }}" placeholder="{{ backup_dir_effective }}">
+                <div class="text-muted small mt-1">
+                  {% blocktrans with eff=backup_dir_effective %}Leave blank to use default: <code>{{ eff }}</code>{% endblocktrans %}
+                </div>
+              </div>
+              <div class="col-auto">
+                <label class="form-label small mb-0">{% trans "Auto-backups to keep" %}</label>
+                <input type="number" name="backup_rotate_count" class="form-control form-control-sm"
+                       style="width:90px" min="1" max="50" value="{{ backup_rotate_count }}">
+              </div>
+              <div class="col-auto">
+                <button type="submit" class="btn btn-sm btn-primary">{% trans "Save" %}</button>
+              </div>
+            </div>
+          </form>
+
+          <hr class="my-3">
+
+          {# Manual backup #}
+          <h6 class="small fw-semibold text-muted text-uppercase mb-2" style="font-size:.7rem;letter-spacing:.05em">{% trans "Create backup now" %}</h6>
+          <p class="text-muted small mb-2">
+            {% blocktrans %}Creates a backup immediately. Leave the fields blank to use the default location and a
+            timestamped filename. Manual backups are kept permanently — prefix the filename with
+            <code>auto_rotate_</code> to include it in the rotation limit.{% endblocktrans %}
+          </p>
+          <form method="post" action="{% url 'preferences:backup_now' %}" class="mb-4">
+            {% csrf_token %}
+            <div class="row g-2 align-items-end">
+              <div class="col-md-5">
+                <label class="form-label small mb-0">{% trans "Folder" %} <span class="text-muted">{% trans "(optional)" %}</span></label>
+                <input type="text" name="manual_backup_dir" class="form-control form-control-sm font-monospace"
+                       placeholder="{{ backup_dir_effective }}">
+              </div>
+              <div class="col-md-4">
+                <label class="form-label small mb-0">{% trans "Filename" %} <span class="text-muted">{% trans "(optional)" %}</span></label>
+                <input type="text" name="manual_backup_name" class="form-control form-control-sm"
+                       placeholder="gcforge_backup_…">
+              </div>
+              <div class="col-auto">
+                <button type="submit" class="btn btn-sm btn-success">{% trans "Backup now" %}</button>
+              </div>
+            </div>
+          </form>
+
+          <hr class="my-3">
+
+          {# Existing backups #}
+          <h6 class="small fw-semibold text-muted text-uppercase mb-2" style="font-size:.7rem;letter-spacing:.05em">{% trans "Existing backups" %}</h6>
+          {% if backups %}
+          <table class="table table-sm table-bordered mb-3">
+            <thead class="table-light">
+              <tr><th>{% trans "Filename" %}</th><th>{% trans "Size" %}</th><th>{% trans "Date" %}</th><th>{% trans "Retention" %}</th><th></th></tr>
+            </thead>
+            <tbody>
+              {% for b in backups %}
+              <tr>
+                <td class="small font-monospace">{{ b.name }}</td>
+                <td class="small text-muted text-end text-nowrap" style="width:6rem">{{ b.size|filesizeformat }}</td>
+                <td class="small text-muted text-nowrap" style="width:11rem">{{ b.mtime|date:"Y-m-d H:i" }}</td>
+                <td class="text-nowrap" style="width:8rem">
+                  {% if b.auto_rotate %}
+                    <span class="badge bg-secondary" title="{% trans 'Deleted automatically when the rotation limit is exceeded' %}">{% trans "Auto-rotate" %}</span>
+                  {% else %}
+                    <span class="badge bg-success" title="{% trans 'Never deleted automatically' %}">{% trans "Permanent" %}</span>
+                  {% endif %}
+                </td>
+                <td class="text-nowrap" style="width:16rem">
+                  <a href="{% url 'preferences:backup_download' b.name %}"
+                     class="btn btn-sm btn-outline-secondary py-0">{% trans "Download" %}</a>
+                  <form method="post" action="{% url 'preferences:backup_restore' %}" class="d-inline">
+                    {% csrf_token %}
+                    <input type="hidden" name="backup_name" value="{{ b.name }}">
+                    <button type="submit" class="btn btn-sm btn-outline-warning py-0"
+                            onclick="return confirm('{% blocktrans with name=b.name %}Restore from {{ name }}?\n\nA safety backup of the current database will be created first.{% endblocktrans %}')">
+                      {% trans "Restore" %}
+                    </button>
+                  </form>
+                  <form method="post" action="{% url 'preferences:backup_delete' %}" class="d-inline">
+                    {% csrf_token %}
+                    <input type="hidden" name="backup_name" value="{{ b.name }}">
+                    <button type="submit" class="btn btn-sm btn-outline-danger py-0"
+                            onclick="return confirm('{% blocktrans with name=b.name %}Delete {{ name }}?\n\nThis cannot be undone.{% endblocktrans %}')">
+                      {% trans "Delete" %}
+                    </button>
+                  </form>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+          {% else %}
+          <p class="text-muted small">{% blocktrans with eff=backup_dir_effective %}No backups found in <code>{{ eff }}</code>.{% endblocktrans %}</p>
+          {% endif %}
+
+          <hr class="my-3">
+
+          {# Restore from file #}
+          <h6 class="small fw-semibold text-muted text-uppercase mb-2" style="font-size:.7rem;letter-spacing:.05em">{% trans "Restore from file" %}</h6>
+          <p class="text-muted small mb-2">
+            {% blocktrans %}Upload a <code>.sqlite3</code> backup file to restore from. A safety backup of the
+            current database is created automatically before restoring.{% endblocktrans %}
+          </p>
+          <form method="post" action="{% url 'preferences:backup_restore' %}" enctype="multipart/form-data">
+            {% csrf_token %}
+            <div class="row g-2 align-items-end">
+              <div class="col-auto">
+                <input type="file" name="restore_file" accept=".sqlite3"
+                       class="form-control form-control-sm" required>
+              </div>
+              <div class="col-auto">
+                <button type="submit" class="btn btn-sm btn-warning"
+                        onclick="return confirm('{% trans "Restore from the selected file?\n\nA safety backup of the current database will be created first." %}')">
+                  {% trans "Restore from file" %}
+                </button>
+              </div>
+            </div>
+          </form>
+
+        </div>
+      </div>
+
+      {# ----- Database Maintenance ----- #}
+      <div class="card mb-3">
+        <div class="card-header py-1 small fw-semibold">{% trans "Database Maintenance" %}</div>
+        <div class="card-body py-2">
+          <p class="text-muted small mb-2">
+            {% blocktrans %}VACUUM rewrites the database file, reclaiming space left by deleted and updated rows.
+            It is safe to run at any time — if interrupted, the original database is untouched.
+            While running, other database operations are queued (typically a few seconds to a minute).
+            GCForge runs this automatically at startup when free space exceeds 10% of total size and 50 MB.{% endblocktrans %}
+          </p>
+          <div class="mb-3 small">
+            <span class="text-muted">{% trans "Free space reclaimable:" %}</span>
+            {% if frag.fragmentation_pct >= 10 %}
+              <strong class="text-warning">{{ frag.free_bytes|filesizeformat }} ({{ frag.fragmentation_pct|floatformat:0 }}%)</strong>
+              {% if frag.free_bytes >= 52428800 %}
+              <span class="badge bg-warning text-dark ms-1">{% trans "Vacuum recommended" %}</span>
+              {% endif %}
+            {% else %}
+              <strong class="text-success">{{ frag.free_bytes|filesizeformat }} ({{ frag.fragmentation_pct|floatformat:0 }}%)</strong>
+              <span class="text-muted ms-1">{% trans "— no action needed" %}</span>
+            {% endif %}
+          </div>
+          <form method="post" action="{% url 'preferences:vacuum_now' %}">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-sm btn-outline-secondary"
+                    onclick="return confirm('{% trans "Run VACUUM now?\n\nThis rewrites the database to reclaim free space. The server remains responsive but database operations may queue briefly." %}')">
+              {% trans "Run VACUUM now" %}
+            </button>
+          </form>
+        </div>
+      </div>
+
+    </div>
+
+    {# ===== GPX EXPORT ===== #}
+    <div class="tab-pane{% if active_tab == 'gpx-export' %} active show{% endif %}" id="gpx-export">
+      <div class="card mb-3">
+        <div class="card-body">
+
+          {# Presets toolbar #}
+          <div class="d-flex flex-wrap align-items-center gap-2 mb-3 pb-3 border-bottom">
+            <span class="small fw-semibold me-1">{% trans "Presets:" %}</span>
+            {% if gpx_export_presets %}
+            {% for preset in gpx_export_presets %}
+            <form method="post" action="{% url 'preferences:load_gpx_export_preset' %}" class="d-inline">
+              {% csrf_token %}<input type="hidden" name="preset_id" value="{{ preset.pk }}">
+              <button type="submit" class="btn btn-outline-secondary btn-sm py-0">{{ preset.name }}</button>
+            </form>
+            <form method="post" action="{% url 'preferences:delete_gpx_export_preset' %}" class="d-inline"
+                  onsubmit="return confirm('{% blocktrans with name=preset.name %}Delete preset \'{{ name }}\'?{% endblocktrans %}')">
+              {% csrf_token %}<input type="hidden" name="preset_id" value="{{ preset.pk }}">
+              <button type="submit" class="btn btn-outline-danger btn-sm py-0 px-1" title="{% trans 'Delete preset' %}">×</button>
+            </form>
+            {% endfor %}
+            <span class="text-muted small">|</span>
+            {% endif %}
+            <form method="post" action="{% url 'preferences:add_gpx_export_preset' %}" class="d-inline d-flex gap-1">
+              {% csrf_token %}
+              <input type="text" name="preset_name" class="form-control form-control-sm" style="width:140px" placeholder="{% trans 'New preset name…' %}" required>
+              <button type="submit" class="btn btn-outline-primary btn-sm py-0">{% trans "Save as preset" %}</button>
+            </form>
+            <form method="post" action="{% url 'preferences:reset_gpx_export' %}" class="d-inline ms-auto"
+                  onsubmit="return confirm('{% trans "Reset all GPX export settings to defaults?" %}')">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-outline-secondary btn-sm py-0">{% trans "Reset to defaults" %}</button>
+            </form>
+          </div>
+
+          <form method="post" action="{% url 'preferences:save_gpx_export' %}">
+            {% csrf_token %}
+
+            {# Notes section #}
+            <h6 class="mb-2">{% trans "Include notes as user notes in logs section" %}</h6>
+            <div class="mb-2 ps-2">
+              <div class="form-check mb-1">
+                <input class="form-check-input" type="checkbox" name="notes_gcforge" id="gpx_notes_gcforge"
+                       {% if gpx_export.notes_gcforge %}checked{% endif %}>
+                <label class="form-check-label small" for="gpx_notes_gcforge">
+                  {% trans "Add GCForge user notes" %}
+                  <span class="text-muted">{% trans '(plain text, heading: "Note from [date]:")' %}</span>
+                </label>
+              </div>
+              <div class="form-check mb-1">
+                <input class="form-check-input" type="checkbox" name="notes_gc_user" id="gpx_notes_gc_user"
+                       {% if gpx_export.notes_gc_user %}checked{% endif %}>
+                <label class="form-check-label small" for="gpx_notes_gc_user">
+                  {% trans "Add user notes from geocaching.com" %}
+                  <span class="text-muted">{% trans "(personal note stored on the cache)" %}</span>
+                </label>
+              </div>
+              <div class="form-check mb-1">
+                <input class="form-check-input" type="checkbox" name="notes_field_notes" id="gpx_notes_field_notes"
+                       {% if gpx_export.notes_field_notes %}checked{% endif %}>
+                <label class="form-check-label small" for="gpx_notes_field_notes">
+                  {% trans "Add field notes" %}
+                  <span class="text-muted">{% trans '(heading: "Field note from [date]:")' %}</span>
+                </label>
+              </div>
+              <div class="form-check mb-3">
+                <input class="form-check-input" type="checkbox" name="notes_corrected" id="gpx_notes_corrected"
+                       {% if gpx_export.notes_corrected %}checked{% endif %}>
+                <label class="form-check-label small" for="gpx_notes_corrected">
+                  {% trans "Add corrected coordinates comment" %}
+                  <span class="text-muted">{% trans "(lat/lon, note, updated at)" %}</span>
+                </label>
+              </div>
+              <div class="d-flex gap-4">
+                <div class="form-check">
+                  <input class="form-check-input" type="radio" name="notes_fuse" id="gpx_notes_fuse_yes"
+                         value="fuse" {% if gpx_export.notes_fuse %}checked{% endif %}>
+                  <label class="form-check-label small" for="gpx_notes_fuse_yes">{% trans "Fuse to one note" %}</label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input" type="radio" name="notes_fuse" id="gpx_notes_fuse_no"
+                         value="separate" {% if not gpx_export.notes_fuse %}checked{% endif %}>
+                  <label class="form-check-label small" for="gpx_notes_fuse_no">{% trans "Export as separate notes" %}</label>
+                </div>
+              </div>
+            </div>
+
+            <hr class="my-3">
+
+            {# Child Waypoints #}
+            <h6 class="mb-2">{% trans "Child Waypoints" %}</h6>
+            <div class="mb-2 ps-2">
+              <div class="form-check mb-1">
+                <input class="form-check-input" type="checkbox" name="wp_hidden" id="gpx_wp_hidden"
+                       {% if gpx_export.wp_hidden %}checked{% endif %}>
+                <label class="form-check-label small" for="gpx_wp_hidden"
+                       title="{% trans 'Exports child waypoints even if marked as hidden' %}">
+                  {% trans "Export hidden waypoints" %}
+                </label>
+              </div>
+              <div class="form-check mb-1">
+                <input class="form-check-input" type="checkbox" name="wp_completed" id="gpx_wp_completed"
+                       {% if gpx_export.wp_completed %}checked{% endif %}
+                       onchange="document.getElementById('gpx_wp_completed_opts').style.display=this.checked?'':'none'">
+                <label class="form-check-label small" for="gpx_wp_completed">{% trans "Export solved/completed waypoints" %}</label>
+              </div>
+              <div id="gpx_wp_completed_opts" class="ps-4 mb-1"
+                   style="{% if not gpx_export.wp_completed %}display:none{% endif %}">
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" name="wp_completed_as_hidden" id="gpx_wp_completed_as_hidden"
+                         {% if gpx_export.wp_completed_as_hidden %}checked{% endif %}>
+                  <label class="form-check-label small text-muted" for="gpx_wp_completed_as_hidden">
+                    {% trans "Export completed waypoints as hidden" %}
+                    <span class="badge bg-secondary fw-normal" style="font-size:.7rem">{% trans "not yet implemented" %}</span>
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <hr class="my-3">
+
+            {# Corrected Coordinates #}
+            <h6 class="mb-2">{% trans "Corrected Coordinates" %}</h6>
+            <div class="mb-2 ps-2">
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="cc_original_as_wp" id="gpx_cc_original_as_wp"
+                       {% if gpx_export.cc_original_as_wp %}checked{% endif %}>
+                <label class="form-check-label small" for="gpx_cc_original_as_wp">
+                  {% trans "Add original coordinates as child waypoint" %}
+                  <span class="text-muted">{% trans "(prefix OW, type Reference Point)" %}</span>
+                </label>
+              </div>
+            </div>
+
+            <hr class="my-3">
+
+            {# Logs #}
+            <h6 class="mb-2">{% trans "Logs" %}</h6>
+            <div class="mb-2 ps-2">
+              <div class="d-flex align-items-center gap-2 mb-2">
+                <label class="form-label small mb-0" for="gpx_logs_max">{% trans "Maximum number of logs to export" %}</label>
+                <input type="number" name="logs_max" id="gpx_logs_max" min="0"
+                       class="form-control form-control-sm" style="width:90px"
+                       value="{{ gpx_export.logs_max }}" placeholder="{% trans 'All' %}">
+                <span class="text-muted small">{% trans "(blank = all; does not count note entries)" %}</span>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="logs_my_on_top" id="gpx_logs_my_on_top"
+                       {% if gpx_export.logs_my_on_top %}checked{% endif %}>
+                <label class="form-check-label small" for="gpx_logs_my_on_top">{% trans "Put my logs on top (below notes)" %}</label>
+              </div>
+            </div>
+
+            <hr class="my-3">
+
+            {# Adventure Labs #}
+            <h6 class="mb-2">{% trans "Adventure Labs" %}</h6>
+            <div class="mb-2 ps-2">
+              <p class="small fw-semibold mb-1">{% trans "Export stages as child waypoints in parent cache:" %}</p>
+              <div class="d-flex flex-column gap-1 mb-3">
+                <div class="form-check">
+                  <input class="form-check-input" type="radio" name="alc_stages" id="gpx_alc_child_only"
+                         value="child_only" {% if gpx_export.alc_stages == "child_only" %}checked{% endif %}>
+                  <label class="form-check-label small" for="gpx_alc_child_only">
+                    {% trans "Only as child waypoints — stages are not exported as separate cache records" %}
+                  </label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input" type="radio" name="alc_stages" id="gpx_alc_child_and_export"
+                         value="child_and_export" {% if gpx_export.alc_stages == "child_and_export" %}checked{% endif %}>
+                  <label class="form-check-label small" for="gpx_alc_child_and_export">
+                    {% trans "As child waypoints and export stages as individual cache records" %}
+                  </label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input" type="radio" name="alc_stages" id="gpx_alc_dont_export"
+                         value="dont_export" {% if gpx_export.alc_stages == "dont_export" %}checked{% endif %}>
+                  <label class="form-check-label small" for="gpx_alc_dont_export">{% trans "Don't export ALC stages" %}</label>
+                </div>
+              </div>
+
+              <p class="small fw-semibold mb-1">{% trans "Completed stages:" %}</p>
+              <div class="d-flex flex-column gap-1">
+                <div class="form-check">
+                  <input class="form-check-input" type="radio" name="alc_completed" id="gpx_alc_found_invisible"
+                         value="found_invisible" {% if gpx_export.alc_completed == "found_invisible" %}checked{% endif %}>
+                  <label class="form-check-label small" for="gpx_alc_found_invisible">
+                    {% trans 'Export as "found" and invisible' %}
+                    <span class="badge bg-secondary fw-normal" style="font-size:.7rem">{% trans "not yet implemented" %}</span>
+                  </label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input" type="radio" name="alc_completed" id="gpx_alc_found_visible"
+                         value="found_visible" {% if gpx_export.alc_completed == "found_visible" %}checked{% endif %}>
+                  <label class="form-check-label small" for="gpx_alc_found_visible">{% trans 'Export as "found" and visible' %}</label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input" type="radio" name="alc_completed" id="gpx_alc_completed_skip"
+                         value="dont_export" {% if gpx_export.alc_completed == "dont_export" %}checked{% endif %}>
+                  <label class="form-check-label small" for="gpx_alc_completed_skip">{% trans "Don't export separately" %}</label>
+                </div>
+              </div>
+            </div>
+
+            <hr class="my-3">
+
+            {# Events #}
+            <h6 class="mb-2">{% trans "Events" %}</h6>
+            <div class="mb-2 ps-2">
+              <div class="form-check mb-2">
+                <input class="form-check-input" type="checkbox" name="events_exclude_past" id="gpx_events_exclude_past"
+                       {% if gpx_export.events_exclude_past %}checked{% endif %}>
+                <label class="form-check-label small" for="gpx_events_exclude_past">
+                  {% trans "Exclude past events" %}
+                  <span class="text-muted">{% trans "(skip events whose date is before today)" %}</span>
+                </label>
+              </div>
+              <div class="d-flex align-items-center gap-2">
+                <label class="form-label small mb-0" for="gpx_events_days_ahead">{% trans "Export events for the next" %}</label>
+                <input type="number" name="events_days_ahead" id="gpx_events_days_ahead" min="1"
+                       class="form-control form-control-sm" style="width:90px"
+                       value="{{ gpx_export.events_days_ahead }}" placeholder="{% trans 'All' %}">
+                <span class="text-muted small">{% trans "days only (blank = no limit)" %}</span>
+              </div>
+            </div>
+
+            <hr class="my-3">
+            <button type="submit" class="btn btn-primary btn-sm">{% trans "Save GPX export settings" %}</button>
+
+          </form>
+        </div>
+      </div>
+    </div>{# end gpx-export #}
+
+    {# ===== OFFLINE MAPS ===== #}
+    <div class="tab-pane fade{% if active_tab == 'offline' %} active show{% endif %}" id="offline" role="tabpanel" aria-labelledby="offline-tab">
+      <div class="d-flex gap-3 align-items-start">
+
+        {# Left: settings cards + areas table + add form #}
+        <div style="flex: 0 0 900px; overflow-x: auto;">
+
+          <div class="card mb-3">
+            <div class="card-header small fw-bold">{% trans "Source & Storage" %}</div>
+            <div class="card-body">
+              <form method="post" action="{% url 'preferences:save_offline_prefs' %}">
+                {% csrf_token %}
+                <div class="mb-2 row align-items-center">
+                  <label class="col-sm-3 col-form-label col-form-label-sm">{% trans "Source URL" %}</label>
+                  <div class="col-sm-9">
+                    <input type="url" name="offline_source_url" class="form-control form-control-sm"
+                           value="{{ offline_source_url }}">
+                    <div class="form-text">{% trans "PMTiles source for tile extraction (default: Protomaps planet)" %}</div>
+                  </div>
+                </div>
+                <div class="mb-2 row align-items-center">
+                  <label class="col-sm-3 col-form-label col-form-label-sm">{% trans "Storage directory" %}</label>
+                  <div class="col-sm-9">
+                    <input type="text" name="offline_maps_dir" class="form-control form-control-sm"
+                           value="{{ offline_maps_dir }}" placeholder="{% trans 'Leave blank for default' %}">
+                    <div class="form-text">{% blocktrans with p=offline_maps_disk_path %}Default: <code>{{ p }}</code>{% endblocktrans %}</div>
+                  </div>
+                </div>
+                <button type="submit" class="btn btn-sm btn-primary">{% trans "Save" %}</button>
+              </form>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header small fw-bold d-flex justify-content-between align-items-center">
+              <span>{% trans "Offline Areas" %}</span>
+              <div class="d-flex gap-2">
+                <button type="button" class="btn btn-sm btn-outline-secondary py-0"
+                        onclick="gcfOfflineResetView()">{% trans "Reset view" %}</button>
+                <button id="offline-add-btn" type="button" class="btn btn-sm btn-outline-primary py-0"
+                        onclick="gcfOfflineToggleForm()">{% trans "+ Add Area" %}</button>
+              </div>
+            </div>
+            <div class="card-body p-0">
+              {% include 'preferences/_offline_areas_table.html' %}
+            </div>
+            <div id="offline-add-section" class="card-footer bg-light" style="display:none">
+              <form method="post" action="{% url 'preferences:offline_create_area' %}"
+                    onsubmit="if(!document.getElementById('offline-min-lon').value){alert('{% trans "Draw an area on the map first." %}');return false;}">
+                {% csrf_token %}
+
+                <div class="mb-2 row">
+                  <label class="col-sm-3 col-form-label col-form-label-sm">{% trans "Name" %}</label>
+                  <div class="col-sm-9">
+                    <input type="text" name="name" class="form-control form-control-sm"
+                           placeholder="{% trans 'e.g. Munich area' %}" required>
+                  </div>
+                </div>
+
+                <div class="mb-2 row">
+                  <label class="col-sm-3 col-form-label col-form-label-sm">{% trans "Area" %}</label>
+                  <div class="col-sm-9">
+                    <button type="button" id="offline-draw-btn"
+                            class="btn btn-sm btn-outline-primary py-0"
+                            onclick="gcfOfflineStartDraw()">{% trans "Draw area" %}</button>
+                    <div class="form-text mt-1">{% blocktrans %}Click <em>Draw area</em>, then drag a rectangle on the map →{% endblocktrans %}</div>
+                  </div>
+                </div>
+
+                <input type="hidden" id="offline-min-lon" name="bbox_min_lon">
+                <input type="hidden" id="offline-min-lat" name="bbox_min_lat">
+                <input type="hidden" id="offline-max-lon" name="bbox_max_lon">
+                <input type="hidden" id="offline-max-lat" name="bbox_max_lat">
+
+                <div class="mb-2 row">
+                  <label class="col-sm-3 col-form-label col-form-label-sm">{% trans "Zoom range" %}</label>
+                  <div class="col-sm-9">
+                    <div class="d-flex align-items-center gap-2 mb-1">
+                      <button type="button" class="btn btn-outline-secondary btn-sm py-0"
+                              onclick="gcfOfflineSetZoomPreset(8,12)">{% trans "Overview (z8–12)" %}</button>
+                      <button type="button" class="btn btn-outline-secondary btn-sm py-0"
+                              onclick="gcfOfflineSetZoomPreset(8,15)">{% trans "Navigation (z8–15)" %}</button>
+                      <button type="button" class="btn btn-outline-secondary btn-sm py-0"
+                              onclick="gcfOfflineSetZoomPreset(8,16)">{% trans "Detailed (z8–16)" %}</button>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                      <label class="small mb-0">{% trans "Min z" %}</label>
+                      <input type="number" id="offline-min-zoom" name="min_zoom" value="8" min="0" max="22"
+                             class="form-control form-control-sm" style="width:70px" oninput="gcfOfflineUpdateEstimate()">
+                      <label class="small mb-0">{% trans "Max z" %}</label>
+                      <input type="number" id="offline-max-zoom" name="max_zoom" value="15" min="0" max="22"
+                             class="form-control form-control-sm" style="width:70px" oninput="gcfOfflineUpdateEstimate()">
+                    </div>
+                  </div>
+                </div>
+
+                <div class="mb-2 row">
+                  <label class="col-sm-3 col-form-label col-form-label-sm">{% trans "Estimate" %}</label>
+                  <div class="col-sm-9">
+                    <div class="form-control-plaintext form-control-sm">
+                      <span id="offline-estimate" class="fw-bold">—</span>
+                      <span id="offline-estimate-warn" class="text-danger ms-2 small" style="display:none"></span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="mb-3 row">
+                  <label class="col-sm-3 col-form-label col-form-label-sm">{% trans "Source URL" %}</label>
+                  <div class="col-sm-9">
+                    <input type="url" name="source_url" class="form-control form-control-sm"
+                           value="{{ offline_source_url }}"
+                           placeholder="https://build.protomaps.com/YYYYMMDD.pmtiles">
+                  </div>
+                </div>
+
+                <button type="submit" class="btn btn-sm btn-primary">{% trans "Start Download" %}</button>
+              </form>
+            </div>
+          </div>
+
+        </div>{# end left #}
+
+        {# Right: always-visible map — sticky so it stays in view while scrolling the left panel #}
+        <div style="flex: 1; min-width: 0; position: sticky; top: 12px;">
+          <div class="d-flex justify-content-end mb-1">
+            <div id="offline-layer-switcher" class="btn-group btn-group-sm">
+              <button onclick="gcfOfflineSetLayer('street', this)" data-layer="street"
+                      class="btn btn-outline-secondary">{% trans "Street" %}</button>
+              <button onclick="gcfOfflineSetLayer('outdoor', this)" data-layer="outdoor"
+                      class="btn btn-outline-secondary">{% trans "Outdoor" %}</button>
+              <button onclick="gcfOfflineSetLayer('aerial', this)" data-layer="aerial"
+                      class="btn btn-outline-secondary">{% trans "Aerial" %}</button>
+            </div>
+          </div>
+          <div id="offline-main-map" style="height:calc(100vh - 220px);min-height:300px;border-radius:.375rem;border:1px solid #dee2e6;"></div>
+          <p class="text-muted small mt-1 mb-0" id="offline-map-status"></p>
+        </div>
+
+      </div>
+    </div>{# end offline #}
+
+    {# ===== IMAGES ===== #}
+    <div class="tab-pane{% if active_tab == 'images' %} active show{% endif %}" id="images">
+      <div class="card mb-3">
+        <div class="card-header small fw-bold d-flex justify-content-between align-items-center">
+          <span>{% trans "Image Cache" %}</span>
+          <span class="text-muted small">
+            {% blocktrans with n=image_cache.total_count s=image_cache.total_bytes|filesizeformat %}Total: {{ n }} files, {{ s }}{% endblocktrans %}
+          </span>
+        </div>
+        <div class="card-body">
+          <p class="small text-muted mb-3">
+            {% blocktrans %}When a category is enabled, images encountered during sync are downloaded once
+            and served from the local cache thereafter — both during normal page renders
+            and via on-demand fallback for any image that wasn't pre-cached. Disabling a
+            category falls through to the original URL with no local copy.{% endblocktrans %}
+          </p>
+
+          <form method="post" action="{% url 'preferences:save_image_cache_prefs' %}">
+            {% csrf_token %}
+
+            <table class="table table-sm small align-middle mb-3">
+              <thead class="table-light">
+                <tr>
+                  <th>{% trans "Category" %}</th>
+                  <th class="text-center" style="width:80px">{% trans "All" %}</th>
+                  <th class="text-center" style="width:80px">{% trans "Found" %}</th>
+                  <th class="text-center" style="width:80px">{% trans "Unfound" %}</th>
+                  <th class="text-center" style="width:80px">{% trans "Mine" %}</th>
+                  <th class="text-end"   style="width:110px">{% trans "Files" %}</th>
+                  <th class="text-end"   style="width:110px">{% trans "On disk" %}</th>
+                  <th style="width:120px"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for cat in image_cache.categories %}
+                <tr>
+                  <td>{{ cat.label }}</td>
+                  {% if cat.splits %}
+                  <td></td>
+                  {% for sub, val in cat.sub_toggles %}
+                  <td class="text-center">
+                    <input class="form-check-input" type="checkbox"
+                           name="{{ cat.key }}.{{ sub }}"
+                           {% if val %}checked{% endif %}>
+                  </td>
+                  {% endfor %}
+                  {% else %}
+                  <td class="text-center">
+                    <input class="form-check-input" type="checkbox"
+                           name="{{ cat.key }}"
+                           {% if cat.value %}checked{% endif %}>
+                  </td>
+                  <td></td><td></td><td></td>
+                  {% endif %}
+                  <td class="text-end">{{ cat.count }}</td>
+                  <td class="text-end">{{ cat.bytes|filesizeformat }}</td>
+                  <td>
+                    <button type="submit" form="form-clear-{{ cat.key }}"
+                            class="btn btn-sm btn-outline-danger py-0"
+                            {% if not cat.count %}disabled{% endif %}>{% trans "Clear" %}</button>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+
+            <div class="mb-3">
+              <label class="form-label small fw-semibold">{% trans "Exclude URLs containing:" %}</label>
+              <textarea name="image_cache.exclusions" rows="4"
+                        class="form-control form-control-sm font-monospace"
+                        placeholder="{% trans 'One substring per line' %}">{{ image_cache.exclusions }}</textarea>
+              <div class="form-text">
+                {% blocktrans %}Substring match — any image URL containing one of these tokens is never cached,
+                and falls through directly to the source. Useful for blocking counter / stats /
+                tracker badges (project-gc, gsak, etc.).{% endblocktrans %}
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label small fw-semibold">{% trans "Refresh stored images after" %}</label>
+              <div class="input-group input-group-sm" style="width:14rem">
+                <input type="number" name="image_cache.refresh_days"
+                       value="{{ image_cache.refresh_days }}" min="0"
+                       class="form-control form-control-sm">
+                <span class="input-group-text">{% trans "days" %}</span>
+              </div>
+              <div class="form-text">
+                {% blocktrans %}After this many days, the next time we prefetch a stored image
+                we make a conditional <code>If-Modified-Since</code> request to
+                the source: a <code>304 Not Modified</code> keeps the file, a
+                <code>200 OK</code> overwrites it with the newer version. Set
+                to <code>0</code> to disable refresh entirely.{% endblocktrans %}
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label small fw-semibold">{% trans "Auto-delete images last seen more than" %}</label>
+              <div class="input-group input-group-sm" style="width:14rem">
+                <input type="number" name="image_cache.auto_delete_days"
+                       value="{{ image_cache.auto_delete_days }}" min="0"
+                       class="form-control form-control-sm">
+                <span class="input-group-text">{% trans "days ago" %}</span>
+              </div>
+              <div class="form-text">
+                {% blocktrans %}Runs at the start of every <em>Download missing offline images</em>
+                task — cleans up before filling. <code>last_seen_at</code> is
+                bumped every time the proxy serves an image, so values like
+                <code>90</code> drop images you haven't viewed in three months.
+                Set to <code>0</code> to disable auto-delete entirely (manual
+                'Delete old' button below still works).{% endblocktrans %}
+              </div>
+            </div>
+
+            <button type="submit" class="btn btn-sm btn-primary">{% trans "Save" %}</button>
+          </form>
+
+          {# Per-category clear forms — submitted from buttons inside the table above #}
+          {% for cat in image_cache.categories %}
+          <form method="post" action="{% url 'preferences:clear_image_cache' %}"
+                id="form-clear-{{ cat.key }}" class="d-none"
+                onsubmit="return confirm('{% blocktrans with label=cat.label|escapejs n=cat.count %}Clear all cached {{ label }} images? ({{ n }} files){% endblocktrans %}');">
+            {% csrf_token %}
+            <input type="hidden" name="category" value="{{ cat.key }}">
+          </form>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div class="card mb-3">
+        <div class="card-header small fw-bold">{% trans "Maintenance" %}</div>
+        <div class="card-body">
+          <form method="post" action="{% url 'preferences:clear_image_cache' %}"
+                class="mb-2"
+                onsubmit="return confirm('{% trans "Delete cached images not accessed in the given number of days?" %}');">
+            {% csrf_token %}
+            <div class="d-flex gap-2 align-items-end flex-wrap">
+              <div>
+                <label class="form-label small mb-1">{% trans "Manual one-shot — delete images older than" %}</label>
+                <div class="input-group input-group-sm" style="width:14rem">
+                  <input type="number" name="clear_old_days"
+                         value="{% if image_cache.auto_delete_days %}{{ image_cache.auto_delete_days }}{% else %}90{% endif %}"
+                         min="1"
+                         class="form-control form-control-sm">
+                  <span class="input-group-text">{% trans "days" %}</span>
+                </div>
+              </div>
+              <button type="submit" class="btn btn-sm btn-outline-warning">{% trans "Delete old now" %}</button>
+            </div>
+            <div class="form-text">
+              {% blocktrans %}Runs exactly once when you click. Pre-filled with your auto-delete
+              threshold above when set, otherwise <code>90</code>. Values must be
+              ≥ 1; use the setting above (with <code>0</code>) to disable
+              automatic pruning.{% endblocktrans %}
+            </div>
+          </form>
+          <hr>
+          <form method="post" action="{% url 'preferences:clear_image_cache' %}"
+                class="mb-2"
+                onsubmit="return confirm('{% trans "Delete any cached image whose source URL matches a token in the exclusion list?" %}');">
+            {% csrf_token %}
+            <input type="hidden" name="purge_excluded" value="1">
+            <button type="submit" class="btn btn-sm btn-outline-warning">{% trans "Purge URLs matching exclusion list" %}</button>
+            <span class="text-muted small ms-2">{% trans "Drops files that were cached before a pattern was added." %}</span>
+          </form>
+          <form method="post" action="{% url 'preferences:clear_image_cache' %}"
+                class="mb-2"
+                onsubmit="return confirm('{% trans "Conditional GET every image older than the configured refresh interval?" %}');">
+            {% csrf_token %}
+            <input type="hidden" name="refresh_stale" value="1">
+            <button type="submit" class="btn btn-sm btn-outline-secondary"
+                    {% if image_cache.refresh_days == 0 %}disabled{% endif %}>
+              {% trans "Refresh stale images now" %}
+            </button>
+            <span class="text-muted small ms-2">
+              {% if image_cache.refresh_days %}{% blocktrans count n=image_cache.refresh_days %}Re-checks images older than {{ n }} day.{% plural %}Re-checks images older than {{ n }} days.{% endblocktrans %}{% else %}{% trans "(Set a refresh interval above first.)" %}{% endif %}
+            </span>
+          </form>
+          <form method="post" action="{% url 'preferences:clear_image_cache' %}"
+                class="mb-2"
+                onsubmit="return confirm('{% trans "Delete any files in the image-cache directory that have no matching DB row?" %}');">
+            {% csrf_token %}
+            <input type="hidden" name="sweep_orphans" value="1">
+            <button type="submit" class="btn btn-sm btn-outline-secondary">{% trans "Sweep orphan files on disk" %}</button>
+            <span class="text-muted small ms-2">{% trans "Removes leftover files that aren't tracked in the registry." %}</span>
+          </form>
+          <form method="post" action="{% url 'preferences:clear_image_cache' %}"
+                class="mb-2"
+                onsubmit="return confirm('{% trans "Sniff every cached file and drop any whose bytes are not actually an image?" %}');">
+            {% csrf_token %}
+            <input type="hidden" name="sweep_non_images" value="1">
+            <button type="submit" class="btn btn-sm btn-outline-secondary">{% trans "Sweep non-image files" %}</button>
+            <span class="text-muted small ms-2">{% trans "Drops files whose magic bytes / Content-Type don't match an image format (e.g. parked-domain HTML served instead of a picture)." %}</span>
+          </form>
+          <hr>
+          <form method="post" action="{% url 'preferences:clear_image_cache' %}"
+                onsubmit="return confirm('{% blocktrans with n=image_cache.total_count s=image_cache.total_bytes|filesizeformat %}Permanently delete the entire image cache ({{ n }} files, {{ s }})?{% endblocktrans %}');">
+            {% csrf_token %}
+            <input type="hidden" name="category" value="__all__">
+            <button type="submit" class="btn btn-sm btn-outline-danger"
+                    {% if not image_cache.total_count %}disabled{% endif %}>
+              {% trans "Clear entire image cache" %}
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>{# end images #}
+
+  </div>{# end tab-content #}
+</div>
+
+<div id="settings-config"
+     data-rp-list="{{ rp_list_json }}"
+     style="display:none"></div>
+{% endblock %}{# content #}
+
+{% block extra_js %}
+{% load static %}
+<style>
+  #rp-map { z-index: 0; }
+  .gcf-rp-marker {
+    width: 14px; height: 14px;
+    background: #0d6efd;
+    border: 2px solid #fff;
+    border-radius: 50%;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.5);
+    cursor: pointer;
+    transition: background 0.15s, width 0.15s, height 0.15s;
+  }
+  .gcf-rp-marker.edit {
+    width: 18px; height: 18px;
+    background: #fd7e14;
+  }
+  .gcf-rp-add-marker {
+    width: 14px; height: 14px;
+    background: #198754;
+    border: 2px solid #fff;
+    border-radius: 50%;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.5);
+  }
+</style>
+<script src="{% static 'js/settings.js' %}"></script>
+<script>
+  gcfLoadMapLibre({
+    scripts: [
+      '{% static "js/map-styles.js" %}',
+      '{% static "js/settings-map.js" %}',
+      '{% static "js/offline-map.js" %}'
+    ],
+    onReady: function() {
+      if (typeof gcfRpMapInit === 'function') gcfRpMapInit();
+      // If page loaded with #offline already active, initialise map now
+      if ((window.location.hash || '') === '#offline' && typeof gcfOfflineTabShown === 'function') {
+        gcfOfflineTabShown();
+      }
+    }
+  });
+</script>
+{% endblock %}{# extra_js #}

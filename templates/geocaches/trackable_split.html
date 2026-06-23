@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% load static i18n %}
+{% block title %}{% trans "Trackables — Split" %} — GCForge{% endblock %}
+
+{% block content %}
+<div class="px-3 py-2">
+
+  <div class="d-flex align-items-center gap-2 mb-2 flex-wrap">
+    <h5 class="mb-0">{% trans "Trackables — Split" %}</h5>
+    <div class="btn-group btn-group-sm ms-1">
+      <a href="{% url 'geocaches:trackable_list' %}{% if f_q or f_state or f_kind or f_series or f_mine or f_held %}?{% if f_q %}q={{ f_q|urlencode }}&{% endif %}{% if f_state %}state={{ f_state }}&{% endif %}{% if f_kind %}kind={{ f_kind }}&{% endif %}{% if f_series %}series={{ f_series|urlencode }}&{% endif %}{% if f_mine %}mine={{ f_mine }}&{% endif %}{% if f_held %}held={{ f_held }}{% endif %}{% endif %}"
+         class="btn btn-outline-secondary">{% trans "List" %}</a>
+      <button type="button" class="btn btn-outline-secondary active" disabled>{% trans "Split" %}</button>
+      <a href="{% url 'geocaches:trackable_map' %}{% if f_q or f_state or f_kind or f_series or f_mine or f_held %}?{% if f_q %}q={{ f_q|urlencode }}&{% endif %}{% if f_state %}state={{ f_state }}&{% endif %}{% if f_kind %}kind={{ f_kind }}&{% endif %}{% if f_series %}series={{ f_series|urlencode }}&{% endif %}{% if f_mine %}mine={{ f_mine }}&{% endif %}{% if f_held %}held={{ f_held }}{% endif %}{% endif %}"
+         class="btn btn-outline-secondary">{% trans "Map" %}</a>
+    </div>
+  </div>
+
+  <div class="d-flex flex-wrap gap-2 align-items-end mb-2">
+    <form id="tb-filter-form"
+          hx-get="{% url 'geocaches:trackable_split' %}"
+          hx-target="#tb-table-container"
+          hx-trigger="change, keyup delay:400ms from:#tb-q"
+          hx-push-url="true"
+          class="d-flex flex-wrap gap-2 align-items-end flex-grow-1">
+      <input type="hidden" name="sort"  value="{{ f_sort }}">
+      <input type="hidden" name="order" value="{{ f_order }}">
+      <input type="text" name="q" id="tb-q" value="{{ f_q }}" placeholder="{% trans 'Search ref / name / owner' %}"
+             class="form-control form-control-sm" style="width:14rem">
+      <select name="state" class="form-select form-select-sm" style="width:auto">
+        <option value="">{% trans "All states" %}</option>
+        {% for val, label in state_choices %}<option value="{{ val }}"{% if f_state == val %} selected{% endif %}>{{ label }}</option>{% endfor %}
+      </select>
+      <select name="kind" class="form-select form-select-sm" style="width:auto">
+        <option value="">{% trans "All kinds" %}</option>
+        {% for val, label in kind_choices %}<option value="{{ val }}"{% if f_kind == val %} selected{% endif %}>{{ label }}</option>{% endfor %}
+      </select>
+      <select name="series" class="form-select form-select-sm" style="width:auto;max-width:12rem">
+        <option value="">{% trans "All series" %}</option>
+        {% for val in series_choices %}<option value="{{ val }}"{% if f_series == val %} selected{% endif %}>{{ val }}</option>{% endfor %}
+      </select>
+      <div class="form-check form-check-inline mb-0 align-self-center">
+        <input class="form-check-input" type="checkbox" name="mine" value="1" id="cb-mine"
+               {% if f_mine == "1" %}checked{% endif %}>
+        <label class="form-check-label small" for="cb-mine">{% trans "Mine" %}{% if gc_username %} ({{ gc_username }}){% endif %}</label>
+      </div>
+      <div class="form-check form-check-inline mb-0 align-self-center">
+        <input class="form-check-input" type="checkbox" name="held" value="1" id="cb-held"
+               {% if f_held == "1" %}checked{% endif %}>
+        <label class="form-check-label small" for="cb-held">{% trans "Held by me" %}</label>
+      </div>
+    </form>
+  </div>
+
+  <div class="row g-2">
+    <div class="col-lg-7" style="max-height:calc(100vh - 180px);overflow:auto">
+      <div id="tb-table-container">
+        {% include "geocaches/partials/_trackable_table.html" %}
+      </div>
+    </div>
+    <div class="col-lg-5" style="max-height:calc(100vh - 180px);overflow:auto">
+      <div id="tb-detail-pane" class="border rounded p-3">
+        <div class="text-muted text-center py-5">{% trans "Select a trackable from the list →" %}</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_head %}
+<script>
+function _gcfTbSplitBindRows() {
+  document.querySelectorAll('#tb-table-container tr').forEach(function(tr) {
+    var link = tr.querySelector('a.cache-name-link');
+    if (!link || tr.dataset.tbBound === '1') return;
+    tr.dataset.tbBound = '1';
+    tr.style.cursor = 'pointer';
+    tr.addEventListener('click', function(e) {
+      if (e.target.closest('a')) return;
+      htmx.ajax('GET', link.href + '?embed=1', {
+        target: '#tb-detail-pane',
+        select: '#tb-detail-content',
+        swap:   'innerHTML',
+      });
+    });
+  });
+}
+document.addEventListener('DOMContentLoaded', _gcfTbSplitBindRows);
+document.body.addEventListener('htmx:afterSwap', function(e) {
+  if (e.target && e.target.id === 'tb-table-container') _gcfTbSplitBindRows();
+});
+</script>
+{% endblock %}

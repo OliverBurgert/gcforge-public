@@ -1,0 +1,200 @@
+{% extends "base.html" %}
+{% load cache_tags static i18n l10n %}
+{% block title %}{% trans "Image Gallery" %} — GCForge{% endblock %}
+{% block content %}
+<style>
+  .gallery-desc img, .gallery-notes img { max-width: 100%; height: auto; }
+  .gallery-desc table, .gallery-notes table { max-width: 100%; }
+</style>
+<div class="px-3 py-3">
+  <div class="d-flex align-items-center gap-3 mb-3 flex-wrap">
+    <h5 class="mb-0">{% trans "Image Gallery" %}</h5>
+    {% if not task_running %}
+    <div class="dropdown">
+      <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+        {% trans "Export as…" %}
+      </button>
+      <ul class="dropdown-menu">
+        <li>
+          <a class="dropdown-item" href="{% url 'geocaches:tools_image_gallery_export_html' task_id %}">
+            {% trans "HTML zip (offline bundle)" %}
+          </a>
+        </li>
+        <li>
+          <a class="dropdown-item" href="{% url 'geocaches:tools_image_gallery_export_odf' task_id %}">
+            {% trans "ODF document (.odt)" %}
+          </a>
+        </li>
+      </ul>
+    </div>
+    <span class="text-muted small">{% blocktrans count n=cache_count %}{{ n }} cache{% plural %}{{ n }} caches{% endblocktrans %}</span>
+    <span class="text-muted small">{% trans "Tip: for PDF, use your browser's Print → Save as PDF." %}</span>
+    {% endif %}
+  </div>
+
+  {% if task_running %}
+  <div class="card" style="max-width:500px"
+       hx-get="{% url 'geocaches:task_status_json' task.id %}"
+       hx-trigger="every 2s"
+       hx-swap="none"
+       id="gallery-poll">
+    <div class="card-body">
+      <p class="mb-2 small fw-bold">{% trans "Building gallery…" %}</p>
+      <p class="small text-muted mb-2">{{ task.phase }}</p>
+      {% if task.total %}
+      <div class="progress mb-2" style="height:6px">
+        <div class="progress-bar" style="width:{{ task.progress_pct }}%"></div>
+      </div>
+      <p class="small text-muted">{{ task.completed }} / {{ task.total }}</p>
+      {% endif %}
+    </div>
+  </div>
+  <script>
+  (function() {
+    function poll() {
+      fetch("{% url 'geocaches:task_status_json' task.id %}")
+        .then(r => r.json())
+        .then(data => {
+          if (data.state === "completed" || data.state === "failed" || data.state === "cancelled") {
+            location.reload();
+          } else {
+            setTimeout(poll, 2000);
+          }
+        })
+        .catch(() => setTimeout(poll, 3000));
+    }
+    setTimeout(poll, 1500);
+  })();
+  </script>
+  {% else %}
+
+  {% for section in sections %}
+  <div class="cache-section border rounded p-3 mb-4">
+    <h6 class="mb-1">
+      {% with cache=section.cache %}
+      <a href="{% url 'geocaches:detail' cache.gc_code|default:cache.oc_code|default:cache.al_code %}">
+        {{ cache.gc_code|default:cache.oc_code|default:cache.al_code }}
+      </a>
+      — {{ cache.name }}
+      {% endwith %}
+    </h6>
+
+    {% if options.include_coords %}
+    <p class="small text-muted mb-1">
+      {{ section.cache.effective_latitude|floatformat:5 }}, {{ section.cache.effective_longitude|floatformat:5 }}
+      {% if section.cache.has_corrected_coordinates %}<span class="badge bg-info text-dark ms-1">{% trans "corrected" %}</span>{% endif %}
+    </p>
+    {% endif %}
+
+    {% if options.include_short_description and section.cache.short_description %}
+    <div class="gallery-desc small mt-2">
+      {% cache_description_html section.cache.short_description section.cache %}
+    </div>
+    {% endif %}
+
+    {% if options.include_long_description and section.cache.long_description %}
+    <div class="gallery-desc small mt-2">
+      {% cache_description_html section.cache.long_description section.cache %}
+    </div>
+    {% endif %}
+
+    {% if options.include_map %}
+    <div class="gallery-map mt-2 rounded border"
+         data-gallery-map
+         data-lat="{{ section.cache.effective_latitude|unlocalize }}"
+         data-lon="{{ section.cache.effective_longitude|unlocalize }}"
+         data-zoom="{{ options.map_zoom|default:13 }}"
+         data-label="{{ section.cache.gc_code|default:section.cache.oc_code|default:section.cache.al_code }}"
+         style="width:240px; height:240px"></div>
+    {% endif %}
+
+    {% if options.user_notes and section.notes %}
+    <div class="gallery-notes mt-3">
+      <div class="small fw-semibold text-muted mb-1">{% trans "Notes" %}</div>
+      {% for note in section.notes %}
+      <div class="border-start ps-2 mb-2 small" style="border-left-width:3px !important">
+        {% if note.format == "html" %}
+          {{ note.body|safe }}
+        {% else %}
+          <pre class="mb-0" style="white-space:pre-wrap; font-family:inherit">{{ note.body }}</pre>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    {% if section.images %}
+    <div class="d-flex flex-wrap gap-2 mt-2">
+      {% for img in section.images %}
+      <figure class="m-0" style="max-width:200px">
+        {% if options.image_size == "no_resize" %}
+        <img src="{{ img.display_url }}" alt="{{ img.caption }}" class="img-fluid rounded" loading="lazy">
+        {% elif options.image_size == "max_width" %}
+        <img src="{{ img.display_url }}" alt="{{ img.caption }}" class="img-fluid rounded" loading="lazy"
+             style="max-width:{{ options.max_width_px }}px">
+        {% else %}
+        <img src="{{ img.display_url }}" alt="{{ img.caption }}" class="img-fluid rounded" loading="lazy"
+             style="max-width:100%">
+        {% endif %}
+        {% if img.caption %}
+        <figcaption class="text-muted small mt-1">{{ img.caption }}</figcaption>
+        {% endif %}
+      </figure>
+      {% endfor %}
+    </div>
+    {% else %}
+    <p class="text-muted small mt-2 mb-0">{% trans "No images." %}</p>
+    {% endif %}
+
+    {% if options.notes_box %}
+    <div class="mt-3 border rounded" style="height:80px; background:#fafafa;">
+      <span class="text-muted small px-2 pt-1 d-block">{% trans "Notes" %}</span>
+    </div>
+    {% endif %}
+  </div>
+  {% endfor %}
+
+  {% if options.include_map and sections %}
+  <script src="{% static 'js/map-loader.js' %}"></script>
+  <script>
+  (function() {
+    if (typeof gcfLoadMapLibre !== 'function') return;
+    gcfLoadMapLibre({
+      onReady: function() {
+        document.querySelectorAll('[data-gallery-map]').forEach(function(el) {
+          var lat = parseFloat(el.dataset.lat);
+          var lon = parseFloat(el.dataset.lon);
+          var zoom = parseFloat(el.dataset.zoom);
+          if (!isFinite(zoom)) zoom = 13;
+          if (!isFinite(lat) || !isFinite(lon)) return;
+          var map = new maplibregl.Map({
+            container: el,
+            style: {
+              version: 8,
+              sources: { osm: {
+                type: 'raster',
+                tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
+                tileSize: 256,
+                attribution: '© OpenStreetMap contributors'
+              }},
+              layers: [{ id: 'osm', type: 'raster', source: 'osm' }]
+            },
+            center: [lon, lat],
+            zoom: zoom,
+            interactive: true
+          });
+          new maplibregl.Marker().setLngLat([lon, lat]).addTo(map);
+        });
+      }
+    });
+  })();
+  </script>
+  {% endif %}
+
+  {% if not sections %}
+  <p class="text-muted small">{% trans "No caches matched the filter." %}</p>
+  {% endif %}
+
+  {% endif %}
+</div>
+{% endblock %}

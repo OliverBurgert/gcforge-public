@@ -1,0 +1,207 @@
+{% extends "base.html" %}
+{% load static i18n %}
+{% block title %}{% trans "Update my Adventure Lab finds" %} — GCForge{% endblock %}
+
+{% block content %}
+{# Pass the advlab icon URL to JS via data-attr (no string interpolation in JS) #}
+<div id="al-founds-config" data-advlab-icon="{% static 'icons/cgeo/types/advlab.svg' %}" hidden></div>
+
+{# Full-height flex column — navbar is ~48px #}
+<div class="d-flex flex-column" style="height:calc(100vh - 48px);overflow:hidden">
+
+  {# ── Title row (fixed) ────────────────────────────────────────────────── #}
+  <div class="px-3 pt-2 pb-1 flex-shrink-0">
+    <div class="d-flex align-items-baseline gap-3">
+      <h5 class="mb-0">{% trans "Update my Adventure Lab finds" %}</h5>
+      <a href="{% url 'geocaches:import_lab2gpx' %}" class="small text-muted">&larr; {% trans "Back to imports" %}</a>
+    </div>
+    <p class="text-muted small mb-0 mt-1">
+      {% trans "Fetches completed and in-progress Adventure Lab adventures from the AL API and imports or updates them in GCForge." %}
+    </p>
+  </div>
+
+  {# ── Main split row (fills the rest) ──────────────────────────────────── #}
+  <div class="d-flex flex-grow-1 px-3 pb-2 mt-2" style="gap:1.25rem;overflow:hidden;min-height:0">
+
+    {# ── Left panel ──────────────────────────────────────────────────────── #}
+    <div class="d-flex flex-column flex-shrink-0" style="width:460px;overflow:hidden">
+
+      {# Load form + indicator (always visible) #}
+      <div class="flex-shrink-0 mb-2">
+        <form hx-post="{% url 'geocaches:import_al_founds_preview' %}"
+              hx-target="#preview-area"
+              hx-swap="innerHTML"
+              hx-indicator="#al-loading">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-sm btn-primary">{% trans "Load my ALCs" %}</button>
+          <span class="text-muted small ms-2">{% trans "Fetches completed and in-progress labs from the AL API." %}</span>
+        </form>
+        <div id="al-loading" class="htmx-indicator d-flex align-items-center gap-2 mt-2 small text-muted">
+          <div class="spinner-border spinner-border-sm" role="status"></div>
+          {% trans "Loading your Adventure Labs from the API…" %}
+        </div>
+      </div>
+
+      {# Preview area — flex column so summary+tabs header stays fixed, only list scrolls #}
+      <div id="preview-area" class="d-flex flex-column flex-grow-1" style="overflow:hidden;min-height:0"></div>
+
+      {# Import controls — always visible at bottom #}
+      <div id="import-controls" class="flex-shrink-0 border-top pt-2 mt-1" style="display:none">
+        <div class="mb-2">
+          <label for="al_tags" class="form-label fw-semibold small mb-1">
+            {% trans "Tags" %} <span class="text-muted fw-normal">{% trans "(comma-separated, optional)" %}</span>
+          </label>
+          <input type="text" id="al_tags" class="form-control form-control-sm"
+                 placeholder="{% trans 'e.g. al-finds, 2026' %}">
+          <div id="al-tag-suggestions" class="mt-1 d-flex flex-wrap gap-1"></div>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+          <button type="button" class="btn btn-success btn-sm" onclick="gcfAlFoundsSubmitImport()">
+            {% trans "Import Selected" %}
+          </button>
+          <span id="al-selected-count" class="small text-muted"></span>
+        </div>
+        <div id="import-status-area" class="mt-1"></div>
+      </div>
+
+    </div>{# /left panel #}
+
+    {# ── Right panel: layer switcher + map ──────────────────────────────── #}
+    {# Same simple pattern as settings/locations: plain div, fixed vh height, #}
+    {# no nested flex / position magic.                                       #}
+    <div class="flex-grow-1" style="min-width:200px">
+      <div class="mb-1">
+        <div class="btn-group btn-group-sm" role="group" id="al-layer-switcher" aria-label="{% trans 'Layer switcher' %}">
+          <button type="button" class="btn btn-outline-secondary" data-layer="street"
+                  onclick="gcfAlFoundsSetLayer('street', this)">{% trans "Street" %}</button>
+          <button type="button" class="btn btn-outline-secondary" data-layer="outdoor"
+                  onclick="gcfAlFoundsSetLayer('outdoor', this)">{% trans "Outdoor" %}</button>
+          <button type="button" class="btn btn-outline-secondary" data-layer="aerial"
+                  onclick="gcfAlFoundsSetLayer('aerial', this)">{% trans "Aerial" %}</button>
+        </div>
+        <span id="al-map-status" class="ms-2 small text-muted"></span>
+      </div>
+      <div id="al-founds-map"
+           style="height:calc(100vh - 180px);min-height:300px;border-radius:4px;border:1px solid #dee2e6;background:#f0f0f0"></div>
+    </div>
+
+  </div>
+</div>
+
+<style>
+.gcf-al-marker { display:flex; flex-direction:column; align-items:center; cursor:pointer; }
+.gcf-al-marker-dot {
+  width:22px; height:22px; border-radius:50%;
+  background-color:#7b1fa2;
+  background-size:14px 14px;
+  background-position:center;
+  background-repeat:no-repeat;
+  border:2px solid #fff;
+  box-shadow:0 1px 3px rgba(0,0,0,.5);
+}
+.gcf-al-marker-label {
+  font-size:10px; color:#222; background:rgba(255,255,255,.88);
+  padding:0 3px; border-radius:2px; margin-top:2px;
+  white-space:nowrap; max-width:130px;
+  overflow:hidden; text-overflow:ellipsis;
+  box-shadow:0 1px 2px rgba(0,0,0,.2);
+  line-height:1.4;
+}
+#al-layer-switcher .btn.active { background:#0d6efd; color:#fff; border-color:#0d6efd; }
+</style>
+
+{% endblock %}
+
+{# ── Scripts ──────────────────────────────────────────────────────────────── #}
+{# extra_js block runs AFTER htmx and map-loader.js are loaded (see base.html) #}
+{% block extra_js %}
+<script>
+(function() {
+  // Tag suggestions
+  fetch('{% url "geocaches:tags_json" %}')
+    .then(function(r) { return r.json(); })
+    .then(function(names) {
+      var box = document.getElementById('al-tag-suggestions');
+      var input = document.getElementById('al_tags');
+      if (!box || !names.length) return;
+      names.forEach(function(name) {
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'btn btn-sm btn-outline-secondary';
+        btn.textContent = name;
+        btn.addEventListener('click', function() {
+          var cur = input.value.split(',').map(function(s) { return s.trim(); }).filter(Boolean);
+          if (cur.indexOf(name) === -1) cur.push(name);
+          input.value = cur.join(', ');
+        });
+        box.appendChild(btn);
+      });
+    });
+
+  document.addEventListener('htmx:afterSwap', function(evt) {
+    // Preview partial loaded → reveal import controls and refresh count
+    if (evt.detail.target && evt.detail.target.id === 'preview-area') {
+      var hasItems = document.querySelectorAll('.al-item-check').length > 0;
+      document.getElementById('import-controls').style.display = hasItems ? '' : 'none';
+      if (typeof gcfAlFoundsUpdateCount === 'function') gcfAlFoundsUpdateCount();
+      return;
+    }
+    // Import status updated → if success alert is present, drop the imported
+    // items from the list & map (no re-fetch). On failure, just clear pending.
+    if (window._gcfAlPendingImport) {
+      var area = document.getElementById('import-status-area');
+      if (!area) return;
+      if (area.querySelector('.alert-success')) {
+        if (typeof gcfAlFoundsMoveImportedToConfirmed === 'function') {
+          gcfAlFoundsMoveImportedToConfirmed(window._gcfAlPendingImport);
+        }
+        window._gcfAlPendingImport = null;
+      } else if (area.querySelector('.alert-danger')) {
+        window._gcfAlPendingImport = null;
+      }
+    }
+  });
+})();
+
+function gcfAlFoundsSubmitImport() {
+  var guids = Array.from(document.querySelectorAll('.al-item-check:checked'))
+    .map(function(cb) { return cb.value; });
+  if (!guids.length) { alert('No Adventures selected.'); return; }
+
+  // Remember which guids were submitted so we can drop them on success
+  window._gcfAlPendingImport = guids;
+
+  var tags = document.getElementById('al_tags').value;
+  var csrf = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+  var params = new URLSearchParams();
+  params.append('csrfmiddlewaretoken', csrf);
+  params.append('tags', tags);
+  guids.forEach(function(g) { params.append('guids', g); });
+
+  var statusArea = document.getElementById('import-status-area');
+  statusArea.innerHTML = '<div class="d-flex align-items-center gap-2 mt-1"><div class="spinner-border spinner-border-sm text-success" role="status"></div><small class="text-success">Starting import…</small></div>';
+
+  fetch('{% url "geocaches:import_al_founds" %}', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: params.toString(),
+  })
+  .then(function(r) { return r.text(); })
+  .then(function(html) { statusArea.innerHTML = html; htmx.process(statusArea); })
+  .catch(function(e) { statusArea.innerHTML = '<div class="alert alert-danger py-1 small mt-1">Request failed: ' + e + '</div>'; });
+}
+</script>
+
+<script>
+gcfLoadMapLibre({
+  scripts: [
+    '{% static "js/map-styles.js" %}',
+    '{% static "js/al-founds-map.js" %}',
+  ],
+  onReady: function() {
+    if (typeof gcfAlFoundsMapInit === 'function') gcfAlFoundsMapInit();
+  }
+});
+</script>
+{% endblock %}
