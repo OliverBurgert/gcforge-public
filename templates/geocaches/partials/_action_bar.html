@@ -1,0 +1,141 @@
+{% load i18n %}
+<div class="d-flex align-items-center gap-2 flex-wrap" data-target="{{ f_target }}" data-page-ids="{{ page_ids_csv }}">
+  <div class="btn-group btn-group-sm" role="group" aria-label="{% trans 'Action target' %}">
+    <input type="radio" class="btn-check" name="action-target" id="target-filter" autocomplete="off"
+           {% if f_target != "viewport" and f_target != "page" %}checked{% endif %}>
+    <label class="btn btn-outline-primary" for="target-filter" onclick="gcfSetTarget('filter')"
+           title="{% trans 'Apply actions to all caches matching the current filter' %}">
+      {% blocktrans with n=total %}Filter ({{ n }}){% endblocktrans %}
+    </label>
+    <input type="radio" class="btn-check" name="action-target" id="target-viewport" autocomplete="off"
+           {% if f_target == "viewport" %}checked{% endif %}>
+    <label class="btn btn-outline-primary" for="target-viewport" onclick="gcfSetTarget('viewport')"
+           title="{% trans 'Apply actions only to caches in the current map viewport (intersected with the filter)' %}">
+      {% if viewport_count is None %}{% trans "Map (–)" %}{% else %}{% blocktrans with n=viewport_count %}Map ({{ n }}){% endblocktrans %}{% endif %}
+    </label>
+    <input type="radio" class="btn-check" name="action-target" id="target-page" autocomplete="off"
+           {% if f_target == "page" %}checked{% endif %}>
+    <label class="btn btn-outline-primary" for="target-page" onclick="gcfSetTarget('page')"
+           title="{% trans 'Apply actions only to caches on the current list page' %}">
+      {% blocktrans with n=page_count %}Page ({{ n }}){% endblocktrans %}
+    </label>
+  </div>
+  <div class="dropdown d-inline-block" id="export-gpx-dropdown"
+       data-export-url="{% url 'geocaches:export_gpx' %}?{{ request.GET.urlencode }}"
+       data-recent-url="{% url 'geocaches:export_recent_folders' %}">
+    <button class="btn btn-sm btn-outline-success dropdown-toggle" data-bs-toggle="dropdown"
+            onclick="gcfLoadExportFolders()">{% trans "Export GPX" %}</button>
+    <ul class="dropdown-menu">
+      <li><a class="dropdown-item" href="#" onclick="gcfExportGpxDownload(); return false;">{% trans "Download (browser)" %}</a></li>
+      <li><a class="dropdown-item" href="#" onclick="gcfExportGpxBrowse(); return false;">{% trans "Select folder..." %}</a></li>
+      <li id="export-recent-separator" class="d-none"><hr class="dropdown-divider"></li>
+      <li id="export-recent-header" class="d-none"><h6 class="dropdown-header">{% trans "Recent folders" %}</h6></li>
+    </ul>
+  </div>
+  <div class="dropdown d-inline-block" id="send-to-gps-dropdown"
+       data-send-url="{% url 'geocaches:send_to_gps' %}?{{ request.GET.urlencode }}"
+       data-recent-url="{% url 'geocaches:gps_recent_devices' %}"
+       data-detect-url="{% url 'geocaches:gps_detect_devices' %}">
+    <button class="btn btn-sm btn-outline-success dropdown-toggle" data-bs-toggle="dropdown"
+            onclick="gcfLoadGpsDevices()">{% trans "Send to GPS" %}</button>
+    <ul class="dropdown-menu">
+      <li><a class="dropdown-item" href="#" onclick="gcfDetectGps(); return false;">{% trans "Detect connected device…" %}</a></li>
+      <li><a class="dropdown-item" href="#" onclick="gcfSendToGpsBrowse(); return false;">{% trans "Browse for device folder…" %}</a></li>
+      <li id="gps-recent-separator" class="d-none"><hr class="dropdown-divider"></li>
+      <li id="gps-recent-header" class="d-none"><h6 class="dropdown-header">{% trans "Recent devices" %}</h6></li>
+    </ul>
+  </div>
+  <div class="dropdown">
+    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">{% trans "Tags" %}</button>
+    <ul class="dropdown-menu">
+      <li><a class="dropdown-item" href="{% url 'geocaches:bulk_tag_add' %}?{{ request.GET.urlencode }}">{% trans "Add tag to filtered…" %}</a></li>
+      <li><a class="dropdown-item" href="{% url 'geocaches:bulk_tag_remove' %}?{{ request.GET.urlencode }}">{% trans "Remove tag from filtered…" %}</a></li>
+    </ul>
+  </div>
+  <form method="post" action="{% url 'geocaches:bulk_map_visibility' %}?{{ request.GET.urlencode }}" class="d-inline" id="bulk-map-visibility-form">
+    {% csrf_token %}
+  </form>
+  <div class="dropdown">
+    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown"
+            title="{% trans 'Hide / show caches on the map' %}">
+      👁 {% trans "Map visibility" %}
+    </button>
+    <ul class="dropdown-menu">
+      <li><h6 class="dropdown-header">{% trans "Apply to filtered subset" %}</h6></li>
+      <li><button type="submit" form="bulk-map-visibility-form" name="state" value="visible" class="dropdown-item">
+        {% trans "Show on map" %}
+      </button></li>
+      <li><button type="submit" form="bulk-map-visibility-form" name="state" value="session" class="dropdown-item">
+        {% trans "Hide for this session" %}
+      </button></li>
+      <li><button type="submit" form="bulk-map-visibility-form" name="state" value="always" class="dropdown-item">
+        {% trans "Hide always" %}
+      </button></li>
+      <li><hr class="dropdown-divider"></li>
+      <li><button type="submit" form="bulk-map-visibility-form" name="state" value="reset_session" class="dropdown-item">
+        {% trans "Clear all session-hides" %}
+      </button></li>
+    </ul>
+  </div>
+  <div class="dropdown">
+    <button class="btn btn-sm btn-outline-info dropdown-toggle" data-bs-toggle="dropdown">{% trans "Enrich" %}</button>
+    <ul class="dropdown-menu">
+      <li><h6 class="dropdown-header">{% trans "All" %}</h6></li>
+      <li><a class="dropdown-item" href="{% url 'geocaches:enrich' %}?{{ request.GET.urlencode }}&fields=all">{% trans "Fill all missing fields" %}</a></li>
+      <li><a class="dropdown-item" href="{{ fx_url_missing_any }}">{% trans "Show caches with missing fields" %}</a></li>
+      <li><hr class="dropdown-divider"></li>
+      <li><h6 class="dropdown-header">{% trans "Elevation" %}</h6></li>
+      <li><a class="dropdown-item" href="{% url 'geocaches:enrich' %}?{{ request.GET.urlencode }}&fields=elevation">{% trans "Fill missing elevation" %}</a></li>
+      <li><a class="dropdown-item" href="{% url 'geocaches:enrich' %}?{{ request.GET.urlencode }}&fields=elevation_update">{% trans "Update elevation (overwrite, SRTM)" %}</a></li>
+      <li><a class="dropdown-item" href="{% url 'geocaches:enrich' %}?{{ request.GET.urlencode }}&fields=elevation_hires">{% trans "Update elevation (EU-DEM / Copernicus, online)" %}</a></li>
+      <li><a class="dropdown-item" href="{{ fx_url_missing_elevation }}">{% trans "Show missing elevation" %}</a></li>
+      <li><hr class="dropdown-divider"></li>
+      <li><h6 class="dropdown-header">{% trans "Location" %}</h6></li>
+      <li><a class="dropdown-item" href="{% url 'geocaches:enrich' %}?{{ request.GET.urlencode }}&fields=location">{% trans "Fill missing country / state / county" %}</a></li>
+      <li><a class="dropdown-item" href="{% url 'geocaches:enrich' %}?{{ request.GET.urlencode }}&fields=location_update">{% trans "Force country / state / county update" %}</a></li>
+      <li><a class="dropdown-item" href="{% url 'geocaches:enrich' %}?{{ request.GET.urlencode }}&fields=location_offline">{% trans "Fill from downloaded boundaries (offline)" %}</a></li>
+      <li><a class="dropdown-item" href="{% url 'geocaches:enrich' %}?{{ request.GET.urlencode }}&fields=location_offline_update">{% trans "Overwrite from downloaded boundaries (offline)" %}</a></li>
+      <li><a class="dropdown-item" href="{{ fx_url_missing_state }}">{% trans "Show missing state" %}</a></li>
+      <li><a class="dropdown-item" href="{{ fx_url_missing_county }}">{% trans "Show missing county" %}</a></li>
+    </ul>
+  </div>
+  <div class="dropdown">
+    <button class="btn btn-sm btn-outline-warning dropdown-toggle" data-bs-toggle="dropdown">{% trans "Update" %}</button>
+    <ul class="dropdown-menu">
+      <li><a class="dropdown-item" href="{% url 'geocaches:update' %}?{{ request.GET.urlencode }}&action=light_update">{% trans "Light update (incl. fav & status)" %}</a></li>
+      <li><a class="dropdown-item" href="{% url 'geocaches:update' %}?{{ request.GET.urlencode }}&action=full_update" data-count="{{ total }}" onclick="return gcfConfirmFullUpdate(this)">{% trans "Full update (all fields + logs)…" %}</a></li>
+      <li><a class="dropdown-item" href="{% url 'geocaches:update' %}?{{ request.GET.urlencode }}&action=alc_only">{% trans "Update ALC only" %}</a></li>
+      <li><a class="dropdown-item" href="{% url 'geocaches:update' %}?{{ request.GET.urlencode }}&action=light_update_alc">{% trans "Light refresh & update ALC" %}</a></li>
+      <li><hr class="dropdown-divider"></li>
+      <li><h6 class="dropdown-header">{% trans "Fetch Logs" %}</h6></li>
+      <li><a class="dropdown-item" href="{% url 'geocaches:update' %}?{{ request.GET.urlencode }}&action=gc_recent_logs">{% trans "GC: Fetch recent 50 logs" %}</a></li>
+      <li><a class="dropdown-item" href="{% url 'geocaches:update' %}?{{ request.GET.urlencode }}&action=gc_all_logs">{% trans "GC: Fetch all logs" %}</a></li>
+      <li><a class="dropdown-item" href="#" onclick="var n=prompt('{% trans 'Number of logs to fetch:' %}','50'); if(n) location.href='{% url 'geocaches:update' %}?{{ request.GET.urlencode }}&action=oc_logs&count='+n; return false;">{% trans "OC: Fetch newest logs…" %}</a></li>
+      <li><hr class="dropdown-divider"></li>
+      <li><a class="dropdown-item" href="{% url 'geocaches:download_missing_images' %}?{{ request.GET.urlencode }}">{% trans "Download missing offline images (filtered caches)" %}</a></li>
+    </ul>
+  </div>
+  <a href="{% url 'geocaches:delete_filtered' %}?{{ request.GET.urlencode }}"
+     class="btn btn-sm btn-outline-danger">{% blocktrans with n=total %}Delete filtered… ({{ n }}){% endblocktrans %}</a>
+  <div hx-get="{% url 'geocaches:enrich_status' %}"
+       hx-trigger="load, every 3s"
+       hx-swap="innerHTML"
+       id="enrich-progress"></div>
+  <div hx-get="{% url 'geocaches:update_status' %}"
+       hx-trigger="load, every 3s"
+       hx-swap="innerHTML"
+       id="update-progress"></div>
+</div>
+<script>
+function gcfConfirmFullUpdate(el) {
+  var n = parseInt(el.dataset.count || '0', 10);
+  var apiCalls = n + Math.ceil(n / 25);
+  var mins = Math.max(1, Math.round(n / 30));
+  return confirm(
+    '{% trans "Full update will refresh" %} ' + n + ' {% trans "cache(s)." %}\n\n' +
+    '{% trans "Estimated API usage: ~" %}' + apiCalls + ' {% trans "calls (~2 per GC cache: data batch + per-cache logs)" %}\n' +
+    '{% trans "Estimated time: ~" %}' + mins + ' {% trans "minute(s)" %}\n\n' +
+    '{% trans "This may consume significant GC API quota. Proceed?" %}'
+  );
+}
+</script>

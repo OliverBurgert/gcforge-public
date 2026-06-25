@@ -1,0 +1,349 @@
+{% load static i18n %}
+{% get_current_language as LANGUAGE_CODE %}
+<!doctype html>
+<html lang="{{ LANGUAGE_CODE }}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="no-referrer-when-downgrade">
+  <title>{% block title %}GCForge{% endblock %}</title>
+  <link rel="icon" type="image/svg+xml" href="{% static 'img/logo.svg' %}">
+  <script>if(window.self!==window.top)document.documentElement.classList.add('gcf-embed');</script>
+  <style>.gcf-embed nav.navbar,.gcf-embed #task-status-dock{display:none!important}</style>
+  {% block extra_head %}{% endblock %}
+  <link href="{% static 'vendor/css/bootstrap.min.css' %}" rel="stylesheet">
+  <link href="{% static 'css/map.css' %}" rel="stylesheet">
+  <link href="{% static 'css/icons.css' %}" rel="stylesheet">
+  <style>
+    body { font-size: 0.875rem; }
+    ::placeholder { color: #b0b8c0 !important; opacity: 1; }
+    .table th a { color: inherit; text-decoration: none; white-space: nowrap; }
+    .table th a:hover { text-decoration: underline; }
+    .sort-arrow { font-size: 0.7em; opacity: 0.5; }
+    .sort-arrow.active { opacity: 1; }
+    .badge-found { background-color: #198754; }
+    .badge-dnf { background-color: #dc3545; }
+    .badge-flag { background-color: #ffc107; color: #000; }
+    td.desc-cell    { max-width: 350px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    td.desc-cell-sm { max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    #filter-bar { background: #f8f9fa; border-bottom: 1px solid #dee2e6; }
+    .htmx-indicator { display: none; }
+    .htmx-request .htmx-indicator { display: inline; }
+    .table-mine { --bs-table-bg: #fffde7; }
+    .cache-name-link { color: inherit; text-decoration: none; }
+    .cache-name-link:hover { text-decoration: underline; color: inherit; }
+    .filter-active { background-color: #fff3cd !important; }
+    #task-status-dock {
+      position: fixed; bottom: 1rem; right: 1rem; z-index: 1080;
+      display: flex; flex-direction: column-reverse; gap: 0.35rem;
+      pointer-events: none; max-width: min(28rem, calc(100vw - 2rem));
+    }
+    #task-status-dock > .gcf-task-card { pointer-events: auto; }
+    .gcf-task-card {
+      background: #fff; border: 1px solid #dee2e6; border-left-width: 4px;
+      border-radius: 0.375rem; padding: 0.4rem 0.6rem;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+      display: flex; align-items: center; gap: 0.5rem;
+      font-size: 0.8125rem;
+    }
+    .gcf-task-card.is-running   { border-left-color: #ffc107; }
+    .gcf-task-card.is-completed { border-left-color: #198754; }
+    .gcf-task-card.is-failed    { border-left-color: #dc3545; }
+    .gcf-task-card.is-cancelled { border-left-color: #6c757d; }
+    .gcf-task-card .gcf-task-text { min-width: 0; flex: 1 1 auto;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .gcf-task-card a.gcf-task-cancel {
+      color: inherit; text-decoration: none; opacity: 0.6; line-height: 1;
+    }
+    .gcf-task-card a.gcf-task-cancel:hover { opacity: 1; }
+    body.gcf-target-viewport.layout-split #map-container,
+    body.gcf-target-viewport.layout-map   #map-container {
+      outline: 2px solid #0d6efd; outline-offset: -2px;
+    }
+    body.gcf-target-page #cache-table-container { background: rgba(13,110,253,0.04); }
+  </style>
+</head>
+<body>
+
+<nav class="navbar navbar-dark bg-dark px-3 py-0">
+  <div class="d-flex align-items-center flex-wrap w-100 py-2 gap-2">
+    <a class="navbar-brand d-flex align-items-center gap-2 py-0" id="logo-link" href="{% url 'geocaches:list' %}">
+      <img src="{% static 'img/logo.svg' %}" alt="" height="30" style="border-radius:4px">
+      <img src="{% static 'img/logo-text.png' %}" alt="GCForge" height="30" style="margin-top:5px">
+    </a>
+
+  <form id="scope-form" method="post" action="{% url 'preferences:set_scope' %}" class="d-flex align-items-center gap-1">
+      {% csrf_token %}
+      <input type="hidden" id="scope-next" name="next" value="{{ request.get_full_path }}">
+      <small class="text-secondary me-1">{% trans "Now Forging:" %}</small>
+      <div class="form-check form-check-inline mb-0">
+        <input class="form-check-input" type="checkbox" name="scope_unfound" value="1" id="scope_unfound"
+               {% if scope_unfound %}checked{% endif %} onchange="gcfSubmitScope()">
+        <label class="form-check-label text-light small" for="scope_unfound">{% trans "Unfound" %}</label>
+      </div>
+      <div class="form-check form-check-inline mb-0">
+        <input class="form-check-input" type="checkbox" name="scope_found" value="1" id="scope_found"
+               {% if scope_found %}checked{% endif %} onchange="gcfSubmitScope()">
+        <label class="form-check-label text-light small" for="scope_found">{% trans "Found" %}</label>
+      </div>
+      <div class="form-check form-check-inline mb-0">
+        <input class="form-check-input" type="checkbox" name="scope_my_caches" value="1" id="scope_my_caches"
+               {% if scope_my_caches %}checked{% endif %} onchange="gcfSubmitScope()">
+        <label class="form-check-label text-light small" for="scope_my_caches">{% trans "My Caches" %}</label>
+      </div>
+      {% if available_platforms %}
+      <span class="text-secondary small" style="border-left:1px solid #555;padding-left:0.5rem;margin-left:0.25rem;">{% trans "in" context "scope filter separator" %}</span>
+      {% if "gc" in available_platforms %}
+      <div class="form-check form-check-inline mb-0">
+        <input class="form-check-input" type="checkbox" name="scope_platform_gc" value="1" id="scope_plat_gc"
+               {% if scope_platform_gc %}checked{% endif %} onchange="gcfSubmitScope()">
+        <label class="form-check-label text-light small" for="scope_plat_gc">GC</label>
+      </div>
+      {% endif %}
+      {% if "lc" in available_platforms %}
+      <div class="form-check form-check-inline mb-0">
+        <input class="form-check-input" type="checkbox" name="scope_platform_lc" value="1" id="scope_plat_lc"
+               {% if scope_platform_lc %}checked{% endif %} onchange="gcfSubmitScope()">
+        <label class="form-check-label text-light small" for="scope_plat_lc">Lab</label>
+      </div>
+      {% endif %}
+      {% if "oc" in available_platforms %}
+      <div class="form-check form-check-inline mb-0">
+        <input class="form-check-input" type="checkbox" name="scope_platform_oc" value="1" id="scope_plat_oc"
+               {% if scope_platform_oc %}checked{% endif %} onchange="gcfSubmitScope()">
+        <label class="form-check-label text-light small" for="scope_plat_oc">OC</label>
+      </div>
+      {% endif %}
+      {% if "other" in available_platforms %}
+      <div class="form-check form-check-inline mb-0">
+        <input class="form-check-input" type="checkbox" name="scope_platform_other" value="1" id="scope_plat_other"
+               {% if scope_platform_other %}checked{% endif %} onchange="gcfSubmitScope()">
+        <label class="form-check-label text-light small" for="scope_plat_other">{% trans "Other" %}</label>
+      </div>
+      {% endif %}
+      {% endif %}
+    </form>
+
+  {% if connected_platforms %}
+  <div class="d-flex align-items-center gap-1">
+    <small class="text-secondary me-1">{% trans "connected to" %}</small>
+      {% for cp in connected_platforms %}
+      <a href="{% url 'preferences:settings' %}#accounts"
+         id="nav-conn-{{ cp.platform }}"
+         class="text-decoration-none small {% if cp.level >= 3 %}text-success{% elif cp.level == 2 %}text-info{% else %}text-warning{% endif %}"
+         title="{{ cp.label }}: {% if cp.level >= 3 %}{% trans "full API access (Level 3)" %}{% elif cp.level == 2 %}{% trans "password stored (website access)" %}{% else %}{% trans "API key only (Level 1)" %}{% endif %}">
+        ● {{ cp.label }}
+      </a>
+      {% endfor %}
+  </div>
+  {% endif %}
+  </div>
+
+  <div class="d-flex align-items-baseline w-100 pb-2 border-top border-secondary border-opacity-25">
+    <div class="d-flex align-items-baseline gap-3 flex-wrap">
+      <a class="text-light small text-decoration-none" href="{% url 'geocaches:dashboard' %}">{% trans "Dashboard" %}</a>
+      <div class="dropdown">
+        <a class="text-light small text-decoration-none dropdown-toggle" href="#"
+           data-bs-toggle="dropdown">{% trans "Import" %}</a>
+        <ul class="dropdown-menu">
+          <li><a class="dropdown-item" href="{% url 'geocaches:import_gpx' %}">{% trans "GPX / Pocket Query" %}</a></li>
+          <li><a class="dropdown-item" href="{% url 'geocaches:import_by_code' %}">{% trans "Import by GC/OC Code" %}</a></li>
+          <li><a class="dropdown-item" href="{% url 'geocaches:pq_management' %}">{% trans "Pocket Queries (API)" %}</a></li>
+          <li><hr class="dropdown-divider"></li>
+          <li><a class="dropdown-item" href="{% url 'geocaches:import_gsak' %}">{% trans "GSAK database" %}</a></li>
+          <li><a class="dropdown-item" href="{% url 'geocaches:import_gsak_locations' %}">{% trans "GSAK Locations" %}</a></li>
+          <li><a class="dropdown-item" href="{% url 'geocaches:ignore_lists_import_gsak' %}">{% trans "GSAK ignore list" %}</a></li>
+          <li><hr class="dropdown-divider"></li>
+          <li><a class="dropdown-item" href="{% url 'geocaches:import_alc_from_url' %}">{% trans "ALC from URL" %}</a></li>
+          <li><a class="dropdown-item" href="{% url 'geocaches:import_lab2gpx' %}">{% trans "Adventure Lab (lab2gpx)" %}</a></li>
+          <li><a class="dropdown-item" href="{% url 'geocaches:import_al_founds' %}">{% trans "Update my Adventure Lab finds" %}</a></li>
+          <li><a class="dropdown-item" href="{% url 'geocaches:sync_al_stage_dates' %}">{% trans "Sync Adventure Lab stage dates" %}</a></li>
+          <li><a class="dropdown-item" href="{% url 'geocaches:import_al_recover_founds' %}">{% trans "Recover missing Adventure Lab founds" %}</a></li>
+          <li><hr class="dropdown-divider"></li>
+          <li><a class="dropdown-item" href="{% url 'geocaches:import_fieldnotes' %}">{% trans "Field Notes" %}</a></li>
+        </ul>
+      </div>
+      <div class="dropdown">
+        <a class="text-light small text-decoration-none dropdown-toggle" href="#"
+           data-bs-toggle="dropdown">{% trans "Tags" %}</a>
+        <ul class="dropdown-menu">
+          <li><a class="dropdown-item" href="{% url 'geocaches:tags' %}">{% trans "Manage tags" %}</a></li>
+        </ul>
+      </div>
+      <div class="dropdown">
+        <a class="text-light small text-decoration-none dropdown-toggle" href="#"
+           data-bs-toggle="dropdown">{% trans "Tools" %}</a>
+        <ul class="dropdown-menu">
+          <li><a class="dropdown-item" href="{% url 'geocaches:tools_event_calendar' %}">{% trans "Event calendar…" %}</a></li>
+          <li><a class="dropdown-item" href="{% url 'geocaches:tools_remove_unattended_past_events' %}">{% trans "Remove past unattended events…" %}</a></li>
+          <li><hr class="dropdown-divider"></li>
+          <li><a class="dropdown-item" href="{% url 'geocaches:tools_remove_zero_waypoints' %}">{% trans "Remove 0°/0° waypoints…" %}</a></li>
+          <li><a class="dropdown-item" href="{% url 'geocaches:tools_check_ftf' %}">{% trans "Check FTF candidates…" %}</a></li>
+          <li><a class="dropdown-item" href="{% url 'geocaches:tools_ftf_markers' %}">{% trans "Check FTF markers…" %}</a></li>
+          <li><hr class="dropdown-divider"></li>
+          <li><h6 class="dropdown-header">{% trans "Fused GC/OC caches" %}</h6></li>
+          <li><a class="dropdown-item" href="{% url 'geocaches:tools_duplicate_caches' %}">{% trans "Find duplicates…" %}</a></li>
+          <li><a class="dropdown-item" href="{% url 'geocaches:tools_manage_fused' %}">{% trans "Manage fused caches…" %}</a></li>
+          <li><a class="dropdown-item" href="{% url 'geocaches:tools_unlinked_oc' %}">{% trans "OC caches missing GC data…" %}</a></li>
+          <li><a class="dropdown-item" href="{% url 'geocaches:tools_misplaced_codes' %}">{% trans "Detect misplaced OC codes…" %}</a></li>
+          <li><hr class="dropdown-divider"></li>
+          <li><a class="dropdown-item" href="#" onclick="location.href='{% url 'geocaches:tools_image_gallery_config' %}'+location.search">{% trans "Image Gallery…" %}</a></li>
+          <li><hr class="dropdown-divider"></li>
+          <li><h6 class="dropdown-header">{% trans "Check duplicate found logs" %}</h6></li>
+          <li><a class="dropdown-item" href="#" onclick="location.href='{% url 'geocaches:tools_duped_my_logs' %}'+location.search">{% trans "Search my duped found logs" %}</a></li>
+          <li><a class="dropdown-item" href="#" onclick="location.href='{% url 'geocaches:tools_duped_cache_logs' %}'+location.search">{% trans "Search duped found logs in my caches" %}</a></li>
+          <li><hr class="dropdown-divider"></li>
+          <li><h6 class="dropdown-header">{% trans "Ignore lists" %}</h6></li>
+          <li><a class="dropdown-item" href="{% url 'geocaches:tools_ignore_lists' %}">{% trans "Manage ignore lists…" %}</a></li>
+          <li><hr class="dropdown-divider"></li>
+          <li><a class="dropdown-item" href="{% url 'geocaches:notifications' %}">{% trans "Instant notifications…" %}</a></li>
+          <li><hr class="dropdown-divider"></li>
+          <li><a class="dropdown-item" href="{% url 'geocaches:trash' %}">{% trans "Trash" %}</a></li>
+        </ul>
+      </div>
+      <button class="layout-toggle-btn" data-layout="list" onclick="gcfLayoutSet('list')" title="{% trans 'List only' %}">{% trans "List" %}</button>
+      <button class="layout-toggle-btn" data-layout="split" onclick="gcfLayoutSet('split')" title="{% trans 'List + map' %}">{% trans "List/Map" %}</button>
+      <button class="layout-toggle-btn" data-layout="split-detail" onclick="gcfLayoutSet('split-detail')" title="{% trans 'List + detail panel' %}">{% trans "List/Detail" %}</button>
+      <button class="layout-toggle-btn" data-layout="map" onclick="gcfLayoutSet('map')" title="{% trans 'Map only' %}">{% trans "Map" %}</button>
+      <a href="{% url 'geocaches:trackable_list' %}" class="text-light small text-decoration-none">{% trans "Trackables" %}</a>
+      <a href="{% url 'geocaches:bulk_logging' %}" class="text-light small text-decoration-none">{% trans "Bulk Log" %}</a>
+    </div>
+    <div class="d-flex align-items-center gap-3 ms-auto">
+      <a href="{% url 'preferences:log' %}" class="text-light small text-decoration-none">{% trans "Log" %}</a>
+      <a href="{% url 'preferences:user_profile' %}" class="text-light small text-decoration-none">{% trans "Profile" %}</a>
+      <a href="{% url 'preferences:settings' %}" class="text-light small text-decoration-none">{% trans "Settings" %}</a>
+      <a href="{% url 'preferences:about' %}" class="text-light small text-decoration-none">{% trans "About" %}</a>
+      <a href="{% url 'geocaches:trash' %}" class="text-light text-decoration-none" title="{% trans 'Trash' %}" style="opacity:0.7" aria-label="{% trans 'Trash' %}">
+        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+          <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/>
+          <path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/>
+        </svg>
+      </a>
+      {% get_current_language as CURRENT_LANG %}
+      {% get_available_languages as AVAILABLE_LANGS %}
+      {# Inline flag SVGs — kept tiny so we avoid new asset files for just two flags. #}
+      {% spaceless %}
+      <svg xmlns="http://www.w3.org/2000/svg" style="display:none">
+        <symbol id="flag-en" viewBox="0 0 60 30">
+          <clipPath id="t"><path d="M30,15 h30 v15 z v15 h-30 z h-30 v-15 z v-15 h30 z"/></clipPath>
+          <path d="M0,0 v30 h60 v-30 z" fill="#012169"/>
+          <path d="M0,0 L60,30 M60,0 L0,30" stroke="#fff" stroke-width="6"/>
+          <path d="M0,0 L60,30 M60,0 L0,30" clip-path="url(#t)" stroke="#C8102E" stroke-width="4"/>
+          <path d="M30,0 v30 M0,15 h60" stroke="#fff" stroke-width="10"/>
+          <path d="M30,0 v30 M0,15 h60" stroke="#C8102E" stroke-width="6"/>
+        </symbol>
+        <symbol id="flag-de" viewBox="0 0 5 3">
+          <rect width="5" height="1" y="0" fill="#000"/>
+          <rect width="5" height="1" y="1" fill="#DD0000"/>
+          <rect width="5" height="1" y="2" fill="#FFCE00"/>
+        </symbol>
+      </svg>
+      {% endspaceless %}
+      <div class="dropdown">
+        <a class="text-light small text-decoration-none dropdown-toggle d-flex align-items-center gap-1" href="#"
+           data-bs-toggle="dropdown" aria-expanded="false">
+          <svg width="20" height="14" aria-hidden="true"><use href="#flag-{{ CURRENT_LANG }}"/></svg>
+          {{ CURRENT_LANG|upper }}
+        </a>
+        <ul class="dropdown-menu dropdown-menu-end">
+          {% for code, name in AVAILABLE_LANGS %}
+          <li>
+            <form action="{% url 'set_language' %}" method="post" class="m-0">
+              {% csrf_token %}
+              <input type="hidden" name="next" value="{{ request.get_full_path }}">
+              <input type="hidden" name="language" value="{{ code }}">
+              <button type="submit" class="dropdown-item d-flex align-items-center gap-2">
+                <svg width="20" height="14" aria-hidden="true"><use href="#flag-{{ code }}"/></svg>
+                {{ code|upper }}
+              </button>
+            </form>
+          </li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+  </div>
+</nav>
+
+
+<div id="main-wrapper">
+  {% block filter_bar %}{% endblock %}
+  {% block action_bar %}{% endblock %}
+  {% if messages %}
+  <div class="px-3 pt-2">
+    {% for message in messages %}
+    <div class="alert alert-{{ message.tags|default:'info' }} fade show py-1 px-3 small mb-1 d-flex align-items-center justify-content-between" role="alert">
+      <span>{{ message }}</span>
+      <button type="button" class="btn-close ms-2 flex-shrink-0" data-bs-dismiss="alert" style="font-size:.6rem"></button>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+  <div id="content">
+    {% block content %}{% endblock %}
+    {% include "geocaches/partials/_map_container.html" %}
+  </div>
+</div>
+
+<div id="task-status-dock"
+     hx-get="{% url 'geocaches:task_status' %}"
+     hx-trigger="every 2s"
+     hx-swap="innerHTML"></div>
+
+<script src="{% url 'javascript-catalog' %}"></script>
+<script src="{% static 'vendor/js/bootstrap.bundle.min.js' %}"></script>
+<script src="{% static 'vendor/js/htmx.min.js' %}"></script>
+<script>
+  function gcfSubmitScope() {
+    // Prefer the cache-list helper that merges the toolbar ?fx= tree —
+    // a plain FormData(filter-form) drops every data-fx-* widget (Type,
+    // Country, Status, Tag, Flag, Found) because they carry no name=,
+    // which would silently strip those filters on the redirect back.
+    var next;
+    if (typeof gcfBuildCurrentListUrl === 'function') {
+      next = gcfBuildCurrentListUrl();
+    }
+    if (!next) {
+      var ff = document.getElementById('filter-form');
+      next = ff
+        ? (window.location.pathname + '?' + new URLSearchParams(new FormData(ff)).toString())
+        : (sessionStorage.getItem('gcforge_list_url') || window.location.pathname + window.location.search);
+    }
+    var form = document.getElementById('scope-form');
+    document.getElementById('scope-next').value = next;
+
+    // In-place path: POST the scope prefs (don't follow the 302 — we don't need
+    // the redirected page), then refresh the list table without a full reload so
+    // the map isn't torn down and rebuilt. The scope is a server-side session
+    // pref (not a URL param), so force the map marker refresh and replace history
+    // rather than pushing a new entry. Fall back to a normal submit when the
+    // in-place helper or table aren't present (non-list pages).
+    if (typeof gcfApplyListChange === 'function' && document.getElementById('cache-table-container')) {
+      fetch(form.action, { method: 'POST', body: new FormData(form), redirect: 'manual' })
+        .then(function () { gcfApplyListChange(next, { forceMap: true, replace: true }); })
+        .catch(function () { form.submit(); });
+    } else {
+      form.submit();
+    }
+  }
+
+  (function () {
+    var logo = document.getElementById('logo-link');
+    if (!logo) return;
+    var saved = sessionStorage.getItem('gcforge_list_url');
+    if (saved) logo.href = saved;
+  })();
+
+  document.body.addEventListener('gcApiValidated', function () {
+    var el = document.getElementById('nav-conn-gc');
+    if (el) {
+      el.className = el.className.replace(/text-warning|text-info/g, 'text-success');
+      el.title = 'GC: full API access (Level 3)';
+    }
+  });
+</script>
+<script src="{% static 'js/map-loader.js' %}"></script>
+<script src="{% static 'js/map-layout.js' %}"></script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

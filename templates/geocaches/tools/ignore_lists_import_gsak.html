@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% trans "Import GSAK ignore list" %} — GCForge{% endblock %}
+{% block content %}
+<div class="px-3 py-3">
+  <h5 class="mb-1">{% trans "Import GSAK ignore list" %}</h5>
+  <p class="text-muted small mb-3">
+    {% blocktrans %}Reads the <code>Ignore</code> table from each selected GSAK <code>sqlite.db3</code> and adds
+    entries to the internal ignore list. Already-existing codes are skipped (notes are not overwritten).{% endblocktrans %}
+  </p>
+
+  <div class="d-flex gap-4 align-items-start">
+
+    <!-- Form column -->
+    <div style="min-width:420px;max-width:500px">
+
+      {% if errors %}
+      <div class="alert alert-danger">
+        {% for e in errors %}<div>{{ e }}</div>{% endfor %}
+      </div>
+      {% endif %}
+
+      <form method="post" id="gsak-import-form">
+        {% csrf_token %}
+
+        {% if gsak_dbs %}
+        <div class="mb-3">
+          <label class="form-label small fw-semibold">{% trans "Detected GSAK databases" %}</label>
+          <div class="d-flex flex-column gap-1">
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="gsak_check_all">
+              <label class="form-check-label small fw-semibold" for="gsak_check_all">{% trans "Check all" %}</label>
+            </div>
+            <hr class="my-1">
+            {% for db in gsak_dbs %}
+            <div class="form-check">
+              <input class="form-check-input gsak-db-check" type="checkbox" name="gsak_paths"
+                     value="{{ db }}\sqlite.db3" id="gsak_{{ forloop.counter }}">
+              <label class="form-check-label small" for="gsak_{{ forloop.counter }}">
+                <strong>{{ db.name }}</strong>
+                <span class="text-muted font-monospace ms-2">{{ db }}\sqlite.db3</span>
+              </label>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+        {% endif %}
+
+        <div class="mb-3">
+          <label class="form-label small fw-semibold">
+            {% if gsak_dbs %}{% trans "Custom path" %} <span class="text-muted fw-normal">{% trans "(optional, in addition to checked databases above)" %}</span>
+            {% else %}{% trans "Path to sqlite.db3" %}{% endif %}
+          </label>
+          <input type="text" name="gsak_custom_path"
+                 class="form-control form-control-sm font-monospace"
+                 placeholder="C:\Users\…\AppData\Roaming\gsak\data\MyDB\sqlite.db3">
+        </div>
+
+        <div class="d-flex gap-2">
+          <button type="button" class="btn btn-outline-secondary btn-sm"
+                  hx-post="{% url 'geocaches:ignore_lists_import_gsak_preview' %}"
+                  hx-include="#gsak-import-form"
+                  hx-target="#gsak-preview-col"
+                  hx-swap="innerHTML">{% trans "Preview" %}</button>
+          <button type="submit" class="btn btn-primary btn-sm">{% trans "Import ignore list" %}</button>
+          <a href="{% url 'geocaches:tools_ignore_lists' %}" class="btn btn-secondary btn-sm">{% trans "Cancel" %}</a>
+        </div>
+      </form>
+    </div>
+
+    <!-- Preview column -->
+    <div id="gsak-preview-col" style="flex:1;min-width:0"></div>
+
+  </div>
+</div>
+
+{% block extra_js %}
+<script>
+(function () {
+  var checkAll = document.getElementById('gsak_check_all');
+  if (!checkAll) return;
+  var boxes = document.querySelectorAll('.gsak-db-check');
+  checkAll.addEventListener('change', function () {
+    boxes.forEach(function (b) { b.checked = checkAll.checked; });
+  });
+  boxes.forEach(function (b) {
+    b.addEventListener('change', function () {
+      checkAll.checked = Array.from(boxes).every(function (x) { return x.checked; });
+    });
+  });
+})();
+</script>
+{% endblock %}
+{% endblock %}

@@ -1,0 +1,201 @@
+{% load i18n l10n icon_tags %}
+{# Statistics tab body — loaded in the background via HTMX (see dashboard.html). #}
+
+{# Summary headline numbers #}
+<div class="row g-2 mb-4">
+  {% with s=summary %}
+  <div class="col-6 col-md-3"><div class="border rounded p-2">
+    <div class="h4 mb-0">{{ s.total_finds }}</div>
+    <div class="small text-muted">{% trans "Total finds" %}</div></div></div>
+  <div class="col-6 col-md-3"><div class="border rounded p-2">
+    <div class="h4 mb-0">{{ s.distinct_days }}</div>
+    <div class="small text-muted">{% trans "Caching days" %}</div></div></div>
+  <div class="col-6 col-md-3"><div class="border rounded p-2">
+    <div class="h4 mb-0">{{ s.best_day_count }}</div>
+    <div class="small text-muted">{% trans "Best day" %}{% if s.best_day %} ({{ s.best_day }}){% endif %}</div></div></div>
+  <div class="col-6 col-md-3"><div class="border rounded p-2">
+    <div class="h4 mb-0">{{ s.finds_this_year }}</div>
+    <div class="small text-muted">{% trans "Finds this year" %}</div></div></div>
+  <div class="col-12 col-md-6"><div class="border rounded p-2 small">
+    {% trans "First find" %}: <b>{{ s.first_find|default:"–" }}</b> ·
+    {% trans "Last find" %}: <b>{{ s.last_find|default:"–" }}</b> ·
+    {% trans "Avg/day" %}: <b>{{ s.avg_per_caching_day }}</b></div></div>
+  <div class="col-12 col-md-6"><div class="border rounded p-2 small">
+    {% trans "By platform" %}:
+    GC <b>{{ s.platform_gc }}</b>
+    <span class="text-success" title="{% trans 'Included in Statistics-tab totals.' %}">&check;</span> ·
+    OC <b>{{ s.platform_oc }}</b>
+    {% if s.include_oc %}
+      <span class="text-success" title="{% trans 'Included in Statistics-tab totals. Toggle in Settings → Dashboard.' %}">&check;</span>
+    {% else %}
+      <span class="text-danger" title="{% trans 'Excluded from Statistics-tab totals. Toggle in Settings → Dashboard.' %}">&cross;</span>
+    {% endif %} ·
+    Lab <b>{{ s.platform_al }}</b>
+    {% if s.include_al %}
+      <span class="text-success" title="{% trans 'Included in Statistics-tab totals. Toggle in Settings → Dashboard.' %}">&check;</span>
+    {% else %}
+      <span class="text-danger" title="{% trans 'Excluded from Statistics-tab totals. Toggle in Settings → Dashboard.' %}">&cross;</span>
+    {% endif %}
+  </div></div>
+  {% endwith %}
+</div>
+
+{# Cumulative finds over time (ECharts) #}
+{% if cumulative_finds.months %}
+<div class="mb-4">
+  <h6>{% trans "Cumulative finds over time" %}</h6>
+  <div id="chart-cumulative-finds" style="height:340px;"></div>
+</div>
+{{ cumulative_finds|json_script:"chart-cumulative-data" }}
+{% endif %}
+
+{# Finds by year + by calendar month — bar charts (ECharts) #}
+{% if by_year %}
+<div class="row g-4 mb-4">
+  <div class="col-md-6">
+    <h6>{% trans "Finds by year" %}</h6>
+    <div id="chart-by-year" style="height:260px;"></div>
+  </div>
+  <div class="col-md-6">
+    <h6>{% trans "Finds by month" %}</h6>
+    <div id="chart-by-month" style="height:260px;"></div>
+  </div>
+</div>
+{{ by_year|json_script:"chart-by-year-data" }}
+{{ by_month|json_script:"chart-by-month-data" }}
+{% endif %}
+
+{# One-dimension breakdowns — CSS percent-bars (type/size with pie toggle) #}
+<div class="row g-4 mb-4">
+  <div class="col-md-6">
+    <div class="d-flex align-items-center justify-content-between mb-1">
+      <h6 class="mb-0">{% trans "Finds by type" %}</h6>
+      {% include "geocaches/partials/_dashboard_chart_toggle.html" with chart="type" %}
+    </div>
+    <div class="gcf-chart-bars" data-chart="type">
+    <table class="table table-sm table-hover gcf-bar-table mb-0">
+      <tbody>
+      {% for r in by_type %}
+        <tr>
+          <td style="width:1.6em">{% cache_type_icon r.value size="16" %}</td>
+          <td>{{ r.label }}</td>
+          <td class="text-end gcf-bar-count">{{ r.count }}</td>
+          <td class="text-end text-muted small">{{ r.pct|floatformat:1 }}%</td>
+          <td style="width:35%"><div class="gcf-bar-track">
+            <div class="gcf-bar-fill" style="width:{{ r.bar|unlocalize }}%"></div></div></td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    </div>
+    <div class="gcf-chart-pie d-none" data-chart="type">
+      <div id="chart-pie-type" style="height:300px;"></div>
+    </div>
+    {{ by_type|json_script:"chart-type-data" }}
+  </div>
+  <div class="col-md-6">
+    <div class="d-flex align-items-center justify-content-between mb-1">
+      <h6 class="mb-0">{% trans "Finds by size" %}</h6>
+      {% include "geocaches/partials/_dashboard_chart_toggle.html" with chart="size" %}
+    </div>
+    <div class="gcf-chart-bars" data-chart="size">
+    <table class="table table-sm table-hover gcf-bar-table mb-0">
+      <tbody>
+      {% for r in by_size %}
+        <tr>
+          <td>{{ r.label }}</td>
+          <td class="text-end gcf-bar-count">{{ r.count }}</td>
+          <td class="text-end text-muted small">{{ r.pct|floatformat:1 }}%</td>
+          <td style="width:40%"><div class="gcf-bar-track">
+            <div class="gcf-bar-fill" style="width:{{ r.bar|unlocalize }}%"></div></div></td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    </div>
+    <div class="gcf-chart-pie d-none" data-chart="size">
+      <div id="chart-pie-size" style="height:300px;"></div>
+    </div>
+    {{ by_size|json_script:"chart-size-data" }}
+  </div>
+</div>
+
+<div class="row g-4 mb-4">
+  <div class="col-md-6">
+    <div class="d-flex align-items-center justify-content-between mb-1">
+      <h6 class="mb-0">{% trans "Finds by difficulty" %}</h6>
+      {% include "geocaches/partials/_dashboard_chart_toggle.html" with chart="difficulty" %}
+    </div>
+    <div class="gcf-chart-bars" data-chart="difficulty">
+    <table class="table table-sm gcf-bar-table mb-0">
+      <tbody>
+      {% for r in by_difficulty %}
+        <tr>
+          <td>D {{ r.rating|unlocalize }}</td>
+          <td class="text-end gcf-bar-count">{{ r.count }}</td>
+          <td class="text-end text-muted small">{{ r.pct|floatformat:1 }}%</td>
+          <td style="width:55%"><div class="gcf-bar-track">
+            <div class="gcf-bar-fill" style="width:{{ r.bar|unlocalize }}%"></div></div></td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    </div>
+    <div class="gcf-chart-pie d-none" data-chart="difficulty">
+      <div id="chart-pie-difficulty" style="height:300px;"></div>
+    </div>
+    {{ by_difficulty|json_script:"chart-difficulty-data" }}
+  </div>
+  <div class="col-md-6">
+    <div class="d-flex align-items-center justify-content-between mb-1">
+      <h6 class="mb-0">{% trans "Finds by terrain" %}</h6>
+      {% include "geocaches/partials/_dashboard_chart_toggle.html" with chart="terrain" %}
+    </div>
+    <div class="gcf-chart-bars" data-chart="terrain">
+    <table class="table table-sm gcf-bar-table mb-0">
+      <tbody>
+      {% for r in by_terrain %}
+        <tr>
+          <td>T {{ r.rating|unlocalize }}</td>
+          <td class="text-end gcf-bar-count">{{ r.count }}</td>
+          <td class="text-end text-muted small">{{ r.pct|floatformat:1 }}%</td>
+          <td style="width:55%"><div class="gcf-bar-track">
+            <div class="gcf-bar-fill" style="width:{{ r.bar|unlocalize }}%"></div></div></td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    </div>
+    <div class="gcf-chart-pie d-none" data-chart="terrain">
+      <div id="chart-pie-terrain" style="height:300px;"></div>
+    </div>
+    {{ by_terrain|json_script:"chart-terrain-data" }}
+  </div>
+</div>
+
+{# Finds by bearing — twin wind-roses (ECharts), at the end of the page #}
+{% if bearing and bearing.total %}
+<div class="mb-4">
+  <div class="d-flex align-items-center gap-2 mb-1 flex-wrap">
+    <h6 class="mb-0">{% trans "Finds by bearing" %}</h6>
+    {% if ref_points|length > 1 %}
+    <span class="text-muted small">·
+      {% trans "from" %}</span>
+    <select class="form-select form-select-sm" style="width:auto" id="dash-bearing-ref"
+            data-url="{% url 'geocaches:dashboard_bearing_data' %}">
+      {% for rp in ref_points %}
+      <option value="{{ rp.id }}" {% if rp.id == bearing.ref_id %}selected{% endif %}>{{ rp.name }}</option>
+      {% endfor %}
+    </select>
+    {% else %}
+    <span class="text-muted small">·
+      {% blocktrans with name=bearing.ref_name %}from {{ name }}{% endblocktrans %}</span>
+    {% endif %}
+  </div>
+  <div class="row g-2">
+    <div class="col-md-6"><div id="chart-bearing-count" style="height:320px;"></div></div>
+    <div class="col-md-6"><div id="chart-bearing-distance" style="height:320px;"></div></div>
+  </div>
+</div>
+{{ bearing|json_script:"chart-bearing-data" }}
+{% endif %}

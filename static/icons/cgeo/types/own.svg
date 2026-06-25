@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36">
+  <!-- Person with cache pin -->
+  <circle cx="18" cy="12" r="3.5" fill="none" stroke="#ffffff" stroke-width="1.5"/>
+  <path d="M11 27c0-4 3-7 7-7s7 3 7 7" fill="none" stroke="#ffffff" stroke-width="1.5"/>
+</svg>

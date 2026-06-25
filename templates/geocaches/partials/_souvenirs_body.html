@@ -1,0 +1,35 @@
+{% load i18n %}
+{% comment %}
+Souvenir controls (order dropdown + tag filter checkboxes) + the grouped list.
+Lives inside #souvenirs-body, which re-fetches this on change / souvenirs:reload
+with its own inputs hx-included, so order + filter state is preserved.
+{% endcomment %}
+
+<div class="d-flex align-items-end gap-3 flex-wrap mb-3">
+  <div>
+    <label class="form-label mb-0 small fw-semibold" for="souv-order">{% trans "Order" %}</label>
+    <select class="form-select form-select-sm" id="souv-order" name="order" style="width:auto">
+      <option value="date" {% if order == "date" %}selected{% endif %}>{% trans "Chronological" %}</option>
+      <option value="year" {% if order == "year" %}selected{% endif %}>{% trans "By year" %}</option>
+      <option value="tag" {% if order == "tag" %}selected{% endif %}>{% trans "By tag" %}</option>
+    </select>
+  </div>
+  <input type="hidden" name="tagfilter" value="1">
+  <div class="d-flex align-items-center gap-2 flex-wrap">
+    {% for t in souvenir_tags.tags %}
+    <div class="form-check mb-0">
+      <input class="form-check-input" type="checkbox" name="tag" value="{{ t.id }}"
+             id="souv-tag-{{ t.id }}" {% if t.id in selected_tags %}checked{% endif %}>
+      <label class="form-check-label small" for="souv-tag-{{ t.id }}">{{ t.name }} ({{ t.count }})</label>
+    </div>
+    {% endfor %}
+    <div class="form-check mb-0">
+      <input class="form-check-input" type="checkbox" name="untagged" value="1"
+             id="souv-untagged" {% if untagged_checked %}checked{% endif %}>
+      <label class="form-check-label small" for="souv-untagged">
+        {% trans "Untagged" %} ({{ souvenir_tags.untagged }})</label>
+    </div>
+  </div>
+</div>
+
+{% include "geocaches/partials/_souvenirs_list.html" %}

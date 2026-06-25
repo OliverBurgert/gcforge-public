@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% trans "Import GSAK Locations" %} — GCForge{% endblock %}
+
+{% block content %}
+<div class="px-3 py-3" style="max-width:800px">
+  <h5 class="mb-3">{% trans "Import GSAK Locations" %}</h5>
+
+  {% for e in errors %}
+  <div class="alert alert-warning small">{{ e }}</div>
+  {% endfor %}
+
+  {% if imported %}
+  <div class="alert alert-success">
+    {% blocktrans count n=imported|length with names=imported|join:", " %}Imported {{ n }} location: {{ names }}{% plural %}Imported {{ n }} locations: {{ names }}{% endblocktrans %}
+  </div>
+  {% endif %}
+
+  {% if candidates %}
+  <p class="text-muted small mb-3">
+    {% blocktrans count n=candidates|length %}Found {{ n }} location from GSAK.{% plural %}Found {{ n }} locations from GSAK.{% endblocktrans %}
+    {% trans "Entries already in GCForge are pre-deselected. Select the ones you want to import." %}
+  </p>
+
+  <form method="post" id="import-form">
+    {% csrf_token %}
+    <table class="table table-sm">
+      <thead>
+        <tr>
+          <th style="width:2rem"><input type="checkbox" id="check-all" class="form-check-input"></th>
+          <th>{% trans "Name" %}</th>
+          <th>{% trans "Coordinates" %}</th>
+          <th>{% trans "Valid from" %}</th>
+          <th>{% trans "Source" %}</th>
+          <th>{% trans "Status" %}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for c in candidates %}
+        <tr {% if c.already_exists %}class="text-muted"{% endif %}>
+          <td>
+            <input type="checkbox" name="loc_idx" value="{{ forloop.counter0 }}"
+                   class="form-check-input loc-check"
+                   {% if not c.already_exists %}checked{% endif %}>
+          </td>
+          <td>{{ c.name }}</td>
+          <td class="font-monospace small">{{ c.lat|floatformat:6 }}, {{ c.lon|floatformat:6 }}</td>
+          <td class="small text-muted">{{ c.valid_from|default:"" }}</td>
+          <td class="small text-muted">{{ c.source }}</td>
+          <td class="small">
+            {% if c.already_exists %}
+            <span class="text-muted">{% trans "already in GCForge" %}</span>
+            {% else %}
+            <span class="text-success">{% trans "new" %}</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <button type="submit" class="btn btn-sm btn-primary">{% trans "Import selected" %}</button>
+    <a href="{% url 'preferences:settings' %}#reference-points" class="btn btn-sm btn-outline-secondary ms-2">{% trans "Settings" %}</a>
+    <a href="{% url 'geocaches:list' %}" class="btn btn-sm btn-outline-secondary ms-1">{% trans "Back to List" %}</a>
+  </form>
+
+  <script>
+  document.getElementById('check-all').addEventListener('change', function() {
+    document.querySelectorAll('.loc-check').forEach(function(cb) { cb.checked = this.checked; }, this);
+  });
+  </script>
+
+  {% elif not errors %}
+  <p class="text-muted">{% trans "No locations found in GSAK. Make sure GSAK is installed and has locations configured in Options → Locations." %}</p>
+  {% endif %}
+
+  {% if existing %}
+  <h6 class="mt-4 mb-2 text-muted">{% trans "Existing locations in GCForge" %}</h6>
+  <ul class="list-unstyled small text-muted">
+    {% for rp in existing %}<li>{{ rp.name }} ({{ rp.latitude|floatformat:5 }}, {{ rp.longitude|floatformat:5 }})</li>{% endfor %}
+  </ul>
+  {% endif %}
+</div>
+{% endblock %}

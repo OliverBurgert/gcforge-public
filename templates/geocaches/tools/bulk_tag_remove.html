@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% trans "Remove tag from filtered caches" %} — GCForge{% endblock %}
+
+{% block content %}
+<div class="px-3 py-4" style="max-width:500px">
+  <h5 class="mb-3">{% trans "Remove tag from filtered caches" %}</h5>
+
+  {% if count == 0 %}
+  <div class="alert alert-info">{% trans "No caches match the current filter — nothing to untag." %}</div>
+  <a href="{% url 'geocaches:list' %}?{{ query_string }}" class="btn btn-sm btn-secondary">{% trans "Back" %}</a>
+
+  {% elif not tags %}
+  <div class="alert alert-info">{% blocktrans count n=count %}None of the {{ n }} filtered cache have any tags.{% plural %}None of the {{ n }} filtered caches have any tags.{% endblocktrans %}</div>
+  <a href="{% url 'geocaches:list' %}?{{ query_string }}" class="btn btn-sm btn-secondary">{% trans "Back" %}</a>
+
+  {% else %}
+  <p class="text-muted small mb-3">
+    {% blocktrans count n=count %}The selected tag will be removed from all matching caches within the <strong>{{ n }} cache</strong> in the current filter.{% plural %}The selected tag will be removed from all matching caches within the <strong>{{ n }} caches</strong> in the current filter.{% endblocktrans %}
+  </p>
+
+  <form method="post" action="{% url 'geocaches:bulk_tag_remove' %}?{{ query_string }}">
+    {% csrf_token %}
+    <div class="mb-3">
+      <label class="form-label small">{% trans "Tag to remove" %}</label>
+      <select name="tag_id" class="form-select form-select-sm" required>
+        <option value="">{% trans "— choose a tag —" %}</option>
+        {% for t in tags %}
+          <option value="{{ t.id }}">{{ t.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    {% if alc_parent_count %}
+    <div class="mb-3">
+      <div class="form-check">
+        <input class="form-check-input" type="checkbox" name="propagate" value="yes" id="propagate-alc" checked>
+        <label class="form-check-label small" for="propagate-alc">
+          {% blocktrans with s=alc_stage_count a=alc_parent_count %}Also remove from {{ s }} ALC stages ({{ a }} adventures){% endblocktrans %}
+        </label>
+      </div>
+    </div>
+    {% endif %}
+    <div class="d-flex gap-2">
+      <button type="submit" class="btn btn-sm btn-warning">{% trans "Remove tag from filtered caches" %}</button>
+      <a href="{% url 'geocaches:list' %}?{{ query_string }}" class="btn btn-sm btn-secondary">{% trans "Cancel" %}</a>
+    </div>
+  </form>
+  {% endif %}
+</div>
+{% endblock %}

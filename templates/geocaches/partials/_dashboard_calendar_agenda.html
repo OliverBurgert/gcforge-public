@@ -1,0 +1,76 @@
+{% load i18n l10n icon_tags %}
+{% comment %}
+Next-N-days agenda for the dashboard Home tab.  ``agenda`` = list of
+{date, entries:[CalendarEntry]} where event entries carry extra ``tag_list``
+and ``distance_str`` attributes.  Reloaded via HTMX on calendar:reload.
+{% endcomment %}
+<div class="d-flex align-items-center justify-content-between mb-2 flex-wrap gap-2">
+  <h6 class="mb-0 d-flex align-items-center gap-1">
+    {% trans "Next" %}
+    <input type="number" min="1" max="366" name="days" value="{{ agenda_days|unlocalize }}"
+           class="form-control form-control-sm py-0 px-1" style="width:4rem"
+           hx-get="{% url 'geocaches:calendar_agenda' %}"
+           hx-trigger="change" hx-target="#dash-cal-agenda" hx-swap="innerHTML"
+           aria-label="{% trans 'Number of days to show' %}">
+    {% trans "days" context "calendar-agenda" %}
+  </h6>
+  <span class="text-muted small">{% trans "Entries" %}: <b>{{ calendar_total }}</b></span>
+</div>
+
+{% if calendar_message %}
+<div class="gcf-cal-toast alert alert-success fade show py-1 px-2 small mb-2" role="alert">
+  {{ calendar_message }}
+</div>
+{% endif %}
+
+{% if not agenda %}
+<p class="text-muted small mb-0">{% trans "Nothing in this period." %}</p>
+{% else %}
+<ul class="list-group list-group-flush">
+  {% for day in agenda %}
+  <li class="list-group-item px-0 py-2">
+    <div class="small fw-semibold">
+      <a href="{% url 'geocaches:calendar_day_candidates' %}?date={{ day.date|date:'Y-m-d' }}"
+         class="text-muted text-decoration-none"
+         title="{% trans 'click to filter for candidates' %}">{{ day.date|date:"D, d M Y" }}</a>
+    </div>
+    {% for e in day.entries %}
+    <div class="d-flex align-items-start gap-2 mt-1">
+      {% if e.geocache %}{% cache_type_icon e.geocache.cache_type size="16" %}{% endif %}
+      <div class="small flex-grow-1">
+        {% if e.start_time %}<span class="font-monospace text-muted">{{ e.start_time|time:"H:i" }}</span>{% endif %}
+        {% if e.geocache %}
+        <a href="{% url 'geocaches:detail' e.geocache.display_code %}">{{ e.title }}</a>
+        {% else %}{{ e.title }}{% endif %}
+        {% if e.kind == 'event' %}
+          {% if e.distance_str %}<span class="text-muted">· {{ e.distance_str }}</span>{% endif %}
+          {% if e.tag_list %}
+          <span class="ms-1">
+            {% for tag in e.tag_list %}<span class="badge bg-secondary fw-normal">{{ tag.name }}</span> {% endfor %}
+          </span>
+          {% endif %}
+        {% endif %}
+      </div>
+      <button type="button" class="btn btn-sm p-0 border-0 lh-1 {% if e.alarm %}text-warning{% else %}text-muted{% endif %}"
+              hx-post="{% url 'geocaches:calendar_toggle_alarm' e.pk %}"
+              hx-target="#dash-cal-agenda" hx-swap="innerHTML"
+              title="{% if e.alarm %}{% trans 'Reminder on — click to turn off' %}{% else %}{% trans 'Set a reminder' %}{% endif %}"
+              aria-label="{% trans 'Toggle reminder' %}">
+        <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+          <path d="M8 16a2 2 0 0 0 2-2H6a2 2 0 0 0 2 2zM8 1.5a.75.75 0 0 1 .75.75v.56c2.13.35 3.25 2.04 3.25 4.19 0 2.5.6 3.5 1.5 4.5H2.5c.9-1 1.5-2 1.5-4.5 0-2.15 1.12-3.84 3.25-4.19v-.56A.75.75 0 0 1 8 1.5z"/>
+        </svg>
+      </button>
+      <button type="button" class="btn btn-sm p-0 border-0 lh-1 text-muted"
+              hx-post="{% url 'geocaches:calendar_delete_entry' e.pk %}"
+              hx-target="#dash-cal-agenda" hx-swap="innerHTML"
+              title="{% trans 'Remove from calendar' %}" aria-label="{% trans 'Remove from calendar' %}">
+        <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+          <path d="M6 1h4l1 1h3v2H2V2h3l1-1zM3 5h10l-1 9.5A1.5 1.5 0 0 1 10.5 16h-5A1.5 1.5 0 0 1 4 14.5L3 5z"/>
+        </svg>
+      </button>
+    </div>
+    {% endfor %}
+  </li>
+  {% endfor %}
+</ul>
+{% endif %}

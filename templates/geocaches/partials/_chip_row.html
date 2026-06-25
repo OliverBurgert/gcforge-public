@@ -1,0 +1,20 @@
+{% load i18n %}
+{% comment %}
+Chip bar fragment.  Wrapped in a stable #hidden-filters-row container so the
+HTMX response can hx-swap-oob it after a toolbar/dropdown change.  Container
+always renders (even with no chips) so the OOB target exists.
+{% endcomment %}
+<div id="hidden-filters-row" class="col-12 d-flex align-items-center gap-1 flex-wrap pt-1{% if not active_filter_chips %} d-none{% endif %}">
+  {% if active_filter_chips %}
+  <small class="text-muted">{% trans "Active filters:" %}</small>
+  {% for action, label, badge_class in active_filter_chips %}
+  {% if action|slice:":1" == "@" %}{# precomputed href — tree-leaf chip #}
+  <a href="{{ action|slice:'1:' }}" onclick="gcfApplyListChange(this.getAttribute('href')); return false;"
+     class="badge {{ badge_class }} text-decoration-none">{{ label }} ×</a>
+  {% else %}
+  <a href="#" onclick="gcfRemoveFilter('{{ action }}', this); return false;"
+     class="badge {{ badge_class }} text-decoration-none">{{ label }} ×</a>
+  {% endif %}
+  {% endfor %}
+  {% endif %}
+</div>

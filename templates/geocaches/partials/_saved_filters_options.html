@@ -1,0 +1,15 @@
+{% load i18n %}
+{% if builtin_filters %}
+<optgroup label="{% trans 'Built-in' %}">
+  {% for sf in builtin_filters %}
+  <option value="{{ sf.pk }}" data-saved-name="{{ sf.name }}" data-builtin="1">{{ sf.name }}</option>
+  {% endfor %}
+</optgroup>
+{% endif %}
+{% if user_filters %}
+<optgroup label="{% trans 'My filters' %}">
+  {% for sf in user_filters %}
+  <option value="{{ sf.pk }}" data-saved-name="{{ sf.name }}">{{ sf.name }}</option>
+  {% endfor %}
+</optgroup>
+{% endif %}

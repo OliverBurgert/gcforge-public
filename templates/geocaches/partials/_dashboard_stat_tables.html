@@ -1,0 +1,10 @@
+{% load i18n %}
+{% comment %}
+Wrapper for the four GSAK-style type-filterable stat tables.  Each section has
+its own HTMX target div so the per-table type select reloads only that section.
+{% endcomment %}
+
+<div id="dash-table-dt">{% include "geocaches/partials/_dashboard_stat_dt.html" %}</div>
+<div id="dash-table-fd">{% include "geocaches/partials/_dashboard_stat_found_date.html" %}</div>
+<div id="dash-table-pm">{% include "geocaches/partials/_dashboard_stat_placed_month.html" %}</div>
+<div id="dash-table-pd">{% include "geocaches/partials/_dashboard_stat_placed_date.html" %}</div>

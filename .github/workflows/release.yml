@@ -1,0 +1,125 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        # Each OS is built twice: a production build (DEBUG=False, WhiteNoise
+        # serves static) and a debug build (DEBUG=True, full error pages for
+        # testers). label/ext come from the include entries below.
+        os: [windows-latest, ubuntu-latest, macos-latest]
+        variant: [debug, prod]
+        include:
+          - os: windows-latest
+            label: windows
+            ext: zip
+          - os: ubuntu-latest
+            label: linux
+            ext: tar.gz
+          - os: macos-latest
+            label: macos
+            ext: zip
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Install dependencies
+        run: uv sync --frozen
+
+      - name: Install PyInstaller
+        run: uv pip install pyinstaller
+
+      - name: Configure build variant
+        # debug: leave DEBUG=True. prod: flip gcforge/settings.py to DEBUG=False.
+        run: python .github/configure_build.py ${{ matrix.variant }}
+
+      - name: Collect static files (production variant)
+        # With DEBUG=False runserver no longer serves static; gather them so the
+        # bundled WhiteNoise can. Skipped for the debug build (serves from source).
+        if: matrix.variant == 'prod'
+        run: uv run python manage.py collectstatic --noinput
+
+      - name: Build with PyInstaller
+        run: uv run pyinstaller gcforge.spec --noconfirm
+
+      - name: Smoke test — app starts
+        # Launch the built bundle and confirm the bundled server comes up on this
+        # OS before we package/release it. Runs identically on Win/Linux/macOS.
+        run: python .github/ci_smoke.py
+
+      - name: Compute artifact name
+        # prod -> GCForge-<os>.zip ; debug -> GCForge-<os>-debug.zip
+        shell: bash
+        run: |
+          suffix=""
+          if [ "${{ matrix.variant }}" = "debug" ]; then suffix="-debug"; fi
+          echo "ARTIFACT=GCForge-${{ matrix.label }}${suffix}.${{ matrix.ext }}" >> "$GITHUB_ENV"
+
+      - name: Package (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: Compress-Archive -Path dist/GCForge -DestinationPath "${{ env.ARTIFACT }}"
+
+      - name: Package (Linux)
+        if: runner.os == 'Linux'
+        run: tar -czf "${{ env.ARTIFACT }}" -C dist GCForge
+
+      - name: Package (macOS)
+        if: runner.os == 'macOS'
+        run: cd dist && zip -r "../${{ env.ARTIFACT }}" GCForge
+
+      - name: Upload to Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ env.ARTIFACT }}
+          draft: true
+          generate_release_notes: false
+          name: "GCForge ${{ github.ref_name }}"
+          body: |
+            ## GCForge ${{ github.ref_name }} — Beta
+
+            Early beta release for testing. Expect rough edges.
+
+            ### Which build should I download?
+
+            Every platform has **two builds** — pick one:
+
+            | Build | When to use it |
+            |-------|----------------|
+            | **Standard** — `GCForge-<os>.zip` | Normal use. Runs in production mode: faster, and internal details stay hidden. If something goes wrong, the details are written to `~/.gcforge/logs/gcforge.log`. |
+            | **Debug** — `GCForge-<os>-debug.zip` | Use this if you hit a problem and want to help fix it. It runs in debug mode and shows a detailed error page in your browser when something breaks — copy that into your bug report. |
+
+            Both builds keep their data in the same place (`~/.gcforge/`), so you can switch between them freely.
+
+            ### Install
+            - **Windows:** extract the zip, run `GCForge.exe`. If SmartScreen warns ("Windows protected your PC"), click **More info → Run anyway**.
+            - **Linux:** extract the tar.gz, run `./GCForge`
+            - **macOS:** extract the zip, then in **Terminal** `cd` into the extracted `GCForge` folder and run `xattr -dr com.apple.quarantine .` once, then `./GCForge`.
+
+            The app starts a local server and opens your browser automatically.
+            Your data is stored in `~/.gcforge/`.
+
+            > **macOS note:** the app is not yet Apple-signed, so macOS quarantines it. Without the `xattr` step above you'll get repeated "unidentified developer" warnings — one per bundled library (e.g. `_struct.cpython-314-darwin.so`). The `xattr -dr` command clears them all at once; you only need it the first time after downloading.
+
+            ### Feedback
+            Please report issues and share feedback in [Discussions](https://github.com/OliverBurgert/gcforge-public/discussions).

@@ -1,0 +1,115 @@
+{% load i18n %}
+{# Adventure Lab tab body — loaded in the background via HTMX (see dashboard.html). #}
+{% if alc_summary.total_finds %}
+{% with s=alc_summary %}
+<div class="row g-2 mb-4">
+  <div class="col-6 col-md-3"><div class="border rounded p-2">
+    <div class="h4 mb-0">{{ s.total_finds }}</div>
+    <div class="small text-muted">{% trans "Lab stage finds" %}</div></div></div>
+  <div class="col-6 col-md-3"><div class="border rounded p-2">
+    <div class="h4 mb-0">{{ s.adventures }}</div>
+    <div class="small text-muted">{% trans "Adventures with finds" %}</div></div></div>
+  <div class="col-6 col-md-3"><div class="border rounded p-2">
+    <div class="h4 mb-0">{{ s.distinct_days }}</div>
+    <div class="small text-muted">{% trans "Caching days" %}</div></div></div>
+  <div class="col-6 col-md-3"><div class="border rounded p-2">
+    <div class="h4 mb-0">{{ s.finds_this_year }}</div>
+    <div class="small text-muted">{% trans "Finds this year" %}</div></div></div>
+  <div class="col-12"><div class="border rounded p-2 small">
+    {% trans "First find" %}: <b>{{ s.first_find|default:"–" }}</b> ·
+    {% trans "Last find" %}: <b>{{ s.last_find|default:"–" }}</b></div></div>
+</div>
+{% endwith %}
+
+{# Cumulative lab finds over time (ECharts) — reuses #chart-labels #}
+{% if alc_cumulative.months %}
+<div class="mb-4">
+  <h6>{% trans "Cumulative finds over time" %}</h6>
+  <div id="chart-alc-cumulative" style="height:340px;"></div>
+</div>
+{{ alc_cumulative|json_script:"chart-alc-cumulative-data" }}
+{% endif %}
+
+{# Finds by country #}
+<div class="mb-4">
+  <h6>{% trans "Finds by country" %}</h6>
+  <div class="gcf-dash-table">
+    <table class="table table-sm table-hover gcf-dash-country-table" style="max-width:580px">
+      <thead><tr>
+        <th style="width:1.6em"></th>
+        <th>{% trans "Country" %}</th>
+        <th class="text-end" style="width:5rem">{% trans "Finds" %}</th>
+        <th class="text-end" style="width:4rem">%</th>
+        <th class="text-end" style="width:6rem" title="{% trans 'Adventure Labs with every stage found' %}">{% trans "Completed ALCs" %}</th>
+        <th class="text-end" style="width:6rem" title="{% trans 'Adventure Labs started but not yet fully found' %}">{% trans "Incomplete ALCs" %}</th>
+      </tr></thead>
+      <tbody>
+      {% for c in alc_by_country %}
+        <tr>
+          <td><span class="fi fi-{{ c.iso|lower }}"></span></td>
+          <td>{{ c.name }}</td>
+          <td class="text-end">{{ c.count }}</td>
+          <td class="text-end text-muted">{{ c.pct|floatformat:1 }}%</td>
+          <td class="text-end">{{ c.completed }}</td>
+          <td class="text-end">{{ c.incomplete }}</td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="6" class="text-muted small">{% trans "No location data yet." %}</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{# Adventures by theme — completed / incomplete / not-started + stage count; click a number to filter #}
+<div class="mb-4">
+  <h6>{% trans "Adventures by theme" %}</h6>
+  <div class="gcf-dash-table">
+    <table class="table table-sm table-hover gcf-dash-country-table" style="max-width:620px">
+      <thead><tr>
+        <th>{% trans "Theme" %}</th>
+        <th class="text-end" style="width:5.5rem" title="{% trans 'Adventures with every stage found' %}">{% trans "Completed" %}</th>
+        <th class="text-end" style="width:5.5rem" title="{% trans 'Adventures started but not yet fully found' %}">{% trans "Incomplete" %}</th>
+        <th class="text-end" style="width:5.5rem" title="{% trans 'Adventures with no stage found yet' %}">{% trans "Not started" %}</th>
+        <th class="text-end" style="width:5.5rem" title="{% trans 'Found lab stages of this theme' %}">{% trans "By stages" %}</th>
+      </tr></thead>
+      <tbody>
+      {% for r in alc_by_theme %}
+        <tr>
+          <td>{% if r.icon %}<span class="me-1">{{ r.icon }}</span>{% endif %}{{ r.label }}</td>
+          <td class="text-end">{% if r.completed %}<a href="{% url 'geocaches:dashboard_alc_theme' %}?theme={{ r.value|urlencode }}&amp;status=completed">{{ r.completed }}</a>{% else %}<span class="text-muted">0</span>{% endif %}</td>
+          <td class="text-end">{% if r.incomplete %}<a href="{% url 'geocaches:dashboard_alc_theme' %}?theme={{ r.value|urlencode }}&amp;status=incomplete">{{ r.incomplete }}</a>{% else %}<span class="text-muted">0</span>{% endif %}</td>
+          <td class="text-end">{% if r.not_started %}<a href="{% url 'geocaches:dashboard_alc_theme' %}?theme={{ r.value|urlencode }}&amp;status=not_started">{{ r.not_started }}</a>{% else %}<span class="text-muted">0</span>{% endif %}</td>
+          <td class="text-end">{% if r.stages %}<a href="{% url 'geocaches:dashboard_alc_theme' %}?theme={{ r.value|urlencode }}&amp;status=stages">{{ r.stages }}</a>{% else %}<span class="text-muted">0</span>{% endif %}</td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="5" class="text-muted small">{% trans "No themes yet." %}</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <p class="text-muted small mt-1 mb-0">
+    {% trans "An adventure is counted under each of its themes. Completed / Incomplete / Not started count adventures; By stages counts found lab stages. Click a number to list them." %}</p>
+</div>
+
+{# Finds by found date — calendar heatmap + add-to-calendar #}
+<div class="mb-4">
+  <h6 class="d-flex align-items-center gap-2 flex-wrap">
+    {% trans "Finds by found date" %}
+    <input type="hidden" id="alc-cal-type" value="{{ alc_lab_type }}">
+    <label class="small mb-0 text-muted fw-normal">{% trans "Treat days below" %}</label>
+    <select id="alc-cal-min" class="form-select form-select-sm fw-normal" style="width:auto">
+      {% for n in minimum_choices %}<option value="{{ n }}">{{ n }}</option>{% endfor %}
+    </select>
+    <label class="small mb-0 text-muted fw-normal">{% trans "as missing" %}</label>
+    <button type="button" class="btn btn-sm btn-outline-primary fw-normal"
+            onclick="gcfCalAddMissing('alc-cal-type', 'alc-cal-min', true)"
+            title="{% trans 'Add reminders to the calendar on upcoming days you have not yet found a lab stage' %}">
+      {% trans "Add missing days to calendar" %}
+    </button>
+  </h6>
+  {% include "geocaches/partials/_dashboard_calendar.html" with cal=alc_found_date %}
+</div>
+{% else %}
+<p class="text-muted">{% trans "No Adventure Lab finds yet. Import or sync your Adventure Labs to see statistics here." %}</p>
+{% endif %}

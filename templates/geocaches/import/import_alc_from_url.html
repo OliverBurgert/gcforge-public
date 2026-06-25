@@ -1,0 +1,28 @@
+{% extends "geocaches/partials/_import_base.html" %}
+{% load i18n %}
+{% block import_title %}{% trans "ALC from URL" %}{% endblock %}
+{% block import_heading %}{% trans "Import ALC from URL" %}{% endblock %}
+{% block form_action %}{% url 'geocaches:import_alc_from_url' %}{% endblock %}
+
+{% block help_text %}
+<p class="text-muted small mb-3">
+  {% blocktrans %}Paste the public Adventure Lab URL — e.g.
+  <code>https://labs.geocaching.com/goto/8432602b-76c8-4129-84cf-fd06cea56b5f</code>.
+  The adventure and all its stages will be imported or refreshed from the API.{% endblocktrans %}
+</p>
+{% if error %}
+<div class="alert alert-danger py-2 small">{{ error }}</div>
+{% endif %}
+{% endblock %}
+
+{% block file_field %}
+<div class="mb-3">
+  <label class="form-label small fw-semibold">{% trans "Adventure Lab URL" %}</label>
+  <input type="text" name="alc_url" class="form-control form-control-sm font-monospace"
+         placeholder="https://labs.geocaching.com/goto/…" value="{{ alc_url }}"
+         autofocus autocomplete="off">
+</div>
+{% endblock %}
+
+{% block submit_label %}{% trans "Import" %}{% endblock %}
+{% block spinner_label %}{% trans "Importing…" %}{% endblock %}

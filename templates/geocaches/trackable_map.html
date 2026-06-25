@@ -1,0 +1,161 @@
+{% extends "base.html" %}
+{% load static i18n %}
+{% block title %}{% trans "Trackables — Map" %} — GCForge{% endblock %}
+
+{% block content %}
+<div class="px-3 py-2">
+
+  <div class="d-flex align-items-center gap-2 mb-2 flex-wrap">
+    <h5 class="mb-0">{% trans "Trackables — Map" %}</h5>
+    <span class="text-muted small">{% blocktrans with n=pin_count_with_coords %}{{ n }} shown{% endblocktrans %}</span>
+    {% if pin_count_without_coords %}
+    <span class="text-muted small">&bull; {% blocktrans with n=pin_count_without_coords %}{{ n }} without known location{% endblocktrans %}</span>
+    <button type="button" class="btn btn-outline-secondary btn-sm py-0" id="resolve-loc-btn"
+            onclick="gcfTbMapResolveLocations()">{% trans "Resolve" %}</button>
+    <span id="resolve-loc-status" class="small text-muted"></span>
+    {% endif %}
+
+    {# List / Map toggle #}
+    <div class="btn-group btn-group-sm ms-1">
+      <a href="{% url 'geocaches:trackable_list' %}{% if f_q or f_state or f_kind or f_series or f_mine or f_held %}?{% if f_q %}q={{ f_q|urlencode }}&{% endif %}{% if f_state %}state={{ f_state }}&{% endif %}{% if f_kind %}kind={{ f_kind }}&{% endif %}{% if f_series %}series={{ f_series|urlencode }}&{% endif %}{% if f_mine %}mine={{ f_mine }}&{% endif %}{% if f_held %}held={{ f_held }}{% endif %}{% endif %}"
+         class="btn btn-outline-secondary">{% trans "List" %}</a>
+      <a href="{% url 'geocaches:trackable_split' %}{% if f_q or f_state or f_kind or f_series or f_mine or f_held %}?{% if f_q %}q={{ f_q|urlencode }}&{% endif %}{% if f_state %}state={{ f_state }}&{% endif %}{% if f_kind %}kind={{ f_kind }}&{% endif %}{% if f_series %}series={{ f_series|urlencode }}&{% endif %}{% if f_mine %}mine={{ f_mine }}&{% endif %}{% if f_held %}held={{ f_held }}{% endif %}{% endif %}"
+         class="btn btn-outline-secondary">{% trans "Split" %}</a>
+      <button type="button" class="btn btn-outline-secondary active" disabled>{% trans "Map" %}</button>
+    </div>
+  </div>
+
+  {# Filter bar — plain GET form, no HTMX (full reload re-inits the map) #}
+  <div class="d-flex flex-wrap gap-2 align-items-end mb-2">
+    <form id="tb-map-filter-form" method="get" action="{% url 'geocaches:trackable_map' %}"
+          class="d-flex flex-wrap gap-2 align-items-end flex-grow-1">
+
+      <input type="text" name="q" id="tb-map-q" value="{{ f_q }}" placeholder="{% trans 'Search ref / name / owner' %}"
+             class="form-control form-control-sm" style="width:16rem">
+
+      <select name="state" class="form-select form-select-sm" style="width:auto" onchange="this.form.submit()">
+        <option value="">{% trans "All states" %}</option>
+        {% for val, label in state_choices %}
+        <option value="{{ val }}"{% if f_state == val %} selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+
+      <select name="kind" class="form-select form-select-sm" style="width:auto" onchange="this.form.submit()">
+        <option value="">{% trans "All kinds" %}</option>
+        {% for val, label in kind_choices %}
+        <option value="{{ val }}"{% if f_kind == val %} selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+
+      <select name="series" class="form-select form-select-sm" style="width:auto;max-width:14rem" onchange="this.form.submit()">
+        <option value="">{% trans "All series" %}</option>
+        {% for val in series_choices %}
+        <option value="{{ val }}"{% if f_series == val %} selected{% endif %}>{{ val }}</option>
+        {% endfor %}
+      </select>
+
+      <div class="form-check form-check-inline mb-0 align-self-center">
+        <input class="form-check-input" type="checkbox" name="mine" value="1" id="cb-map-mine"
+               {% if f_mine == "1" %}checked{% endif %} onchange="this.form.submit()">
+        <label class="form-check-label small" for="cb-map-mine">{% trans "Owned by me" %}{% if gc_username %} ({{ gc_username }}){% endif %}</label>
+      </div>
+      <div class="form-check form-check-inline mb-0 align-self-center">
+        <input class="form-check-input" type="checkbox" name="held" value="1" id="cb-map-held"
+               {% if f_held == "1" %}checked{% endif %} onchange="this.form.submit()">
+        <label class="form-check-label small" for="cb-map-held">{% trans "Held by me" %}</label>
+      </div>
+    </form>
+  </div>
+
+  {# Map wrapper #}
+  <div id="tb-map-wrapper">
+    <div class="card">
+      <div class="card-header py-1 small fw-semibold d-flex justify-content-between">
+        <span>{% trans "Current locations" %}</span>
+        <div class="btn-group btn-group-sm" id="tb-index-layer-switcher">
+          <button class="btn btn-outline-secondary btn-sm py-0" data-layer="street"  onclick="gcfTbIndexSetLayer('street',this)">{% trans "Street" %}</button>
+          <button class="btn btn-outline-secondary btn-sm py-0" data-layer="outdoor" onclick="gcfTbIndexSetLayer('outdoor',this)">{% trans "Topo" %}</button>
+          <button class="btn btn-outline-secondary btn-sm py-0" data-layer="aerial"  onclick="gcfTbIndexSetLayer('aerial',this)">{% trans "Aerial" %}</button>
+        </div>
+      </div>
+      <div id="tb-index-map"
+           style="height:calc(100vh - 220px);min-height:400px"
+           data-home-lat="{{ home_ref.latitude|default:'' }}"
+           data-home-lon="{{ home_ref.longitude|default:'' }}"
+           data-pins-url="{% url 'geocaches:trackable_map_pins' %}{% if f_q or f_state or f_kind or f_series or f_mine or f_held %}?{% if f_q %}q={{ f_q|urlencode }}&{% endif %}{% if f_state %}state={{ f_state }}&{% endif %}{% if f_kind %}kind={{ f_kind }}&{% endif %}{% if f_series %}series={{ f_series|urlencode }}&{% endif %}{% if f_mine %}mine={{ f_mine }}&{% endif %}{% if f_held %}held={{ f_held }}{% endif %}{% endif %}">
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_head %}
+<style>
+  .tb-marker { display:flex; flex-direction:column; align-items:center; cursor:pointer; pointer-events:auto; }
+  .tb-marker-icon { width:32px; height:32px; display:block; filter:drop-shadow(0 1px 2px rgba(0,0,0,0.4)); }
+  .tb-marker-label {
+    margin-top:2px;
+    font: 11px/1.2 sans-serif;
+    background: rgba(255,255,255,0.9);
+    color: #333;
+    padding: 1px 5px;
+    border-radius: 3px;
+    max-width: 140px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+  }
+</style>
+<script>
+(function() {
+  var inp = document.getElementById('tb-map-q');
+  if (!inp) return;
+  var timer;
+  inp.addEventListener('input', function() {
+    clearTimeout(timer);
+    timer = setTimeout(function() { document.getElementById('tb-map-filter-form').submit(); }, 400);
+  });
+})();
+</script>
+<script>
+function gcfTbMapResolveLocations() {
+  var btn    = document.getElementById('resolve-loc-btn');
+  var status = document.getElementById('resolve-loc-status');
+  if (btn) btn.disabled = true;
+  if (status) status.textContent = '{% trans "Resolving…" %}';
+  var csrf = (document.cookie.match(/csrftoken=([^;]+)/) || [])[1] || '';
+  var body = new URLSearchParams(window.location.search).toString();
+  fetch("{% url 'geocaches:trackable_resolve_locations' %}", {
+    method: 'POST',
+    headers: {'X-CSRFToken': csrf, 'Content-Type': 'application/x-www-form-urlencoded'},
+    body: body,
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(d) {
+    if (btn) btn.disabled = false;
+    if (d.ok) {
+      if (status) status.textContent = '{% trans "Resolved" %} ' + d.resolved + ' {% trans "of" %} ' + d.total_missing + '.';
+      if (d.resolved > 0) setTimeout(function() { window.location.reload(); }, 800);
+    } else {
+      if (status) status.textContent = '{% trans "Error:" %} ' + (d.error || '{% trans "unknown" %}');
+    }
+  })
+  .catch(function(e) {
+    if (btn) btn.disabled = false;
+    if (status) status.textContent = '{% trans "Failed:" %} ' + e;
+  });
+}
+</script>
+<script src="{% static 'js/map-loader.js' %}"></script>
+<script>
+gcfLoadMapLibre({
+  scripts: [
+    '{% static "js/map-styles.js" %}',
+    '{% static "js/trackable-map.js" %}'
+  ],
+  onReady: function() { if (typeof gcfTbIndexMapInit === 'function') gcfTbIndexMapInit(); }
+});
+</script>
+{% endblock %}
