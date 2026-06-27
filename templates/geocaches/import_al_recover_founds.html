@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% trans "Recover Adventure Lab Founds" %} — GCForge{% endblock %}
+{% block content %}
+<div class="container-fluid px-3 py-3" style="max-width:640px">
+  <h5 class="mb-3">{% trans "Recover Missing Adventure Lab Founds" %}</h5>
+
+  <p class="small text-muted mb-3">
+    {% blocktrans %}Reads your Adventure Lab log history from <code>labs.geocaching.com</code> and
+    creates every found stage that is missing from your database — including
+    <strong>retired</strong> adventures that no longer appear in the search API or
+    the Adventure Lab app. For each one the whole adventure is created (parent and
+    stages) and the found date is filled in from your log.{% endblocktrans %}
+  </p>
+
+  <p class="small text-muted mb-3">
+    {% blocktrans %}Retired adventures have no coordinates available from
+    geocaching.com, so their caches are placed at 0,0 until you edit them.{% endblocktrans %}
+  </p>
+
+  {% if not has_account %}
+  {% url 'preferences:settings' as settings_url %}
+  <div class="alert alert-warning small">
+    {% blocktrans %}No GC account with a user GUID is configured.
+    Go to <a href="{{ settings_url }}#accounts">Settings &rsaquo; Accounts</a>
+    and connect your GC account.{% endblocktrans %}
+  </div>
+  {% else %}
+  <form method="post"
+        hx-post="{% url 'geocaches:import_al_recover_founds' %}"
+        hx-target="#recover-status"
+        hx-swap="innerHTML">
+    {% csrf_token %}
+    <div class="mb-2">
+      <label class="form-label small mb-1">{% trans "Tags to apply (comma-separated, optional)" %}</label>
+      <input type="text" name="tags" class="form-control form-control-sm"
+             placeholder="{% trans 'e.g. recovered-alc' %}">
+    </div>
+    <button type="submit" class="btn btn-primary btn-sm">
+      {% trans "Scan log history and recover founds" %}
+    </button>
+  </form>
+
+  <div id="recover-status" class="mt-3"></div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,80 @@
+{% load i18n l10n %}
+<div id="offline-areas-table">
+{% if offline_areas %}
+<table class="table table-sm table-hover mb-0">
+  <thead>
+    <tr>
+      <th style="width:2rem">
+        <input type="checkbox" id="offline-check-all" class="form-check-input" checked>
+      </th>
+      <th>{% trans "Name" %}</th>
+      <th>{% trans "Bounding box" %}</th>
+      <th>{% trans "Zooms" %}</th>
+      <th>{% trans "Size" %}</th>
+      <th>{% trans "Status" %}</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for area in offline_areas %}
+    <tr data-area-id="{{ area.id }}"
+        data-min-lon="{{ area.bbox_min_lon|unlocalize }}"
+        data-min-lat="{{ area.bbox_min_lat|unlocalize }}"
+        data-max-lon="{{ area.bbox_max_lon|unlocalize }}"
+        data-max-lat="{{ area.bbox_max_lat|unlocalize }}">
+      <td onclick="event.stopPropagation()">
+        <input type="checkbox" class="form-check-input offline-area-check"
+               data-area-id="{{ area.id }}" checked>
+      </td>
+      <td class="small fw-semibold" style="cursor:pointer"
+          onclick="gcfOfflineZoomToArea({{ area.bbox_min_lon|unlocalize }}, {{ area.bbox_min_lat|unlocalize }}, {{ area.bbox_max_lon|unlocalize }}, {{ area.bbox_max_lat|unlocalize }})">
+        {{ area.name }}
+      </td>
+      <td class="small font-monospace text-muted" style="cursor:pointer"
+          onclick="gcfOfflineZoomToArea({{ area.bbox_min_lon|unlocalize }}, {{ area.bbox_min_lat|unlocalize }}, {{ area.bbox_max_lon|unlocalize }}, {{ area.bbox_max_lat|unlocalize }})">
+        {{ area.bbox_min_lat|floatformat:2 }}°–{{ area.bbox_max_lat|floatformat:2 }}° N,
+        {{ area.bbox_min_lon|floatformat:2 }}°–{{ area.bbox_max_lon|floatformat:2 }}° E
+      </td>
+      <td class="small">z{{ area.min_zoom }}–z{{ area.max_zoom }}</td>
+      <td class="small">
+        {% if area.file_size_bytes %}{{ area.file_size_bytes|filesizeformat }}{% else %}—{% endif %}
+      </td>
+      <td>
+        {% if area.status == 'ready' %}
+          <span class="badge bg-success">{% trans "Ready" %}</span>
+        {% elif area.status == 'downloading' or area.status == 'updating' %}
+          <span class="badge bg-warning text-dark">{{ area.progress }}%</span>
+        {% elif area.status == 'error' %}
+          <span class="badge bg-danger" title="{{ area.error_message }}">{% trans "Error" %}</span>
+        {% else %}
+          <span class="badge bg-secondary">{{ area.status }}</span>
+        {% endif %}
+      </td>
+      <td class="text-end text-nowrap">
+        <form method="post" action="{% url 'preferences:offline_start_download' area.pk %}" class="d-inline">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-outline-secondary btn-sm py-0"
+                  {% if area.status == 'downloading' or area.status == 'updating' %}disabled{% endif %}
+                  title="{% trans 'Re-download' %}">&#x21BB;</button>
+        </form>
+        <form method="post" action="{% url 'preferences:offline_delete_area' area.pk %}" class="d-inline ms-1"
+              onsubmit="return confirm('{% blocktrans with name=area.name %}Delete {{ name }}?{% endblocktrans %}')">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-outline-danger btn-sm py-0" title="{% trans 'Delete' %}">&#x2715;</button>
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% for area in offline_areas %}{% if area.status == 'downloading' or area.status == 'updating' %}
+<div hx-get="{% url 'preferences:offline_areas_partial' %}"
+     hx-trigger="every 2s"
+     hx-target="#offline-areas-table"
+     hx-swap="outerHTML"
+     style="display:none"></div>
+{% endif %}{% endfor %}
+{% else %}
+<p class="text-muted small mb-0 p-3">{% trans "No offline areas yet. Use the form below to add one." %}</p>
+{% endif %}
+</div>

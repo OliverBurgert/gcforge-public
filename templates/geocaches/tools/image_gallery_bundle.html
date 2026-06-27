@@ -1,0 +1,72 @@
+{% load i18n %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>{% trans "Image Gallery" %}</title>
+<style>
+  body { font-family: sans-serif; font-size: 13px; margin: 0; padding: 1em; background: #fff; color: #222; }
+  .cache-section { border-bottom: 1px solid #ddd; padding-bottom: 1.5em; margin-bottom: 2em; }
+  h2 { font-size: 1.1em; margin: 0 0 .3em; }
+  .coords { font-size: .85em; color: #666; }
+  .desc { font-size: .9em; margin: .5em 0; }
+  .desc img { max-width: 100%; height: auto; }
+  .notes { font-size: .9em; margin: .5em 0; }
+  .notes .note { border-left: 3px solid #ccc; padding-left: .5em; margin: .25em 0; white-space: pre-wrap; }
+  .notes img { max-width: 100%; height: auto; }
+  .gallery { display: flex; flex-wrap: wrap; gap: .5em; margin-top: .75em; }
+  figure { margin: 0; }
+  img { display: block; max-width: 100%; height: auto; border-radius: 3px; }
+  figcaption { font-size: .8em; color: #555; margin-top: 3px; }
+  .notes-box { border: 1px solid #bbb; height: 80px; margin-top: .75em; background: #fafafa; }
+</style>
+</head>
+<body>
+{% for section in sections %}
+<div class="cache-section">
+  {% with cache=section.cache %}
+  <h2>{{ cache.gc_code|default:cache.oc_code|default:cache.al_code }} — {{ cache.name }}</h2>
+  {% if section.options.include_coords %}
+  <p class="coords">{{ cache.effective_latitude|floatformat:5 }}, {{ cache.effective_longitude|floatformat:5 }}</p>
+  {% endif %}
+
+  {% if section.options.include_short_description and cache.short_description %}
+  <div class="desc">{{ cache.short_description|safe }}</div>
+  {% endif %}
+
+  {% if section.options.include_long_description and cache.long_description %}
+  <div class="desc">{{ cache.long_description|safe }}</div>
+  {% endif %}
+
+  {% if section.options.user_notes and section.notes %}
+  <div class="notes">
+    <strong>{% trans "Notes" %}</strong>
+    {% for note in section.notes %}
+    <div class="note">{% if note.format == "html" %}{{ note.body|safe }}{% else %}{{ note.body }}{% endif %}</div>
+    {% endfor %}
+  </div>
+  {% endif %}
+  {% endwith %}
+
+  {% if section.images %}
+  <div class="gallery">
+    {% for img in section.images %}
+    <figure>
+      {% if section.options.image_size == "max_width" %}
+      <img src="{{ img.rel_path }}" alt="{{ img.caption }}" style="max-width:{{ section.options.max_width_px }}px">
+      {% else %}
+      <img src="{{ img.rel_path }}" alt="{{ img.caption }}">
+      {% endif %}
+      {% if img.caption %}<figcaption>{{ img.caption }}</figcaption>{% endif %}
+    </figure>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {% if section.options.notes_box %}
+  <div class="notes-box"></div>
+  {% endif %}
+</div>
+{% endfor %}
+</body>
+</html>

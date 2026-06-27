@@ -1,0 +1,90 @@
+{% load i18n %}
+{% comment %}
+4d-ii destructive cleanup: replacement for the Where tab of the legacy
+advanced "Filters" dialog. Edits the ``?where_sql=`` / ``?where_name=``
+URL params directly; those stay outside the fx tree because raw SQL
+doesn't fit the pure-Q compiler.
+{% endcomment %}
+
+<div class="modal fade" id="whereClauseDialog" tabindex="-1" aria-labelledby="whereClauseDialogLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content">
+
+      <div class="modal-header">
+        <h5 class="modal-title" id="whereClauseDialogLabel">
+          {% trans "Raw SQL filter" %} <small class="text-muted">{% trans "(WHERE clause)" %}</small>
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{% trans 'Close' %}"></button>
+      </div>
+
+      <div class="modal-body">
+        <p class="small text-muted mb-2">
+          {% blocktrans %}Power-user escape hatch. Applied as an additional <code>AND</code>
+          condition on <code>geocaches_geocache</code>. For everything else use the Tabs
+          / Custom filter dialogs.{% endblocktrans %}
+        </p>
+
+        <form id="where-clause-form" method="get" action="{% url 'geocaches:list' %}">
+          <label class="form-label small mb-1">{% trans "WHERE clause SQL" %}</label>
+          <textarea id="wc-where-sql" name="where_sql" class="form-control form-control-sm font-monospace"
+                    rows="5" spellcheck="false"
+                    placeholder="{% trans 'e.g. difficulty >= 4 AND terrain >= 4' %}">{{ fv.where_sql }}</textarea>
+          <input type="hidden" name="where_name" id="wc-where-name" value="{{ fv.where_name }}">
+          {% if fv.where_error %}
+          <div class="text-danger small mt-1">{{ fv.where_error }}</div>
+          {% endif %}
+
+          <div class="row g-2 mt-3">
+            <div class="col-md-6">
+              <label class="form-label small mb-1">{% trans "Save as named clause" %}</label>
+              <div class="input-group input-group-sm">
+                <input type="text" id="wc-save-name" class="form-control" placeholder="{% trans 'Filter name…' %}">
+                <button type="button" class="btn btn-outline-success" onclick="gcfWcSave()">{% trans "Save" %}</button>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small mb-1">{% trans "Load saved / recent" %}</label>
+              <div class="input-group input-group-sm">
+                <select id="wc-load-select" class="form-select" onchange="gcfWcLoadSelected(this)">
+                  <option value="">{% trans "— select —" %}</option>
+                  {% if named_where_clauses %}
+                  <optgroup label="{% trans 'Named' %}">
+                    {% for wc in named_where_clauses %}
+                    <option value="{{ wc.pk }}" data-sql="{{ wc.sql }}" data-name="{{ wc.name }}">{{ wc.name }}</option>
+                    {% endfor %}
+                  </optgroup>
+                  {% endif %}
+                  {% if recent_where_clauses %}
+                  <optgroup label="{% trans 'Recent' %}">
+                    {% for wc in recent_where_clauses %}
+                    <option value="{{ wc.pk }}" data-sql="{{ wc.sql }}" data-name="">{{ wc.sql|truncatechars:60 }}</option>
+                    {% endfor %}
+                  </optgroup>
+                  {% endif %}
+                </select>
+                <button type="button" class="btn btn-outline-danger" id="wc-delete-btn"
+                        onclick="gcfWcDeleteSelected()" style="display:none">×</button>
+              </div>
+            </div>
+          </div>
+        </form>
+
+        <div id="wc-error" class="text-danger small mt-2 d-none"></div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">{% trans "Cancel" %}</button>
+        <button type="button" class="btn btn-sm btn-outline-warning" onclick="gcfWcClear()">{% trans "Clear" %}</button>
+        <button type="button" class="btn btn-sm btn-primary" onclick="gcfWcApply()">{% trans "Apply" %}</button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+{# Hidden form for CSRF-protected save POST. #}
+<form id="wc-save-form" method="post" action="{% url 'geocaches:where_save' %}" style="display:none">
+  {% csrf_token %}
+  <input type="hidden" name="name" id="wc-sf-name">
+  <input type="hidden" name="sql"  id="wc-sf-sql">
+</form>

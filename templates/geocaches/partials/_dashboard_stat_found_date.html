@@ -1,0 +1,18 @@
+{% load i18n %}
+<h6 class="d-flex align-items-center gap-2 flex-wrap">
+  {% trans "Finds by found date" %}
+  <select id="dash-type-fd" name="stat_type" class="form-select form-select-sm fw-normal" style="width:auto"
+          hx-get="{% url 'geocaches:dashboard_stat_table' %}?table=found_date"
+          hx-target="#dash-table-fd" hx-swap="innerHTML">
+    {% for value, label in type_options %}
+    <option value="{{ value }}" {% if value == tables.selected_type %}selected{% endif %}>{{ label }}</option>
+    {% endfor %}
+  </select>
+  <button type="button" class="btn btn-sm btn-outline-primary fw-normal"
+          onclick="gcfCalAddMissing('dash-type-fd', 'min-fd')"
+          title="{% trans 'Add reminders to the calendar on upcoming days you have not yet filled for this type' %}">
+    {% trans "Add missing days to calendar" %}
+  </button>
+</h6>
+{% include "geocaches/partials/_dashboard_calendar.html" with cal=tables.found_date %}
+{% include "geocaches/partials/_dashboard_missing_btn.html" with min_id="min-fd" section_id="dash-table-fd" hide_btn="1" %}

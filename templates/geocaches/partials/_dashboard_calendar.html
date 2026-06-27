@@ -1,0 +1,31 @@
+{% load i18n %}
+{% comment %}
+Month(row) x day-of-month(col) calendar heatmap.  ``cal`` = {days, rows, ...}
+where each row is {month, cells:[{count,color,valid}], total}.
+{% endcomment %}
+{% if cal.grand_total %}
+<table class="gcf-stat-table gcf-cal-table mb-2">
+  <tr>
+    <th></th>
+    {% for d in cal.days %}<th>{{ d }}</th>{% endfor %}
+    <th class="gcf-total">Σ</th>
+  </tr>
+  {% for row in cal.rows %}
+  <tr>
+    <td class="gcf-rowhead">{{ row.month }}</td>
+    {% for cell in row.cells %}
+      {% if not cell.valid %}
+      <td class="gcf-invalid"></td>
+      {% elif cell.count %}
+      <td class="gcf-cell" data-count="{{ cell.count }}" data-color="{{ cell.color }}" style="background:{{ cell.color }}">{{ cell.count }}</td>
+      {% else %}
+      <td class="gcf-cell-empty">·</td>
+      {% endif %}
+    {% endfor %}
+    <td class="gcf-total">{{ row.total }}</td>
+  </tr>
+  {% endfor %}
+</table>
+{% else %}
+<p class="text-muted small">{% trans "No data." %}</p>
+{% endif %}

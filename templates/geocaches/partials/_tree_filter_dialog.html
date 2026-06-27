@@ -1,0 +1,96 @@
+{% load i18n %}
+{% comment %}
+Power-user "Custom filter" modal — edits a v2 filter-expression tree as JSON.
+The polished tabbed dialog (with per-condition form widgets and AND/OR/NOT
+chips) is the phase-4d follow-up; this is the minimum viable surface so
+trees are manually testable in a browser.
+{% endcomment %}
+
+<div class="modal fade" id="treeFilterDialog" tabindex="-1" aria-labelledby="treeFilterDialogLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="treeFilterDialogLabel">
+          {% trans "Custom filter" %} <small class="text-muted">{% trans "(JSON tree)" %}</small>
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{% trans 'Close' %}"></button>
+      </div>
+
+      <div class="modal-body">
+        <p class="small text-muted mb-2">
+          {% blocktrans %}Edit the filter-expression tree directly as JSON. See
+          <code>docs/filtering.md</code> for the schema and the available condition
+          fields/operators. Two-level grouping cap; deeper logic needs the
+          <em>Where clause</em> filter.{% endblocktrans %}
+        </p>
+
+        <div class="mb-2">
+          <label class="form-label small mb-1">{% trans "Load saved tree filter" %}</label>
+          <div class="d-flex gap-1">
+            <select id="tree-load-select" class="form-select form-select-sm">
+              <option value="">{% trans "— select —" %}</option>
+              {% for sf in tree_saved_filters %}
+              <option value="{{ sf.name }}">{{ sf.name }}{% if sf.is_builtin %} ({% trans "built-in" %}){% endif %}</option>
+              {% endfor %}
+            </select>
+            <button type="button" class="btn btn-sm btn-outline-secondary"
+                    onclick="gcfTreeFilterLoadSelected()">{% trans "Apply" %}</button>
+          </div>
+        </div>
+
+        <form id="tree-filter-form" method="post" action="{% url 'geocaches:tree_filter_apply' %}">
+          {% csrf_token %}
+          <label for="tree-json" class="form-label small mb-1">{% trans "Tree (JSON)" %}</label>
+          <textarea id="tree-json" name="tree_json" class="form-control font-monospace"
+                    rows="14" spellcheck="false"
+                    style="font-size: 0.85rem;">{{ current_tree_json }}</textarea>
+          <div id="tree-error" class="text-danger small mt-1 d-none"></div>
+        </form>
+
+        <details class="mt-2">
+          <summary class="small text-muted">{% trans "Mini-cheatsheet" %}</summary>
+          <pre class="small mb-0" style="white-space: pre-wrap;">{% spaceless %}
+{
+  "g": "and",                          // or "or" / "not"
+  "c": [
+    {"f": "name", "op": "contains", "v": "Bavaria"},
+    {"f": "difficulty", "op": "between", "v": {"gte": 3.0, "lte": 5.0}},
+    {"g": "or", "c": [
+      {"f": "state", "op": "in", "v": ["Bavaria"]},
+      {"f": "state", "op": "in", "v": ["Baden-Württemberg"]}
+    ]}
+  ]
+}
+          {% endspaceless %}</pre>
+          <p class="small text-muted mb-0 mt-1">
+            {% blocktrans %}Common fields: <code>name</code>, <code>code</code>, <code>cache_type</code>,
+            <code>status</code>, <code>size</code>, <code>country</code>, <code>state</code>,
+            <code>difficulty</code>, <code>terrain</code>, <code>fav_points</code>,
+            <code>hidden_date</code>, <code>found</code>, <code>ftf</code>, <code>tags</code>,
+            <code>attributes</code>, <code>distance</code>, <code>bearing</code>, <code>alc</code>,
+            <code>logs</code>, <code>area</code>.{% endblocktrans %}
+          </p>
+        </details>
+      </div>
+
+      <div class="modal-footer">
+        <div class="d-flex gap-1 me-auto">
+          <input type="text" id="tree-save-name" class="form-control form-control-sm"
+                 placeholder="{% trans 'Save as…' %}" style="width:160px">
+          <button type="button" class="btn btn-sm btn-outline-success"
+                  onclick="gcfTreeFilterSaveAs()">{% trans "Save" %}</button>
+        </div>
+        <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">{% trans "Cancel" %}</button>
+        <button type="button" class="btn btn-sm btn-primary"
+                onclick="gcfTreeFilterApply()">{% trans "Apply" %}</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+{# Hidden form used to POST tree saves with proper CSRF. #}
+<form id="tree-save-form" method="post" action="{% url 'geocaches:tree_filter_save' %}" style="display:none">
+  {% csrf_token %}
+  <input type="hidden" name="name"      id="tree-sf-name">
+  <input type="hidden" name="tree_json" id="tree-sf-json">
+</form>

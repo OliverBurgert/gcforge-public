@@ -1,0 +1,470 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% trans "Pocket Queries" %} — GCForge{% endblock %}
+
+{% block content %}
+<div class="px-3 py-3" style="max-width:1300px">
+  <h5 class="mb-3">{% trans "Pocket Queries" %}</h5>
+
+  {% if error %}
+  <div class="alert alert-danger">{{ error }}</div>
+  {% endif %}
+
+  {% if task_result %}
+  <div id="pq-task-result"
+       data-task-id="{{ task_result.id }}"
+       data-task-state="{{ task_result.state }}"
+       data-task-action="{% if task_result.result.status == 'triggered' %}trigger{% else %}download{% endif %}">
+    {% if task_result.state == "completed" %}
+      {% if task_result.result.status == "no_match" %}
+      <div class="alert alert-warning">{{ task_result.result.error }}</div>
+      {% elif task_result.result.status == "deleted" %}
+      <div class="alert alert-success">
+        <strong>{% blocktrans count n=task_result.result.deleted_count %}{{ n }} pocket query deleted on geocaching.com.{% plural %}{{ n }} pocket queries deleted on geocaching.com.{% endblocktrans %}</strong>
+        {% if task_result.result.deleted_count < task_result.result.requested_count %}
+        <ul class="mb-0 mt-2 small">
+          {% for r in task_result.result.results %}
+          <li>{{ r.name }}: {% if r.status == "deleted" %}{% trans "deleted" %}{% else %}<span class="text-danger">{{ r.status }}</span>{% endif %}</li>
+          {% endfor %}
+        </ul>
+        {% endif %}
+      </div>
+      {% elif task_result.result.status == "triggered" %}
+      <div class="alert alert-success">
+        <strong>{{ task_result.result.pq_name }}</strong> — {% trans "triggered." %}
+        <span class="text-muted small">{% trans "The list will refresh automatically." %}</span>
+        {% if task_result.result.error %}
+        <div class="text-danger mt-1">{{ task_result.result.error }}</div>
+        {% endif %}
+        {% if task_result.result.results %}
+        <ul class="mb-0 mt-2 small">
+          {% for r in task_result.result.results %}
+          <li>{{ r.name }}: {{ r.status }}</li>
+          {% endfor %}
+        </ul>
+        {% endif %}
+      </div>
+      {% elif task_result.result.pq_name %}
+      <div class="alert alert-success">
+        <strong>{{ task_result.result.pq_name }}</strong> {% trans "imported" %} —
+        {% trans "created" %}: {{ task_result.result.created }},
+        {% trans "updated" %}: {{ task_result.result.updated }}
+        {% if task_result.result.locked %}, {% trans "locked" %}: {{ task_result.result.locked }}{% endif %}
+        {% if task_result.result.error %}
+        <div class="text-danger mt-1">{{ task_result.result.error }}</div>
+        {% endif %}
+        {% if task_result.result.errors %}
+        <ul class="mb-0 mt-2 small">
+          {% for e in task_result.result.errors %}<li>{{ e }}</li>{% endfor %}
+        </ul>
+        {% endif %}
+      </div>
+      {% elif task_result.result.results %}
+      <div class="alert alert-success">
+        <strong>{% trans "Download all complete" %}</strong> —
+        {% trans "created" %}: {{ task_result.result.total_created }},
+        {% trans "updated" %}: {{ task_result.result.total_updated }}
+        <ul class="mb-0 mt-2 small">
+          {% for r in task_result.result.results %}
+          <li>
+            {{ r.pq_name }}:
+            {% if r.error %}
+              <span class="text-danger">{{ r.error }}</span>
+            {% else %}
+              +{{ r.created }} ~{{ r.updated }}
+              {% if r.locked %}{% trans "locked" %}: {{ r.locked }}{% endif %}
+            {% endif %}
+          </li>
+          {% endfor %}
+        </ul>
+      </div>
+      {% endif %}
+    {% elif task_result.state == "running" %}
+      <div class="alert alert-info d-flex align-items-center gap-2" id="pq-progress">
+        <span class="spinner-border spinner-border-sm" role="status"></span>
+        <span id="pq-progress-inner">{{ task_result.name }} — {{ task_result.phase }} {{ task_result.progress_pct }}%</span>
+      </div>
+    {% elif task_result.state == "failed" %}
+      <div class="alert alert-danger">
+        {% trans "Task failed:" %} {{ task_result.error }}
+      </div>
+    {% elif task_result.state == "cancelled" %}
+      <div class="alert alert-warning">{% trans "Task cancelled." %}</div>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  <form method="post" id="pq-form"
+        data-poll-web="{% if has_web_session and not web_ready %}1{% else %}0{% endif %}">
+    {% csrf_token %}
+
+    <div class="mb-2 d-flex justify-content-between align-items-center flex-wrap gap-2">
+      <div class="d-flex align-items-center gap-3">
+        {% if pqs %}
+        <span class="text-muted small" id="pq-count">{% blocktrans count n=pqs|length %}{{ n }} pocket query found{% plural %}{{ n }} pocket queries found{% endblocktrans %}</span>
+        {% endif %}
+        {% if pq_summary %}
+        <span class="small {% if pq_summary.remaining_triggers == 0 %}text-danger fw-semibold{% else %}text-muted{% endif %}">
+          {% blocktrans with today=pq_summary.today_pst ran=pq_summary.ran_today %}PQs ran on {{ today }} (PST): {{ ran }}/10{% endblocktrans %}
+        </span>
+        {% endif %}
+        <span id="pq-web-check" class="text-muted small d-none align-items-center gap-1">
+          <span class="spinner-border spinner-border-sm" role="status" style="width:.8rem;height:.8rem"></span>
+          {% trans "Checking geocaching.com…" %}
+        </span>
+      </div>
+      <div class="d-flex gap-2 align-items-center flex-wrap">
+        {% if has_web_session %}
+        <div class="input-group input-group-sm" style="width:auto">
+          <input type="text" name="trigger_pattern" id="pq-trigger-pattern" class="form-control" style="width:140px"
+                 placeholder="{% trans 'Name pattern' %}" title="{% trans 'Trigger all PQs whose name contains this string' %}">
+          <button type="button" class="btn btn-outline-secondary" onclick="gcfPqShowMatching()"
+                  title="{% trans 'Preview which PQs match this pattern' %}">{% trans "Show matching" %}</button>
+          <button type="submit" name="action" value="trigger_pattern" class="btn btn-outline-warning"
+                  title="{% trans 'Trigger matching PQs' %}">{% trans "Trigger matching" %}</button>
+          <button type="submit" name="action" value="trigger_download_pattern" class="btn btn-outline-primary"
+                  title="{% trans 'Trigger matching PQs, wait for generation, then download' %}">{% trans "Trigger + DL matching" %}</button>
+        </div>
+        {% endif %}
+        <a href="https://www.geocaching.com/pocket/" target="_blank" class="btn btn-sm btn-outline-secondary">
+          {% trans "Open PQ list on geocaching.com" %}
+        </a>
+        {% if pqs and has_web_session %}
+        <button type="submit" name="action" value="download_all" class="btn btn-sm btn-outline-primary"
+                title="{% trans 'Download all PQs that ran today and have not yet been imported' %}">
+          {% trans "Download all fresh" %}
+        </button>
+        {% endif %}
+      </div>
+    </div>
+
+    {% if pqs %}
+    <table class="table table-sm table-hover align-middle">
+      <thead class="table-light">
+        <tr>
+          <th style="width:1%"><input type="checkbox" id="pq-check-all" class="form-check-input"
+                 title="{% trans 'Select all' %}"></th>
+          <th>{% trans "Name" %}</th>
+          <th class="text-end">{% trans "Caches" %}</th>
+          <th>{% trans "Last generated" %}<br><span class="fw-normal small text-muted">{% trans "(local time)" %}</span></th>
+          <th>{% trans "Last generated" %}<br><span class="fw-normal small text-muted">{% trans "(server time)" %}</span></th>
+          <th>{% trans "Status" %}</th>
+          <th>{% trans "Tags" %}</th>
+        </tr>
+      </thead>
+      <tbody id="pq-tbody">
+        {% include "geocaches/_pq_rows.html" %}
+      </tbody>
+    </table>
+
+    <div class="d-flex align-items-center gap-2 flex-wrap mb-3 sticky-bottom bg-body py-2">
+      <span class="text-muted small me-1" id="pq-sel-count">{% trans "0 selected" %}</span>
+      <button type="submit" name="action" value="download" class="btn btn-sm btn-outline-success"
+              onclick="return gcfPqRequireSelection()"
+              title="{% trans 'Download and import the selected PQs' %}">{% trans "Download" %}</button>
+      {% if has_web_session %}
+      <button type="submit" name="action" value="trigger" class="btn btn-sm btn-outline-warning pq-needs-web"
+              {% if not web_ready %}disabled{% endif %} onclick="return gcfPqRequireSelection()"
+              title="{% trans 'Trigger the selected PQs on geocaching.com' %}">{% trans "Trigger" %}</button>
+      <button type="submit" name="action" value="trigger_download" class="btn btn-sm btn-outline-primary pq-needs-web"
+              {% if not web_ready %}disabled{% endif %} onclick="return gcfPqRequireSelection()"
+              title="{% trans 'Trigger the selected PQs, wait for generation, then download' %}">{% trans "Trigger and Download" %}</button>
+      <button type="submit" name="action" value="delete" class="btn btn-sm btn-outline-danger ms-auto pq-needs-web"
+              {% if not web_ready %}disabled{% endif %} onclick="return gcfPqConfirmDelete()"
+              title="{% trans 'Permanently delete the selected PQs on geocaching.com' %}">{% trans "Delete" %}</button>
+      {% endif %}
+    </div>
+
+    {% if all_tags %}
+    <div class="mt-2 mb-3">
+      <small class="text-muted">{% trans "Existing tags (click to append to last focused tag field):" %}</small>
+      <div class="d-flex flex-wrap gap-1 mt-1">
+        {% for tag in all_tags %}
+        <a href="#" class="badge bg-secondary text-decoration-none pq-tag-pick" onclick="gcfPqInsertTag('{{ tag|escapejs }}'); return false;">{{ tag }}</a>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+    {% elif not error %}
+    <p class="text-muted">{% trans "No pocket queries found. Make sure your GC API tokens are configured." %}</p>
+    {% endif %}
+  </form>
+</div>
+
+<!-- Show matching dialog -->
+<div class="modal fade" id="pq-match-modal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header py-2">
+        <h6 class="modal-title">{% trans "Matching Pocket Queries" %}</h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body" id="pq-match-body">
+        <p class="text-muted">{% trans "Loading..." %}</p>
+      </div>
+      <div class="modal-footer py-1">
+        <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">{% trans "OK" %}</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+var _pqLastTagInput = null;
+
+function gcfPqInsertTag(tag) {
+  var input = _pqLastTagInput;
+  if (!input) return;
+  var current = input.value.split(',').map(function(s) { return s.trim(); }).filter(Boolean);
+  if (current.indexOf(tag) === -1) {
+    current.push(tag);
+  }
+  input.value = current.join(', ');
+  input.focus();
+}
+
+// --- Row selection + bulk actions ---
+var PQ_I18N = {
+  selected: "{% trans 'selected' %}",
+  selectFirst: "{% trans 'Select at least one pocket query first.' %}",
+  confirmDelete: "{% trans 'Permanently delete the selected pocket queries on geocaching.com? This cannot be undone.' %}"
+};
+
+function gcfPqCheckedCount() {
+  return document.querySelectorAll('.pq-row-check:checked').length;
+}
+
+function gcfPqUpdateSelCount() {
+  var n = gcfPqCheckedCount();
+  var el = document.getElementById('pq-sel-count');
+  if (el) el.textContent = n + ' ' + PQ_I18N.selected;
+  var master = document.getElementById('pq-check-all');
+  if (master) {
+    var total = document.querySelectorAll('.pq-row-check').length;
+    master.checked = n > 0 && n === total;
+    master.indeterminate = n > 0 && n < total;
+  }
+}
+
+// (Re)bind handlers that live on table rows — also called after the background
+// web-status swap replaces the tbody.
+function gcfPqBindRows() {
+  document.querySelectorAll('input[name^="tags_"]').forEach(function(input) {
+    input.addEventListener('focus', function() { _pqLastTagInput = this; });
+  });
+  if (!_pqLastTagInput) _pqLastTagInput = document.querySelector('input[name^="tags_"]');
+  document.querySelectorAll('.pq-row-check').forEach(function(cb) {
+    cb.addEventListener('change', gcfPqUpdateSelCount);
+  });
+  gcfPqUpdateSelCount();
+}
+
+(function() {
+  var master = document.getElementById('pq-check-all');
+  if (master) {
+    master.addEventListener('change', function() {
+      document.querySelectorAll('.pq-row-check').forEach(function(cb) {
+        cb.checked = master.checked;
+      });
+      gcfPqUpdateSelCount();
+    });
+  }
+  gcfPqBindRows();
+})();
+
+// --- Background website check: swap in web-derived chips once ready ---
+(function() {
+  var form = document.getElementById('pq-form');
+  if (!form || form.dataset.pollWeb !== '1') return;
+  var spinner = document.getElementById('pq-web-check');
+  function showSpinner(on) {
+    if (!spinner) return;
+    spinner.classList.toggle('d-none', !on);
+    spinner.classList.toggle('d-inline-flex', on);
+  }
+  showSpinner(true);
+  var tries = 0;
+  function poll() {
+    if (++tries > 40) { showSpinner(false); return; }
+    fetch('{% url "geocaches:pq_rows_json" %}')
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        if (data && data.ready && data.html) {
+          var tbody = document.getElementById('pq-tbody');
+          if (tbody) { tbody.innerHTML = data.html; gcfPqBindRows(); }
+          document.querySelectorAll('.pq-needs-web').forEach(function(b) { b.disabled = false; });
+          showSpinner(false);
+        } else {
+          setTimeout(poll, 1500);
+        }
+      })
+      .catch(function() { setTimeout(poll, 2500); });
+  }
+  setTimeout(poll, 800);
+})();
+
+function gcfPqRequireSelection() {
+  if (gcfPqCheckedCount() === 0) {
+    alert(PQ_I18N.selectFirst);
+    return false;
+  }
+  return true;
+}
+
+function gcfPqConfirmDelete() {
+  if (gcfPqCheckedCount() === 0) {
+    alert(PQ_I18N.selectFirst);
+    return false;
+  }
+  return confirm(PQ_I18N.confirmDelete);
+}
+
+// --- Show matching preview ---
+function gcfPqShowMatching() {
+  var pattern = document.getElementById('pq-trigger-pattern').value.trim();
+  if (!pattern) return;
+
+  var body = document.getElementById('pq-match-body');
+  body.innerHTML = '<p class="text-muted">Loading...</p>';
+  var modal = new bootstrap.Modal(document.getElementById('pq-match-modal'));
+  modal.show();
+
+  fetch('{% url "geocaches:pq_match_preview" %}?pattern=' + encodeURIComponent(pattern))
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (data.error) {
+        body.innerHTML = '<div class="alert alert-danger mb-0">' + data.error + '</div>';
+        return;
+      }
+
+      var html = '';
+      var s = data.summary;
+
+      // Run counter
+      html += '<p class="small mb-2">PQs ran on ' + s.today_pst + ' (PST): <strong>'
+            + s.ran_today + '/10</strong>, remaining: ' + s.remaining_triggers + '</p>';
+
+      if (data.matching.length === 0) {
+        html += '<p class="text-muted">No PQs match "' + pattern + '".</p>';
+      } else {
+        html += '<p class="mb-1"><strong>' + data.matching.length + '</strong> PQ(s) match "' + pattern + '"';
+        if (s.would_trigger > 0) {
+          html += ', <strong>' + s.would_trigger + '</strong> would be triggered';
+        }
+        html += ':</p>';
+
+        if (s.exceeds_limit) {
+          html += '<div class="alert alert-warning py-1 small mb-2">'
+                + 'Triggering ' + s.would_trigger + ' PQ(s) would exceed the daily limit of 10! '
+                + 'Only ' + s.remaining_triggers + ' trigger(s) remaining today.'
+                + '</div>';
+        }
+
+        html += '<ul class="small mb-0">';
+        data.matching.forEach(function(pq) {
+          var status = '';
+          if (pq.already_ran) status = ' <span class="badge bg-info">Ran today</span>';
+          else if (pq.already_sched) status = ' <span class="badge bg-warning text-dark">Scheduled</span>';
+          else if (pq.has_trigger_url) status = ' <span class="badge bg-success">Will trigger</span>';
+          else status = ' <span class="badge bg-secondary">No trigger URL</span>';
+          html += '<li>' + pq.name + status + '</li>';
+        });
+        html += '</ul>';
+      }
+
+      body.innerHTML = html;
+    })
+    .catch(function(err) {
+      body.innerHTML = '<div class="alert alert-danger mb-0">Request failed: ' + err + '</div>';
+    });
+}
+
+// --- Task progress polling ---
+(function() {
+  var el = document.getElementById('pq-task-result');
+  if (!el) return;
+  var state = el.dataset.taskState;
+  var taskId = el.dataset.taskId;
+  if (state !== 'running') {
+    if (state === 'completed' && el.dataset.taskAction === 'trigger') _gcfStartPqRefresh();
+    return;
+  }
+
+  function poll() {
+    fetch('{% url "geocaches:task_status_json" "PLACEHOLDER" %}'.replace('PLACEHOLDER', taskId))
+      .then(function(r) {
+        if (r.status === 404) {
+          window.location.href = window.location.pathname;
+          return null;
+        }
+        return r.json();
+      })
+      .then(function(data) {
+        if (!data) return;
+        var inner = document.getElementById('pq-progress-inner');
+        if (!inner) return;
+        if (data.state === 'running') {
+          inner.textContent = data.name + ' — ' + (data.phase || '') + ' ' + data.progress_pct + '%';
+          setTimeout(poll, 2000);
+        } else if (data.state === 'completed' || data.state === 'failed' || data.state === 'cancelled') {
+          window.location.href = window.location.pathname + '?task_id=' + taskId;
+        }
+      })
+      .catch(function() { setTimeout(poll, 3000); });
+  }
+  setTimeout(poll, 2000);
+})();
+
+// --- PQ list auto-refresh after trigger ---
+var _pqRefreshTimer = null;
+var _pqRefreshCount = 0;
+var _PQ_REFRESH_MAX = 20;
+var _PQ_REFRESH_INTERVAL = 30000;
+
+function _gcfStartPqRefresh() {
+  if (_pqRefreshTimer) return;
+  _pqRefreshCount = 0;
+  _pqRefreshTimer = setInterval(_gcfRefreshPqList, _PQ_REFRESH_INTERVAL);
+}
+
+function _gcfRefreshPqList() {
+  _pqRefreshCount++;
+  if (_pqRefreshCount > _PQ_REFRESH_MAX) {
+    clearInterval(_pqRefreshTimer);
+    _pqRefreshTimer = null;
+    return;
+  }
+
+  fetch('{% url "geocaches:pq_list_json" %}')
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (!data.pqs) return;
+      var tbody = document.getElementById('pq-tbody');
+      if (!tbody) return;
+
+      var anyNewReady = false;
+      data.pqs.forEach(function(pq) {
+        var row = tbody.querySelector('tr[data-ref="' + pq.referenceCode + '"]');
+        if (!row) return;
+
+        var statusTd = row.querySelector('.pq-status');
+        if (!statusTd) return;
+
+        // Check if this PQ just became ready (had no "Ready" badge before)
+        var hadReady = statusTd.innerHTML.indexOf('Ready') !== -1;
+        if (!hadReady && pq.lastUpdatedDateUtc) {
+          anyNewReady = true;
+        }
+      });
+
+      // A triggered PQ just finished generating — full reload to get correct status chips
+      if (anyNewReady) {
+        clearInterval(_pqRefreshTimer);
+        _pqRefreshTimer = null;
+        window.location.href = window.location.pathname;
+      }
+    })
+    .catch(function() {});
+}
+</script>
+{% endblock %}

@@ -1,0 +1,152 @@
+{% load cache_tags i18n %}
+{# Logs panel — included from detail.html #}
+{% if log_page_obj.paginator.count or log_filter != "all" %}
+<div class="card mb-2" id="logs">
+  <div class="card-header py-1 d-flex justify-content-between align-items-center flex-wrap gap-1">
+    <div class="d-flex align-items-center gap-1">
+      <span class="small fw-semibold">{% trans "Logs" %}
+        <span class="text-muted fw-normal">{% blocktrans with n=cache.platform_log_count %}({{ n }} total){% endblocktrans %}</span>
+      </span>
+      {% if not embed %}
+      <button type="button" class="btn btn-sm btn-primary py-0 px-1" style="font-size:.75rem"
+              data-bs-toggle="offcanvas" data-bs-target="#newLogPanel">{% trans "New log" %}</button>
+      {% endif %}
+      {% if cache.gc_code and not cache.al_code %}
+      {% if log_has_more %}
+      <form method="post" action="{% url 'geocaches:fetch_logs' cache.display_code %}" class="d-inline ms-1">
+        {% csrf_token %}
+        <input type="hidden" name="source" value="gc">
+        <input type="hidden" name="action" value="fetch_more">
+        <input type="hidden" name="skip" value="{{ log_skip }}">
+        <button type="submit" class="btn btn-outline-primary py-0 px-1" style="font-size:.75rem">{% trans "Fetch 50 more" %}</button>
+      </form>
+      <form method="post" action="{% url 'geocaches:fetch_logs' cache.display_code %}" class="d-inline ms-1">
+        {% csrf_token %}
+        <input type="hidden" name="source" value="gc">
+        <input type="hidden" name="action" value="fetch_all">
+        <button type="submit" class="btn btn-outline-warning py-0 px-1" style="font-size:.75rem">{% trans "Fetch all logs" %}</button>
+      </form>
+      {% else %}
+      <form method="post" action="{% url 'geocaches:fetch_logs' cache.display_code %}" class="d-inline ms-1">
+        {% csrf_token %}
+        <input type="hidden" name="source" value="gc">
+        <input type="hidden" name="action" value="fetch_recent">
+        <button type="submit" class="btn btn-outline-primary py-0 px-1" style="font-size:.75rem">{% trans "Fetch recent 50 logs" %}</button>
+      </form>
+      {% endif %}
+      {% endif %}
+      {% if cache.oc_code %}
+      <form method="post" action="{% url 'geocaches:fetch_logs' cache.display_code %}" class="d-inline ms-1">
+        {% csrf_token %}
+        <input type="hidden" name="source" value="{{ cache.oc_platform }}">
+        <input type="hidden" name="action" value="fetch_recent">
+        <input type="number" name="count" value="50" min="1" max="500" class="form-control d-inline py-0 px-1" style="width:3.5em;font-size:.75rem">
+        <button type="submit" class="btn btn-outline-success py-0 px-1" style="font-size:.75rem">{% trans "Fetch OC logs" %}</button>
+      </form>
+      {% endif %}
+    </div>
+    <div class="btn-group btn-group-sm" role="group">
+      <a href="?log_filter=all#logs" class="btn btn-outline-secondary {% if log_filter == 'all' %}active{% endif %}">{% trans "All" %}</a>
+      <a href="?log_filter=my#logs" class="btn btn-outline-secondary {% if log_filter == 'my' %}active{% endif %}">{% trans "My" %}</a>
+      <a href="?log_filter=friends#logs" class="btn btn-outline-secondary {% if log_filter == 'friends' %}active{% endif %} disabled" aria-disabled="true">{% trans "Friends" %}</a>
+      <a href="?log_filter=owner#logs" class="btn btn-outline-secondary {% if log_filter == 'owner' %}active{% endif %}">{% trans "Owner" %}</a>
+      <a href="?log_filter=reviewer#logs" class="btn btn-outline-secondary {% if log_filter == 'reviewer' %}active{% endif %}">{% trans "Reviewer" %}</a>
+    </div>
+  </div>
+  <div class="card-body py-0">
+    {% if log_page_obj.object_list %}
+    <div class="list-group list-group-flush">
+      {% for log in log_page_obj %}
+      <div class="list-group-item px-0 py-2">
+        <div class="d-flex justify-content-between align-items-baseline">
+          <span class="fw-semibold small">{{ log.user_name }}{% if multi_source_logs and log.source %}&nbsp;<span class="badge bg-light text-muted border" style="font-size:0.65em;">{% if log.source == "oc_de" %}oc.de{% else %}{{ log.source }}{% endif %}</span>{% endif %}</span>
+          <span class="text-muted small">
+            {{ log.logged_date|date:"Y-m-d" }}
+            <form method="post" action="{% url 'geocaches:log_delete' log.id %}" class="d-inline ms-1" onsubmit="return confirm('{% trans "Delete this log entry?" %}')">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-link btn-sm text-danger p-0" style="font-size:.7rem;" title="{% trans 'Remove from GCForge' %}">&times;</button>
+            </form>
+          </span>
+        </div>
+        <div>
+          <span class="badge
+            {% if log.log_type == 'Found it' %}bg-success
+            {% elif log.log_type == "Didn't find it" %}bg-danger
+            {% elif log.log_type == 'Write note' %}bg-secondary
+            {% else %}bg-light text-dark
+            {% endif %} small">{{ log.log_type }}</span>
+          {% if log.text %}
+            {% if log_truncate and log.text|length > log_truncate_length %}
+              <span class="text-muted small ms-1 log-text-short">{{ log.text|striptags|truncatechars:log_truncate_length }}</span>
+              <div class="text-muted small ms-1 log-text-full d-none">{% cache_log_html log.text log.source cache log %}</div>
+              <a href="#" class="small ms-1 log-expand-link" onclick="toggleLogText(this); return false;">{% trans "more" %}</a>
+            {% else %}
+              <div class="text-muted small ms-1 d-inline">{% cache_log_html log.text log.source cache log %}</div>
+            {% endif %}
+          {% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {# Pagination #}
+    {% if log_page_obj.paginator.num_pages > 1 %}
+    {% with last=log_page_obj.paginator.num_pages lo=log_page_obj.number|add:"-3" hi=log_page_obj.number|add:"3" %}
+    <nav class="py-1">
+      <ul class="pagination pagination-sm mb-0">
+
+        {% if log_page_obj.has_previous %}
+        <li class="page-item">
+          <a class="page-link" href="?log_filter={{ log_filter }}&log_page={{ log_page_obj.previous_page_number }}#logs">&laquo;</a>
+        </li>
+        {% else %}
+        <li class="page-item disabled"><span class="page-link">&laquo;</span></li>
+        {% endif %}
+
+        {% if lo > 1 %}
+        <li class="page-item">
+          <a class="page-link" href="?log_filter={{ log_filter }}&log_page=1#logs">1</a>
+        </li>
+        {% if lo > 2 %}
+        <li class="page-item disabled"><span class="page-link">&hellip;</span></li>
+        {% endif %}
+        {% endif %}
+
+        {% for num in log_page_obj.paginator.page_range %}
+          {% if num >= lo and num <= hi %}
+            {% if log_page_obj.number == num %}
+            <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+            {% else %}
+            <li class="page-item">
+              <a class="page-link" href="?log_filter={{ log_filter }}&log_page={{ num }}#logs">{{ num }}</a>
+            </li>
+            {% endif %}
+          {% endif %}
+        {% endfor %}
+
+        {% if hi < last %}
+        {% if hi < last|add:"-1" %}
+        <li class="page-item disabled"><span class="page-link">&hellip;</span></li>
+        {% endif %}
+        <li class="page-item">
+          <a class="page-link" href="?log_filter={{ log_filter }}&log_page={{ last }}#logs">{{ last }}</a>
+        </li>
+        {% endif %}
+
+        {% if log_page_obj.has_next %}
+        <li class="page-item">
+          <a class="page-link" href="?log_filter={{ log_filter }}&log_page={{ log_page_obj.next_page_number }}#logs">&raquo;</a>
+        </li>
+        {% else %}
+        <li class="page-item disabled"><span class="page-link">&raquo;</span></li>
+        {% endif %}
+
+      </ul>
+    </nav>
+    {% endwith %}
+    {% endif %}
+    {% else %}
+    <p class="text-muted small py-2 mb-0">{% trans "No logs match the selected filter." %}</p>
+    {% endif %}
+  </div>
+</div>
+{% endif %}

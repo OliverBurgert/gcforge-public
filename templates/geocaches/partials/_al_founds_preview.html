@@ -1,0 +1,200 @@
+{% load i18n l10n %}
+{% if error %}
+<div class="alert alert-danger py-2 small">
+  <strong>{% trans "API error:" %}</strong> {{ error }}
+</div>
+
+{% elif empty %}
+<div class="alert alert-info py-2 small">
+  {% trans "No completed or in-progress Adventure Lab adventures found for this account." %}
+</div>
+
+{% else %}
+{# summary + tab nav are flex-shrink:0 — they don't scroll #}
+<p class="small text-muted mb-1 flex-shrink-0">
+  {% blocktrans count n=total with completed=total_completed inprogress=total_inprogress %}Found {{ n }} adventure ({{ completed }} completed, {{ inprogress }} in progress).{% plural %}Found {{ n }} adventures ({{ completed }} completed, {{ inprogress }} in progress).{% endblocktrans %}
+  {% trans "Pre-selected items need to be imported or updated in GCForge." %}
+</p>
+
+<ul class="nav nav-tabs nav-sm flex-shrink-0" id="alFoundsTab" role="tablist">
+  <li class="nav-item" role="presentation">
+    <button class="nav-link active small py-1 px-2" id="tab-completed-btn"
+            data-bs-toggle="tab" data-bs-target="#tab-completed" type="button" role="tab">
+      {% trans "Completed" %}
+      <span class="badge bg-secondary ms-1">{{ total_completed }}</span>
+    </button>
+  </li>
+  <li class="nav-item" role="presentation">
+    <button class="nav-link small py-1 px-2" id="tab-inprogress-btn"
+            data-bs-toggle="tab" data-bs-target="#tab-inprogress" type="button" role="tab">
+      {% trans "In Progress" %}
+      <span class="badge bg-secondary ms-1">{{ total_inprogress }}</span>
+    </button>
+  </li>
+</ul>
+
+{# Tab content: flex:1 + overflow-y:auto — the only scrolling region #}
+<div class="tab-content border border-top-0 rounded-bottom p-2 flex-grow-1"
+     id="alFoundsTabContent" style="overflow-y:auto;min-height:0">
+
+  <!-- ── Completed tab ─────────────────────────────────────── -->
+  <div class="tab-pane fade show active" id="tab-completed" role="tabpanel">
+
+    {# Section: completed needs update — always rendered (hidden if empty) #}
+    <div id="section-comp-update" class="mb-2"
+         {% if not classified.completed_needs_update %}style="display:none"{% endif %}>
+      <div class="d-flex align-items-center justify-content-between mb-1">
+        <span class="small fw-semibold text-warning">
+          {% trans "Needs import / update" %} (<span class="al-section-count">{{ classified.completed_needs_update|length }}</span>)
+        </span>
+        <button type="button" class="btn btn-link btn-sm p-0 small"
+                data-select-section="comp-update"
+                onclick="gcfAlFoundsToggleSection('comp-update', this)">
+          {% trans "Deselect all" %}
+        </button>
+      </div>
+      <div class="al-section-items">
+        {% for adv in classified.completed_needs_update %}
+        <div class="form-check form-check-sm py-0">
+          <input class="form-check-input al-item-check" type="checkbox"
+                 name="guids" value="{{ adv.adventure_guid }}"
+                 id="al-{{ adv.adventure_guid }}"
+                 data-guid="{{ adv.adventure_guid }}"
+                 data-lat="{{ adv.lat|unlocalize }}" data-lon="{{ adv.lon|unlocalize }}"
+                 data-title="{{ adv.title|escapejs }}"
+                 data-section="comp-update"
+                 checked
+                 onchange="gcfAlFoundsOnCheck(this)">
+          <label class="form-check-label small" for="al-{{ adv.adventure_guid }}">
+            {% if adv.lc_code %}<a href="{% url 'geocaches:detail' adv.lc_code %}" target="_blank" class="text-decoration-none">{{ adv.title }}</a>{% else %}{{ adv.title }}{% endif %}
+          </label>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    {# Section: completed confirmed — always rendered (hidden if empty) #}
+    <div id="section-comp-confirmed" class="mb-2"
+         {% if not classified.completed_confirmed %}style="display:none"{% endif %}>
+      <div class="d-flex align-items-center justify-content-between mb-1">
+        <span class="small fw-semibold text-success">
+          {% trans "Already complete in GCForge" %} (<span class="al-section-count">{{ classified.completed_confirmed|length }}</span>)
+        </span>
+        <button type="button" class="btn btn-link btn-sm p-0 small"
+                data-select-section="comp-confirmed"
+                onclick="gcfAlFoundsToggleSection('comp-confirmed', this)">
+          {% trans "Select all" %}
+        </button>
+      </div>
+      <div class="al-section-items">
+        {% for adv in classified.completed_confirmed %}
+        <div class="form-check form-check-sm py-0">
+          <input class="form-check-input al-item-check" type="checkbox"
+                 name="guids" value="{{ adv.adventure_guid }}"
+                 id="al-{{ adv.adventure_guid }}"
+                 data-guid="{{ adv.adventure_guid }}"
+                 data-lat="{{ adv.lat|unlocalize }}" data-lon="{{ adv.lon|unlocalize }}"
+                 data-title="{{ adv.title|escapejs }}"
+                 data-section="comp-confirmed"
+                 onchange="gcfAlFoundsOnCheck(this)">
+          <label class="form-check-label small text-muted" for="al-{{ adv.adventure_guid }}">
+            {% if adv.lc_code %}<a href="{% url 'geocaches:detail' adv.lc_code %}" target="_blank" class="text-decoration-none text-muted">{{ adv.title }}</a>{% else %}{{ adv.title }}{% endif %}
+          </label>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    {% if not classified.completed_confirmed and not classified.completed_needs_update %}
+    <p class="text-muted small mt-2">{% trans "No completed labs found." %}</p>
+    {% endif %}
+  </div>
+
+  <!-- ── In Progress tab ──────────────────────────────────── -->
+  <div class="tab-pane fade" id="tab-inprogress" role="tabpanel">
+
+    {# Section: in-progress needs update — always rendered (hidden if empty) #}
+    <div id="section-prog-update" class="mb-2"
+         {% if not classified.inprogress_needs_update %}style="display:none"{% endif %}>
+      <div class="d-flex align-items-center justify-content-between mb-1">
+        <span class="small fw-semibold text-warning">
+          {% trans "Needs import / update" %} (<span class="al-section-count">{{ classified.inprogress_needs_update|length }}</span>)
+        </span>
+        <button type="button" class="btn btn-link btn-sm p-0 small"
+                data-select-section="prog-update"
+                onclick="gcfAlFoundsToggleSection('prog-update', this)">
+          {% trans "Deselect all" %}
+        </button>
+      </div>
+      <div class="al-section-items">
+        {% for adv in classified.inprogress_needs_update %}
+        <div class="form-check form-check-sm py-0">
+          <input class="form-check-input al-item-check" type="checkbox"
+                 name="guids" value="{{ adv.adventure_guid }}"
+                 id="al-{{ adv.adventure_guid }}"
+                 data-guid="{{ adv.adventure_guid }}"
+                 data-lat="{{ adv.lat|unlocalize }}" data-lon="{{ adv.lon|unlocalize }}"
+                 data-title="{{ adv.title|escapejs }}"
+                 data-section="prog-update"
+                 checked
+                 onchange="gcfAlFoundsOnCheck(this)">
+          <label class="form-check-label small" for="al-{{ adv.adventure_guid }}">
+            {% if adv.lc_code %}<a href="{% url 'geocaches:detail' adv.lc_code %}" target="_blank" class="text-decoration-none">{{ adv.title }}</a>{% else %}{{ adv.title }}{% endif %}
+          </label>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    {# Section: in-progress confirmed — always rendered (hidden if empty) #}
+    <div id="section-prog-confirmed" class="mb-2"
+         {% if not classified.inprogress_confirmed %}style="display:none"{% endif %}>
+      <div class="d-flex align-items-center justify-content-between mb-1">
+        <span class="small fw-semibold text-success">
+          {% trans "Already tracked in GCForge" %} (<span class="al-section-count">{{ classified.inprogress_confirmed|length }}</span>)
+        </span>
+        <button type="button" class="btn btn-link btn-sm p-0 small"
+                data-select-section="prog-confirmed"
+                onclick="gcfAlFoundsToggleSection('prog-confirmed', this)">
+          {% trans "Select all" %}
+        </button>
+      </div>
+      <div class="al-section-items">
+        {% for adv in classified.inprogress_confirmed %}
+        <div class="form-check form-check-sm py-0">
+          <input class="form-check-input al-item-check" type="checkbox"
+                 name="guids" value="{{ adv.adventure_guid }}"
+                 id="al-{{ adv.adventure_guid }}"
+                 data-guid="{{ adv.adventure_guid }}"
+                 data-lat="{{ adv.lat|unlocalize }}" data-lon="{{ adv.lon|unlocalize }}"
+                 data-title="{{ adv.title|escapejs }}"
+                 data-section="prog-confirmed"
+                 onchange="gcfAlFoundsOnCheck(this)">
+          <label class="form-check-label small text-muted" for="al-{{ adv.adventure_guid }}">
+            {% if adv.lc_code %}<a href="{% url 'geocaches:detail' adv.lc_code %}" target="_blank" class="text-decoration-none text-muted">{{ adv.title }}</a>{% else %}{{ adv.title }}{% endif %}
+          </label>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    {% if not classified.inprogress_confirmed and not classified.inprogress_needs_update %}
+    <p class="text-muted small mt-2">{% trans "No in-progress labs found." %}</p>
+    {% endif %}
+  </div>
+
+</div>
+
+<script>
+// Sync map after this partial loads
+(function() {
+  if (typeof gcfAlFoundsSyncMarkers === 'function') {
+    if (window._gcfAlMap && window._gcfAlMap.loaded()) {
+      gcfAlFoundsSyncMarkers();
+    } else if (window._gcfAlMap) {
+      window._gcfAlMap.once('load', gcfAlFoundsSyncMarkers);
+    }
+  }
+})();
+</script>
+{% endif %}

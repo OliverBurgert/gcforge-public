@@ -1,0 +1,81 @@
+{% load i18n %}
+{% load l10n %}
+
+{% if not oc_cards %}
+  <div class="alert alert-secondary">
+    {% blocktrans %}No OpenCaching account is configured. Add one under Settings &rsaquo; Accounts to enable notification management.{% endblocktrans %}
+  </div>
+{% endif %}
+
+{% for card in oc_cards %}
+  <div class="card mb-3">
+    <div class="card-header d-flex align-items-center gap-2 py-2">
+      <strong>{{ card.platform_label }}</strong>
+      <span class="text-muted small">@{{ card.username }}</span>
+      {% if card.supported and card.notification and not card.is_us %}
+        {% if card.notification.enabled %}
+          <span class="badge text-bg-success">{% blocktrans with r=card.notification.radius_km %}enabled · {{ r }} km{% endblocktrans %}</span>
+        {% else %}
+          <span class="badge text-bg-secondary">{% trans "disabled" %}</span>
+        {% endif %}
+      {% endif %}
+      {% if card.is_us and card.rows %}
+        <span class="badge text-bg-primary">{% blocktrans count counter=card.rows|length %}{{ counter }} neighbourhood{% plural %}{{ counter }} neighbourhoods{% endblocktrans %}</span>
+      {% endif %}
+      <div class="ms-auto d-flex gap-1">
+        {% if card.supported %}
+          <form method="post" action="{% url 'geocaches:oc_notification_pull' platform=card.platform %}" class="d-inline">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-sm btn-outline-primary" title="{% trans 'Refresh local from server' %}">
+              <span aria-hidden="true">&#x2B07;</span> {% trans "Pull" %}
+            </button>
+          </form>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="card-body">
+      {% if not card.supported %}
+        <div class="text-muted small">
+          {% blocktrans %}Notification automation for this platform is not yet implemented. The OpenCaching codebases differ between nodes, so this is a one-by-one effort.{% endblocktrans %}
+        </div>
+
+      {% elif card.is_us %}
+        {% if not card.rows %}
+          <div class="alert alert-secondary mb-0">
+            {% blocktrans %}No local data yet — click <strong>Pull</strong> above to fetch the current settings from opencaching.us.{% endblocktrans %}
+          </div>
+        {% else %}
+          {% include "geocaches/partials/_notify_oc_us_card_body.html" with card=card %}
+        {% endif %}
+
+      {% else %}
+        {# .de family — single notification row #}
+        {% if not card.notification %}
+          <div class="alert alert-secondary mb-0">
+            {% blocktrans with site=card.platform_label %}No local data yet — click <strong>Pull</strong> above to fetch the current settings from {{ site }}.{% endblocktrans %}
+          </div>
+        {% else %}
+          {% include "geocaches/partials/_notify_oc_de_form.html" with card=card n=card.notification %}
+        {% endif %}
+      {% endif %}
+    </div>
+  </div>
+{% endfor %}
+
+<script>
+(function () {
+  document.querySelectorAll('#pane-oc select[name=location_id]').forEach(function (sel) {
+    sel.addEventListener('change', function () {
+      var opt = sel.selectedOptions[0];
+      if (!opt || !opt.dataset.lat) return;
+      var form = sel.closest('form');
+      if (!form) return;
+      var lat = form.querySelector('input[name=latitude]');
+      var lon = form.querySelector('input[name=longitude]');
+      if (lat) lat.value = opt.dataset.lat;
+      if (lon) lon.value = opt.dataset.lon;
+    });
+  });
+})();
+</script>

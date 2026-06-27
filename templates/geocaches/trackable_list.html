@@ -1,0 +1,382 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% trans "Trackables" %} — GCForge{% endblock %}
+
+{% block content %}
+<div class="px-3 py-2">
+
+  <div class="d-flex align-items-center gap-2 mb-2 flex-wrap">
+    <h5 class="mb-0">{% trans "Trackables" %}</h5>
+    <div class="btn-group btn-group-sm ms-1">
+      <button type="button" class="btn btn-outline-secondary active" disabled>{% trans "List" %}</button>
+      <a href="{% url 'geocaches:trackable_split' %}{% if f_q or f_state or f_kind or f_series or f_mine or f_held %}?{% if f_q %}q={{ f_q|urlencode }}&{% endif %}{% if f_state %}state={{ f_state }}&{% endif %}{% if f_kind %}kind={{ f_kind }}&{% endif %}{% if f_series %}series={{ f_series|urlencode }}&{% endif %}{% if f_mine %}mine={{ f_mine }}&{% endif %}{% if f_held %}held={{ f_held }}{% endif %}{% endif %}"
+         class="btn btn-outline-secondary">{% trans "Split" %}</a>
+      <a href="{% url 'geocaches:trackable_map' %}{% if f_q or f_state or f_kind or f_series or f_mine or f_held %}?{% if f_q %}q={{ f_q|urlencode }}&{% endif %}{% if f_state %}state={{ f_state }}&{% endif %}{% if f_kind %}kind={{ f_kind }}&{% endif %}{% if f_series %}series={{ f_series|urlencode }}&{% endif %}{% if f_mine %}mine={{ f_mine }}&{% endif %}{% if f_held %}held={{ f_held }}{% endif %}{% endif %}"
+         class="btn btn-outline-secondary">{% trans "Map" %}</a>
+    </div>
+  </div>
+
+  <div class="d-flex flex-wrap gap-2 align-items-end mb-2">
+    <form id="tb-filter-form"
+          hx-get="{% url 'geocaches:trackable_list' %}"
+          hx-target="#tb-table-container"
+          hx-trigger="change, keyup delay:400ms from:#tb-q"
+          hx-push-url="true"
+          class="d-flex flex-wrap gap-2 align-items-end flex-grow-1">
+      <input type="hidden" name="sort"  value="{{ f_sort }}">
+      <input type="hidden" name="order" value="{{ f_order }}">
+
+      <input type="text" name="q" id="tb-q" value="{{ f_q }}" placeholder="{% trans 'Search ref / name / owner' %}"
+             class="form-control form-control-sm" style="width:16rem" autofocus>
+
+      <select name="state" class="form-select form-select-sm" style="width:auto">
+        <option value="">{% trans "All states" %}</option>
+        {% for val, label in state_choices %}
+        <option value="{{ val }}"{% if f_state == val %} selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+
+      <select name="kind" class="form-select form-select-sm" style="width:auto">
+        <option value="">{% trans "All kinds" %}</option>
+        {% for val, label in kind_choices %}
+        <option value="{{ val }}"{% if f_kind == val %} selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+
+      <select name="series" class="form-select form-select-sm" style="width:auto;max-width:14rem">
+        <option value="">{% trans "All series" %}</option>
+        {% for val in series_choices %}
+        <option value="{{ val }}"{% if f_series == val %} selected{% endif %}>{{ val }}</option>
+        {% endfor %}
+      </select>
+
+      <select name="tag" class="form-select form-select-sm" style="width:auto;max-width:12rem">
+        <option value="">{% trans "All tags" %}</option>
+        {% for name in tag_choices %}
+        <option value="{{ name }}"{% if f_tag == name %} selected{% endif %}>{{ name }}</option>
+        {% endfor %}
+      </select>
+
+      <div class="form-check form-check-inline mb-0 align-self-center">
+        <input class="form-check-input" type="checkbox" name="mine" value="1" id="cb-mine"
+               {% if f_mine == "1" %}checked{% endif %}>
+        <label class="form-check-label small" for="cb-mine">{% trans "Owned by me" %}{% if gc_username %} ({{ gc_username }}){% endif %}</label>
+      </div>
+      <div class="form-check form-check-inline mb-0 align-self-center">
+        <input class="form-check-input" type="checkbox" name="held" value="1" id="cb-held"
+               {% if f_held == "1" %}checked{% endif %}>
+        <label class="form-check-label small" for="cb-held">{% trans "Held by me" %}</label>
+      </div>
+    </form>
+
+    {# Sync — separate action, not part of filter form #}
+    <div class="d-flex align-items-center gap-2">
+      <div class="btn-group btn-group-sm">
+        <button type="button" class="btn btn-outline-success" id="sync-btn"
+                onclick="gcfTbBulkSync('mine')">{% trans "Sync mine" %}</button>
+        <button type="button" class="btn btn-outline-success dropdown-toggle dropdown-toggle-split"
+                data-bs-toggle="dropdown" aria-expanded="false">
+          <span class="visually-hidden">{% trans "Toggle Sync menu" %}</span>
+        </button>
+        <ul class="dropdown-menu">
+          <li><a class="dropdown-item" href="#" onclick="gcfTbBulkSync('mine'); return false">{% trans "Sync mine (inventory + collection + owned)" %}</a></li>
+          <li><a class="dropdown-item" href="#" onclick="gcfTbBulkSync('discovered'); return false">{% trans "Sync discovered" %}</a></li>
+          <li><a class="dropdown-item" href="#" onclick="gcfTbBulkSync('moved'); return false">{% trans "Sync moved" %}</a></li>
+          <li><hr class="dropdown-divider"></li>
+          <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#tbSyncByCodeModal">{% trans "Sync by code…" %}</a></li>
+          <li><hr class="dropdown-divider"></li>
+          <li><a class="dropdown-item" href="#" onclick="gcfTbSyncTrackingCodes(); return false">{% trans "Sync missing tracking codes for my TBs" %}</a></li>
+          <li><hr class="dropdown-divider"></li>
+          <li><a class="dropdown-item" href="#" onclick="gcfTbResolveLocations(); return false">{% trans "Resolve missing locations from GC API" %}</a></li>
+        </ul>
+      </div>
+
+      {# Sync-by-code modal — paste one or more TB codes, optional tag. #}
+      <div class="modal fade" id="tbSyncByCodeModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+          <div class="modal-content">
+            <div class="modal-header py-2">
+              <h6 class="modal-title mb-0">{% trans "Sync trackables by code" %}</h6>
+              <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body py-2">
+              <div class="mb-2">
+                <label class="form-label small mb-1">{% trans "Codes" %}</label>
+                <textarea id="tb-sync-codes" rows="4"
+                          class="form-control form-control-sm font-monospace"
+                          placeholder="{% trans 'TB2J2DQ, TB7WZ44 (also accepts whitespace / newlines)' %}"></textarea>
+                <div class="form-text">{% blocktrans %}Each code starts with <code>TB</code>; comma, space, or newline separated.{% endblocktrans %}</div>
+              </div>
+              <div class="mb-2">
+                <label class="form-label small mb-1">{% trans "Tag (optional)" %}</label>
+                <input type="text" id="tb-sync-tag" class="form-control form-control-sm" placeholder="{% trans 'e.g. lookup' %}">
+                <div class="form-text">{% trans "Auto-creates the tag and attaches it to every synced row." %}</div>
+              </div>
+              <div id="tb-sync-codes-error" class="text-danger small d-none"></div>
+            </div>
+            <div class="modal-footer py-2">
+              <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">{% trans "Cancel" %}</button>
+              <button type="button" class="btn btn-primary btn-sm" onclick="gcfTbSyncByCode()">{% trans "Sync" %}</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <span id="sync-status" class="small text-muted"></span>
+      <div id="sync-progress" class="progress d-none" style="width:14rem;height:8px">
+        <div id="sync-progress-bar" class="progress-bar" role="progressbar" style="width:0%"></div>
+      </div>
+      <a class="btn btn-sm btn-outline-secondary"
+         href="{% url 'geocaches:download_missing_trackable_images' %}?{% if f_q %}q={{ f_q|urlencode }}&{% endif %}{% if f_state %}state={{ f_state }}&{% endif %}{% if f_kind %}kind={{ f_kind }}&{% endif %}{% if f_series %}series={{ f_series|urlencode }}&{% endif %}{% if f_mine %}mine={{ f_mine }}&{% endif %}{% if f_held %}held={{ f_held }}{% endif %}"
+         title="{% trans 'Download missing offline images for the filtered trackables' %}">{% trans "Fill missing images" %}</a>
+    </div>
+  </div>
+
+  <div id="tb-table-container">
+    {% include "geocaches/partials/_trackable_table.html" %}
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_head %}
+<script>
+function _gcfTbCsrf() {
+  var m = document.cookie.match(/csrftoken=([^;]+)/);
+  return m ? m[1] : '';
+}
+
+function _gcfTbPostJson(url, body) {
+  return fetch(url, {
+    method: 'POST',
+    headers: {'X-CSRFToken': _gcfTbCsrf(), 'Content-Type': 'application/x-www-form-urlencoded'},
+    body: body || ''
+  }).then(function(r) { return r.json(); });
+}
+
+function gcfTbBulkSync(scope) {
+  scope = scope || 'mine';
+  var btn      = document.getElementById('sync-btn');
+  var status   = document.getElementById('sync-status');
+  var bar      = document.getElementById('sync-progress');
+  var fill     = document.getElementById('sync-progress-bar');
+  if (btn) { btn.disabled = true; btn.textContent = '{% trans "Syncing…" %}'; }
+  if (status) status.textContent = '{% trans "Fetching" %} ' + scope + ' {% trans "list…" %}';
+  if (bar) bar.classList.remove('d-none');
+  if (fill) fill.style.width = '0%';
+
+  _gcfTbPostJson("{% url 'geocaches:trackable_sync_plan' %}", 'scope=' + encodeURIComponent(scope))
+    .then(function(plan) {
+      if (!plan.ok) throw new Error(plan.error || 'plan failed');
+      var refs = plan.refs || [];
+      var skipped = plan.skipped || 0;
+      if (!refs.length) {
+        var msg = '{% trans "Nothing to sync for" %} ' + scope;
+        if (skipped) msg += ' (' + skipped + ' {% trans "already up-to-date" %})';
+        msg += '.';
+        if (status) status.textContent = msg;
+        if (btn) { btn.disabled = false; btn.textContent = '{% trans "Sync mine" %}'; }
+        if (bar) bar.classList.add('d-none');
+        return;
+      }
+      return _gcfTbSyncSequentially(refs, plan.tag || '', scope, skipped, status, fill);
+    })
+    .then(function(result) {
+      if (!result) return;
+      if (result.errors.length) {
+        alert('{% trans "Sync done:" %} ' + result.ok + ' {% trans "synced," %} ' + result.errors.length + ' {% trans "failed." %}\n\n' + result.errors.join('\n'));
+      }
+      window.location.reload();
+    })
+    .catch(function(err) {
+      if (status) status.textContent = '';
+      if (bar) bar.classList.add('d-none');
+      if (btn) { btn.disabled = false; btn.textContent = '{% trans "Sync mine" %}'; }
+      alert('{% trans "Sync failed:" %} ' + err);
+    });
+}
+
+function gcfTbSyncTrackingCodes() {
+  var btn    = document.getElementById('sync-btn');
+  var status = document.getElementById('sync-status');
+  var bar    = document.getElementById('sync-progress');
+  var fill   = document.getElementById('sync-progress-bar');
+  if (btn) { btn.disabled = true; btn.textContent = '{% trans "Syncing…" %}'; }
+  if (status) status.textContent = '{% trans "Finding owned TBs without tracking codes…" %}';
+  if (bar) bar.classList.remove('d-none');
+  if (fill) fill.style.width = '0%';
+
+  _gcfTbPostJson("{% url 'geocaches:trackable_tracking_codes_plan' %}")
+    .then(function(plan) {
+      if (!plan.ok) throw new Error(plan.error || 'plan failed');
+      var refs = plan.refs || [];
+      if (!refs.length) {
+        if (status) status.textContent = '{% trans "No owned TBs are missing a tracking code." %}';
+        if (btn) { btn.disabled = false; btn.textContent = '{% trans "Sync mine" %}'; }
+        if (bar) bar.classList.add('d-none');
+        return;
+      }
+      return _gcfTbScrapeCodesSequentially(refs, status, fill);
+    })
+    .then(function(result) {
+      if (!result) return;
+      if (result.errors.length) {
+        alert('{% trans "Tracking code sync:" %} ' + result.ok + ' {% trans "fetched," %} ' + result.errors.length + ' {% trans "failed." %}\n\n' + result.errors.join('\n'));
+      }
+      window.location.reload();
+    })
+    .catch(function(err) {
+      if (status) status.textContent = '';
+      if (bar) bar.classList.add('d-none');
+      if (btn) { btn.disabled = false; btn.textContent = '{% trans "Sync mine" %}'; }
+      alert('{% trans "Tracking code sync failed:" %} ' + err);
+    });
+}
+
+function _gcfTbScrapeCodesSequentially(refs, status, fill) {
+  var total  = refs.length;
+  var done   = 0;
+  var ok     = 0;
+  var errors = [];
+  function step() {
+    if (done >= total) return Promise.resolve({ok: ok, errors: errors});
+    var ref = refs[done];
+    if (status) status.textContent = '{% trans "Tracking codes:" %} ' + (done + 1) + ' / ' + total + ' (' + ref + ')…';
+    return _gcfTbPostJson("{% url 'geocaches:trackable_tracking_code_fetch' %}", 'ref=' + encodeURIComponent(ref))
+      .then(function(r) {
+        if (r.ok) ok++;
+        else errors.push(ref + ': ' + (r.error || '{% trans "unknown error" %}'));
+      })
+      .catch(function(err) { errors.push(ref + ': ' + err); })
+      .then(function() {
+        done++;
+        if (fill) fill.style.width = Math.round((done / total) * 100) + '%';
+        // Pace the website scrape gently — same shape as the API sync pacing.
+        if (done < total && done % _GCF_TB_BATCH_SIZE === 0) {
+          return new Promise(function(res) { setTimeout(res, _GCF_TB_BATCH_PAUSE); }).then(step);
+        }
+        return step();
+      });
+  }
+  return step();
+}
+
+function gcfTbSyncByCode() {
+  var ta    = document.getElementById('tb-sync-codes');
+  var tagEl = document.getElementById('tb-sync-tag');
+  var err   = document.getElementById('tb-sync-codes-error');
+  err.classList.add('d-none');
+  err.textContent = '';
+
+  var raw = (ta.value || '').toUpperCase();
+  // Split on anything that isn't [A-Z0-9]; keep tokens that look like TB####
+  var tokens = raw.split(/[^A-Z0-9]+/).filter(function(s) { return s.length > 0; });
+  var refs   = [];
+  var seen   = {};
+  var bad    = [];
+  for (var i = 0; i < tokens.length; i++) {
+    var tok = tokens[i];
+    if (!/^TB[A-Z0-9]{3,8}$/.test(tok)) { bad.push(tok); continue; }
+    if (!seen[tok]) { seen[tok] = 1; refs.push(tok); }
+  }
+  if (bad.length) {
+    err.textContent = '{% trans "Not a valid TB code:" %} ' + bad.slice(0, 5).join(', ') + (bad.length > 5 ? '…' : '');
+    err.classList.remove('d-none');
+    return;
+  }
+  if (!refs.length) {
+    err.textContent = '{% trans "Enter at least one TB code." %}';
+    err.classList.remove('d-none');
+    return;
+  }
+
+  // Close the modal and run the existing sequential-sync helper with the
+  // hand-built ref list (skipping the plan endpoint entirely).
+  var modal = bootstrap.Modal.getInstance(document.getElementById('tbSyncByCodeModal'));
+  if (modal) modal.hide();
+
+  var btn    = document.getElementById('sync-btn');
+  var status = document.getElementById('sync-status');
+  var bar    = document.getElementById('sync-progress');
+  var fill   = document.getElementById('sync-progress-bar');
+  if (btn) { btn.disabled = true; btn.textContent = '{% trans "Syncing…" %}'; }
+  if (bar) bar.classList.remove('d-none');
+  if (fill) fill.style.width = '0%';
+
+  _gcfTbSyncSequentially(refs, (tagEl.value || '').trim(), 'by-code', 0, status, fill)
+    .then(function(result) {
+      if (result.errors.length) {
+        alert('{% trans "Sync done:" %} ' + result.ok + ' {% trans "synced," %} ' + result.errors.length + ' {% trans "failed." %}\n\n' + result.errors.join('\n'));
+      }
+      window.location.reload();
+    })
+    .catch(function(e) {
+      if (btn) { btn.disabled = false; btn.textContent = '{% trans "Sync mine" %}'; }
+      if (bar) bar.classList.add('d-none');
+      alert('{% trans "Sync failed:" %} ' + e);
+    });
+}
+
+function gcfTbResolveLocations() {
+  var btn    = document.getElementById('sync-btn');
+  var status = document.getElementById('sync-status');
+  var bar    = document.getElementById('sync-progress');
+  if (btn) { btn.disabled = true; }
+  if (status) status.textContent = '{% trans "Resolving locations…" %}';
+  var body = new URLSearchParams(window.location.search).toString();
+  _gcfTbPostJson("{% url 'geocaches:trackable_resolve_locations' %}", body)
+    .then(function(d) {
+      if (btn) btn.disabled = false;
+      if (bar) bar.classList.add('d-none');
+      if (d.ok) {
+        if (status) status.textContent = '{% trans "Resolved" %} ' + d.resolved + ' {% trans "of" %} ' + d.total_missing + ' {% trans "missing location(s)." %}';
+        if (d.resolved > 0) setTimeout(function() { window.location.reload(); }, 800);
+      } else {
+        if (status) status.textContent = '{% trans "Error:" %} ' + (d.error || '{% trans "unknown" %}');
+        alert('{% trans "Resolve locations failed:" %} ' + (d.error || '{% trans "unknown error" %}'));
+      }
+    })
+    .catch(function(e) {
+      if (btn) btn.disabled = false;
+      if (bar) bar.classList.add('d-none');
+      alert('{% trans "Resolve locations failed:" %} ' + e);
+    });
+}
+
+// Sync TBs sequentially; pause briefly after each batch of N to give the GC
+// API breathing room. Important for large discovered/moved lists which can
+// run to thousands of refs for prolific cachers.
+var _GCF_TB_BATCH_SIZE  = 10;
+var _GCF_TB_BATCH_PAUSE = 300;  // ms
+
+function _gcfTbSyncSequentially(refs, tag, scope, skipped, status, fill) {
+  var total  = refs.length;
+  var done   = 0;
+  var ok     = 0;
+  var errors = [];
+  var suffix = skipped ? ' (' + skipped + ' skipped)' : '';
+
+  function step() {
+    if (done >= total) return Promise.resolve({ok: ok, errors: errors});
+    var ref = refs[done];
+    if (status) status.textContent = scope + ': ' + (done + 1) + ' / ' + total + ' (' + ref + ')' + suffix + '…';
+    var body = 'ref=' + encodeURIComponent(ref);
+    if (tag) body += '&tag=' + encodeURIComponent(tag);
+    return _gcfTbPostJson("{% url 'geocaches:trackable_sync_one' %}", body)
+      .then(function(r) {
+        if (r.ok) ok++;
+        else errors.push(ref + ': ' + (r.error || '{% trans "unknown error" %}'));
+      })
+      .catch(function(err) { errors.push(ref + ': ' + err); })
+      .then(function() {
+        done++;
+        if (fill) fill.style.width = Math.round((done / total) * 100) + '%';
+        if (done < total && done % _GCF_TB_BATCH_SIZE === 0) {
+          return new Promise(function(res) { setTimeout(res, _GCF_TB_BATCH_PAUSE); }).then(step);
+        }
+        return step();
+      });
+  }
+  return step();
+}
+</script>
+{% endblock %}

@@ -1,0 +1,37 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+
+# Django
+*.log
+
+# Runtime data — DB, backups, alternative DBs, logs, offline maps, fieldnotes
+/data/
+
+# Config + bundle outputs
+gcforge.conf
+/staticfiles/
+/media/
+
+# GSAK help (extracted from proprietary CHM — not redistributable)
+docs/reference/gsak-help/
+
+# PyCharm
+.idea/
+
+# uv
+.python-version
+/groundspeak_tokens.json
+
+/docs/cgeo-master/
+
+# Node / frontend tooling
+node_modules/
+package-lock.json
+
+# Coverage reports
+.coverage
+coverage.json
+htmlcov/

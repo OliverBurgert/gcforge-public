@@ -1,0 +1,1165 @@
+{% extends "base.html" %}
+{% load cache_tags icon_tags i18n l10n %}
+{% block title %}{{ cache.display_code }} — {{ cache.name }} — GCForge{% endblock %}
+{% block extra_head %}
+<style>
+.gcf-embed #back-to-list,
+.gcf-embed [data-bs-target="#newLogPanel"],
+.gcf-embed [data-bs-target="#defuseModal"],
+.gcf-embed [data-bs-target="#deleteModal"]{display:none!important}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="px-3 py-2" data-task-reload>
+
+  {# --- Placeholder banner --- #}
+  {% if cache.is_placeholder %}
+  <div class="alert alert-warning py-2 small mb-2 d-flex align-items-center gap-3 flex-wrap">
+    <strong>{% blocktrans with code=cache.display_code %}{{ code }} is not in your database yet.{% endblocktrans %}</strong>
+    <span class="text-muted">{% trans "Field note imported without cache data." %}</span>
+    {% for label, url in cache.external_urls %}
+    <a href="{{ url }}" target="_blank" rel="noopener" class="btn btn-sm btn-outline-primary">&#8599; {% blocktrans %}Open on {{ label }}{% endblocktrans %}</a>
+    {% endfor %}
+    {% for label, source in cache.refresh_sources %}
+    <form method="post" action="{% url 'geocaches:refresh' cache.display_code %}" class="d-inline">
+      {% csrf_token %}
+      <input type="hidden" name="source" value="{{ source }}">
+      <button type="submit" class="btn btn-sm btn-success">&#8635; {% blocktrans %}Import from {{ label }}{% endblocktrans %}</button>
+    </form>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {# --- Header --- #}
+  <div class="d-flex align-items-baseline gap-3 mb-2 flex-wrap">
+    <h5 class="mb-0 font-monospace">{{ cache.display_code }}</h5>
+    <h5 class="mb-0 fw-normal">{% if cache.is_placeholder %}{% trans "(not yet imported)" %}{% else %}{{ cache.name }}{% endif %}</h5>
+    {% if not cache.is_placeholder %}
+    {% for label, url in cache.external_urls %}
+    <a href="{{ url }}" target="_blank" rel="noopener"
+       class="btn btn-sm btn-outline-primary">↗ {{ label }}</a>
+    {% endfor %}
+    {% endif %}
+    {% if not cache.is_placeholder %}
+    {% for label, source in cache.refresh_sources %}
+    <form method="post" action="{% url 'geocaches:refresh' cache.display_code %}" class="d-inline">
+      {% csrf_token %}
+      <input type="hidden" name="source" value="{{ source }}">
+      <button type="submit" class="btn btn-sm btn-outline-success">&#8635; {% blocktrans %}Refresh from {{ label }}{% endblocktrans %}</button>
+    </form>
+    {% endfor %}
+    <div class="dropdown d-inline-block" id="export-gpx-dropdown"
+         data-export-url="{% url 'geocaches:detail_export_gpx' cache.display_code %}?"
+         data-recent-url="{% url 'geocaches:export_recent_folders' %}">
+      <button class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown"
+              onclick="gcfLoadExportFolders()">&#8595; GPX</button>
+      <ul class="dropdown-menu">
+        <li><a class="dropdown-item" href="#" onclick="gcfExportGpxDownload(); return false;">{% trans "Download (browser)" %}</a></li>
+        <li><a class="dropdown-item" href="#" onclick="gcfExportGpxBrowse(); return false;">{% trans "Select folder..." %}</a></li>
+        <li id="export-recent-separator" class="d-none"><hr class="dropdown-divider"></li>
+        <li id="export-recent-header" class="d-none"><h6 class="dropdown-header">{% trans "Recent folders" %}</h6></li>
+      </ul>
+    </div>
+    {% if is_event %}
+    <a href="{% url 'geocaches:tools_event_ical' cache.pk %}"
+       class="btn btn-sm btn-outline-secondary"
+       title="{% trans 'Download iCal entry' %}">{% trans "Add to calendar" %}</a>
+    {% endif %}
+    {% endif %}
+    {% if not embed %}
+    <div class="ms-auto d-flex gap-2">
+      <a href="{% url 'geocaches:list' %}" class="btn btn-sm btn-outline-secondary"
+         id="back-to-list">&larr; {% trans "Back" %}</a>
+      {% if not cache.is_placeholder %}
+      {% if ignore_state.any %}
+      <form method="post" action="{% url 'geocaches:cache_unignore' cache.display_code %}" id="unignore-form">{% csrf_token %}</form>
+      <form method="post" action="{% url 'geocaches:cache_ignore' cache.display_code %}" id="ignore-form">{% csrf_token %}</form>
+      <div class="btn-group btn-group-sm">
+        <button type="button" class="btn btn-sm btn-warning dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">{% trans "Ignored" %}</button>
+        <ul class="dropdown-menu dropdown-menu-end">
+          {% if ignore_state.local %}
+          <li><button type="submit" form="unignore-form" name="target" value="local" class="dropdown-item">{% trans "Un-ignore: Local" %}</button></li>
+          {% endif %}
+          {% if ignore_state.gc %}
+          <li><button type="submit" form="unignore-form" name="target" value="gc" class="dropdown-item">{% trans "Un-ignore: GC.com" %}</button></li>
+          {% endif %}
+          {% if ignore_state.oc %}
+          <li><button type="submit" form="unignore-form" name="target" value="oc" class="dropdown-item">{% blocktrans with platform=ignore_state.oc_platform %}Un-ignore: {{ platform }}{% endblocktrans %}</button></li>
+          {% endif %}
+          {% if ignore_state.count > 1 %}
+          <li><hr class="dropdown-divider"></li>
+          <li><button type="submit" form="unignore-form" name="target" value="all" class="dropdown-item text-danger">{% trans "Un-ignore from all" %}</button></li>
+          {% endif %}
+          {% if not ignore_state.local or cache.gc_code and not ignore_state.gc or cache.oc_code and not ignore_state.oc %}
+          <li><hr class="dropdown-divider"></li>
+          {% if not ignore_state.local %}
+          <li><button type="submit" form="ignore-form" name="target" value="local" class="dropdown-item">{% trans "Also ignore: Local" %}</button></li>
+          {% endif %}
+          {% if cache.gc_code and not ignore_state.gc %}
+          <li><button type="submit" form="ignore-form" name="target" value="remote" class="dropdown-item">{% trans "Also ignore: GC.com" %}</button></li>
+          {% endif %}
+          {% if cache.oc_code and not ignore_state.oc %}
+          <li><button type="submit" form="ignore-form" name="target" value="remote" class="dropdown-item">{% blocktrans with platform=cache.oc_platform %}Also ignore: {{ platform }}{% endblocktrans %}</button></li>
+          {% endif %}
+          {% endif %}
+        </ul>
+      </div>
+      {% else %}
+      <form method="post" action="{% url 'geocaches:cache_ignore' cache.display_code %}" id="ignore-form">{% csrf_token %}</form>
+      <div class="btn-group btn-group-sm">
+        <button type="submit" form="ignore-form" name="target" value="local" class="btn btn-sm btn-outline-secondary">{% trans "Ignore" %}</button>
+        <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
+          <span class="visually-hidden">{% trans "Toggle Dropdown" %}</span>
+        </button>
+        <ul class="dropdown-menu dropdown-menu-end">
+          <li><button type="submit" form="ignore-form" name="target" value="local" class="dropdown-item">{% trans "Local only" %}</button></li>
+          {% if cache.gc_code %}
+          <li><button type="submit" form="ignore-form" name="target" value="remote" class="dropdown-item">{% trans "GC.com only" %}</button></li>
+          <li><button type="submit" form="ignore-form" name="target" value="both" class="dropdown-item">{% trans "Both (local + GC.com)" %}</button></li>
+          {% elif cache.oc_code %}
+          <li><button type="submit" form="ignore-form" name="target" value="remote" class="dropdown-item">{% blocktrans with platform=cache.oc_platform %}{{ platform }} only{% endblocktrans %}</button></li>
+          <li><button type="submit" form="ignore-form" name="target" value="both" class="dropdown-item">{% blocktrans with platform=cache.oc_platform %}Both (local + {{ platform }}){% endblocktrans %}</button></li>
+          {% endif %}
+        </ul>
+      </div>
+      {% endif %}
+      {% include "geocaches/partials/_map_visibility_control.html" %}
+      {% if defuse_available %}
+      <button type="button" class="btn btn-sm btn-outline-warning"
+              data-bs-toggle="modal" data-bs-target="#defuseModal">{% trans "De-fuse GC/OC" %}</button>
+      {% endif %}
+      <button type="button" class="btn btn-sm btn-outline-danger"
+              data-bs-toggle="modal" data-bs-target="#deleteModal">{% trans "Delete" %}</button>
+      {% endif %}
+    </div>
+    {% endif %}
+  </div>
+
+  <div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">{% trans "Move to Trash?" %}</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <p>{% blocktrans with code=cache.display_code name=cache.name %}<strong>{{ code }} — {{ name }}</strong> will be moved to Trash.{% endblocktrans %}</p>
+          <p class="text-muted small mb-0">{% trans "You can restore it or permanently delete it from the Trash page. Re-importing it will also clear the Trash entry." %}</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans "Cancel" %}</button>
+          <form method="post" action="{% url 'geocaches:delete' cache.display_code %}">
+            {% csrf_token %}
+            <input type="hidden" name="next" id="delete-next" value="{% url 'geocaches:list' %}">
+            <button type="submit" class="btn btn-warning">{% trans "Move to Trash" %}</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {% if cache.is_placeholder %}
+  <div class="text-muted small mt-2">
+    {% trans "This cache has not been imported from GC/OC yet. Use the buttons above to import it, or open it on the platform website. Log submission from the bulk logging panel will still work." %}
+  </div>
+  {% else %}
+  <div class="row g-3 gcf-detail-row">
+
+    {# ==================== LEFT COLUMN ==================== #}
+    <div class="col-lg-7 gcf-detail-left">
+
+      {# Core attributes row #}
+      <div class="card mb-2">
+        <div class="card-body py-2 px-3">
+          <div class="row row-cols-auto g-2 align-items-center small">
+
+            <div class="col">
+              <span class="text-muted">{% trans "Type:" %}</span> {% cache_type_icon cache.cache_type cache=cache %} {{ cache.cache_type }}
+            </div>
+            <div class="col">
+              <span class="text-muted">{% trans "Size:" %}</span> {{ cache.size_override|default:cache.size }}
+            </div>
+            <div class="col">
+              <span class="text-muted">{% trans "D/T:" %}</span>
+              {{ cache.difficulty|default:"—" }} / {{ cache.terrain|default:"—" }}
+            </div>
+            <div class="col">
+              {% if cache.status == "Active" %}
+                <span class="badge bg-success">{% trans "Active" %}</span>
+              {% elif cache.status == "Disabled" %}
+                <span class="badge bg-warning text-dark">{% trans "Disabled" %}</span>
+              {% elif cache.status == "Archived" %}
+                <span class="badge bg-secondary">{% trans "Archived" %}</span>
+              {% else %}
+                <span class="badge bg-light text-dark">{{ cache.status }}</span>
+              {% endif %}
+              {% if cache.found %}
+                <span class="badge bg-success ms-1">{% trans "Found ✓" %}</span>
+              {% endif %}
+            </div>
+            {% if cache.owner %}
+            <div class="col">
+              <span class="text-muted">{% trans "By:" %}</span>
+              {% if cache.gc_code %}
+                {% if cache.placed_by and cache.placed_by != cache.owner %}
+                  <a href="https://www.geocaching.com/p/?u={{ cache.owner|urlencode }}" target="_blank" rel="noopener">{{ cache.placed_by }}</a>
+                  <small class="text-muted">(<a href="https://www.geocaching.com/p/?u={{ cache.owner|urlencode }}" target="_blank" rel="noopener">{{ cache.owner }}</a>)</small>
+                {% else %}
+                  <a href="https://www.geocaching.com/p/?u={{ cache.owner|urlencode }}" target="_blank" rel="noopener">{{ cache.owner }}</a>
+                {% endif %}
+              {% else %}
+                {% if cache.placed_by and cache.placed_by != cache.owner %}
+                  {{ cache.placed_by }} <small class="text-muted">({{ cache.owner }})</small>
+                {% else %}
+                  {{ cache.owner }}
+                {% endif %}
+              {% endif %}
+            </div>
+            {% endif %}
+            <div class="col">
+              <span class="text-muted">{% trans "Hidden:" %}</span> {{ cache.hidden_date|date:"Y-m-d"|default:"—" }}{% if cache.event_start_time %} {{ cache.event_start_time|time:"H:i" }}{% if cache.event_end_time %}–{{ cache.event_end_time|time:"H:i" }}{% endif %}{% endif %}
+            </div>
+            <div class="col">
+              <span class="text-muted">{% trans "Last found:" %}</span> {{ cache.last_found_date|date:"Y-m-d"|default:"—" }}
+            </div>
+            {% if cache.adventure and not cache.al_detail and cache.adventure.ratings_average is not None %}
+            <div class="col">
+              <span class="text-muted">{% trans "Rating:" %}</span> {{ cache.adventure.ratings_average|floatformat:1 }}{% if cache.adventure.ratings_total_count %} <span class="text-muted">({{ cache.adventure.ratings_total_count }})</span>{% endif %}
+            </div>
+            {% if cache.adventure.is_highly_recommended %}
+            <div class="col" title="{% trans 'Highly recommended' %}">⭐</div>
+            {% endif %}
+            {% else %}
+            <div class="col">
+              <span {% if cache.user_favorited %}style="color:#0d6efd" title="{% trans 'You gave a favourite point' %}"{% else %}class="text-muted"{% endif %}>♥</span> {{ cache.fav_points }}
+            </div>
+            {% endif %}
+            <div class="col">
+              <span class="text-muted">{% trans "Location:" %}</span>
+              {% if cache.iso_country_code or cache.country %}
+                {% if cache.iso_country_code %}{{ cache.iso_country_code|country_name }}{% else %}{{ cache.country }}{% endif %}{% if cache.state %}, {{ cache.state }}{% endif %}{% if cache.county %}, {{ cache.county }}{% endif %}
+              {% else %}
+                <em class="text-muted">{% trans "not set" %}</em>
+              {% endif %}
+              {% if cache.manual_location %}<small class="text-muted">{% trans "(manual)" %}</small>{% endif %}
+              <a href="#" class="ms-1 small" data-bs-toggle="modal" data-bs-target="#cache-location-edit"
+                 title="{% trans 'Edit location & elevation' %}">{% trans "Edit" %}</a>
+            </div>
+            {% if cache.adventure and not cache.al_detail %}
+            {% if cache.adventure.published_utc %}
+            <div class="col">
+              <span class="text-muted">{% trans "Published:" %}</span> {{ cache.adventure.published_utc|date:"Y-m-d" }}
+            </div>
+            {% endif %}
+            {% if cache.adventure.completion_date %}
+            <div class="col">
+              <span class="text-muted">{% trans "Completed:" %}</span> {{ cache.adventure.completion_date|date:"Y-m-d" }}
+            </div>
+            {% endif %}
+            {% endif %}
+            <div class="col">
+              <span class="text-muted">{% trans "Elev:" %}</span>
+              {% if cache.elevation_user is not None %}
+                {{ cache.elevation_user }} m <small class="text-muted">{% trans "(user)" %}</small>
+              {% elif cache.elevation is not None %}
+                {{ cache.elevation }} m
+              {% else %}
+                <em class="text-muted">{% trans "not set" %}</em>
+              {% endif %}
+              <a href="#" class="ms-1 small" data-bs-toggle="modal" data-bs-target="#cache-location-edit"
+                 title="{% trans 'Edit location & elevation' %}">{% trans "Edit" %}</a>
+              {% if cache.al_detail and cache.al_detail.geofencing_radius %}
+              <span class="ms-2 text-muted">{% trans "Radius:" %} {{ cache.al_detail.geofencing_radius }} m</span>
+              {% endif %}
+            </div>
+
+          </div>
+
+          {# Parent Adventure link for ALC stages #}
+          {% if cache.adventure and cache.al_detail %}
+          <div class="mt-1 small d-flex align-items-center gap-2 flex-wrap">
+            <span class="text-muted">{% trans "Adventure:" %}</span>
+            <a href="{% url 'geocaches:detail' cache.adventure.code %}">{{ cache.adventure.title|default:cache.adventure.code }}</a>
+            <span class="text-muted">{% blocktrans with n=cache.al_detail.stage_number %}(Stage {{ n }}){% endblocktrans %}</span>
+            {% if prev_stage %}
+            <a href="{% url 'geocaches:detail' prev_stage.code %}" class="btn btn-sm btn-outline-secondary py-0 px-2"
+               title="{% blocktrans with n=prev_stage.num %}Stage {{ n }}{% endblocktrans %}">&laquo; {% trans "Prev stage" %}</a>
+            {% else %}
+            <button class="btn btn-sm btn-outline-secondary py-0 px-2" disabled>&laquo; {% trans "Prev stage" %}</button>
+            {% endif %}
+            {% if next_stage %}
+            <a href="{% url 'geocaches:detail' next_stage.code %}" class="btn btn-sm btn-outline-secondary py-0 px-2"
+               title="{% blocktrans with n=next_stage.num %}Stage {{ n }}{% endblocktrans %}">{% trans "Next stage" %} &raquo;</a>
+            {% else %}
+            <button class="btn btn-sm btn-outline-secondary py-0 px-2" disabled>{% trans "Next stage" %} &raquo;</button>
+            {% endif %}
+          </div>
+          {% endif %}
+
+          {# Adventure themes — prettified tokens + icons #}
+          {% if cache.adventure.themes %}
+          <div class="mt-1 small d-flex align-items-center gap-1 flex-wrap">
+            <span class="text-muted">{% trans "Themes:" %}</span>
+            {% for b in cache.adventure.themes|al_theme_badges %}
+            <span class="badge bg-light text-dark border fw-normal">{% if b.icon %}{{ b.icon }} {% endif %}{{ b.label }}</span>
+            {% endfor %}
+          </div>
+          {% endif %}
+
+          {# Adventure GUID — parent: standalone line; child: own line after the Adventure row #}
+          {% if cache.adventure and cache.adventure.adventure_guid %}
+          <div class="mt-1 small">
+            <span class="text-muted">{% trans "ALC-guid:" %}</span>
+            <span class="text-muted font-monospace" id="alc-guid">{{ cache.adventure.adventure_guid }}</span>
+            <button class="btn btn-link btn-sm p-0 ms-1" title="{% trans 'Copy GUID' %}"
+                    onclick="gcfCopyCoords('alc-guid')">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+              </svg>
+            </button>
+          </div>
+          {% endif %}
+
+          {# Coordinates + corrected coords + inline action forms #}
+          <div class="mt-2 small">
+            <div class="d-flex align-items-center flex-wrap gap-1">
+              <span class="text-muted">{% trans "Coords:" %}</span>
+              <span class="gcf-coords font-monospace" role="button" title="{% trans 'Click to change format' %}"
+                    data-lat="{{ cache.latitude|unlocalize }}" data-lon="{{ cache.longitude|unlocalize }}"
+                    id="coords-listing">{{ lat_str }} {{ lon_str }}</span>
+              <button class="btn btn-link btn-sm p-0" title="{% trans 'Copy coordinates' %}"
+                      onclick="gcfCopyCoords('coords-listing')">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                </svg>
+              </button>
+              {% if cache.corrected_coordinates %}
+              <span class="ms-2 text-muted">{% trans "Corrected:" %}</span>
+              <span class="gcf-coords font-monospace text-success" role="button" title="{% trans 'Click to change format' %}"
+                    data-lat="{{ cache.corrected_coordinates.latitude|unlocalize }}" data-lon="{{ cache.corrected_coordinates.longitude|unlocalize }}"
+                    id="coords-corrected">{{ corr_lat_str }} {{ corr_lon_str }}</span>
+              <button class="btn btn-link btn-sm p-0" title="{% trans 'Copy coordinates' %}"
+                      onclick="gcfCopyCoords('coords-corrected')">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                </svg>
+              </button>
+              {% if cache.corrected_coordinates.note %}
+              <span class="text-muted">— {{ cache.corrected_coordinates.note }}</span>
+              {% endif %}
+              {% endif %}
+              <button class="btn btn-link btn-sm p-0 ms-2" type="button" onclick="toggleCorrectedForm()">
+                {% if cache.corrected_coordinates %}{% trans "Edit / Clear" %}{% else %}{% trans "Set corrected coords" %}{% endif %}
+              </button>
+              <button class="btn btn-link btn-sm p-0 ms-auto" type="button" onclick="toggleRefPointForm()">
+                {% trans "Add to locations" %}
+              </button>
+            </div>
+
+            {# Corrected coordinates edit form (collapsed) #}
+            <div id="corrected-form" style="display:none" class="mt-2 border rounded p-2">
+              <form method="post" action="{% url 'geocaches:corrected_save' cache.display_code %}">
+                {% csrf_token %}
+                <div class="mb-2 text-muted" style="font-size:0.8rem">
+                  {% blocktrans %}Accepted formats: <code>48.30315</code> &nbsp;|&nbsp;
+                  <code>N 48° 18.189'</code> &nbsp;|&nbsp;
+                  <code>N 48° 18' 11.3"</code>{% endblocktrans %}
+                </div>
+                <div class="row g-2 align-items-end">
+                  <div class="col">
+                    <label class="form-label small mb-0">{% trans "Latitude" %}</label>
+                    <input type="text" name="latitude" id="corr-lat"
+                           class="form-control form-control-sm font-monospace"
+                           data-lon-target="corr-lon"
+                           value="{% if cache.corrected_coordinates %}{{ corr_lat_str }}{% endif %}"
+                           placeholder="{{ lat_str }}"
+                           autocomplete="off">
+                  </div>
+                  <div class="col">
+                    <label class="form-label small mb-0">{% trans "Longitude" %}</label>
+                    <input type="text" name="longitude" id="corr-lon"
+                           class="form-control form-control-sm font-monospace"
+                           value="{% if cache.corrected_coordinates %}{{ corr_lon_str }}{% endif %}"
+                           placeholder="{{ lon_str }}"
+                           autocomplete="off">
+                  </div>
+                  <div class="col-12 col-md">
+                    <label class="form-label small mb-0">{% trans "Note (optional)" %}</label>
+                    <input type="text" name="note" class="form-control form-control-sm"
+                           value="{% if cache.corrected_coordinates %}{{ cache.corrected_coordinates.note }}{% endif %}"
+                           placeholder="{% trans 'e.g. solved 2024-01-15' %}">
+                  </div>
+                </div>
+                <div class="mt-2 d-flex gap-2">
+                  <button type="submit" class="btn btn-sm btn-success">{% trans "Save" %}</button>
+                  {% if cache.corrected_coordinates %}
+                  <button type="submit" name="clear" value="1" class="btn btn-sm btn-outline-danger">{% trans "Clear" %}</button>
+                  {% endif %}
+                  <button type="button" class="btn btn-sm btn-outline-secondary" onclick="toggleCorrectedForm()">{% trans "Cancel" %}</button>
+                </div>
+              </form>
+            </div>
+
+            {# Save as location form (collapsed) #}
+            <div id="refpoint-form" style="display:none" class="mt-2 border rounded p-2">
+              <form method="post" action="{% url 'geocaches:set_refpoint' cache.display_code %}">
+                {% csrf_token %}
+                <div class="row g-2 align-items-end">
+                  <div class="col-auto">
+                    <label class="form-label small mb-0">{% trans "Name" %}</label>
+                    <input type="text" name="name" class="form-control form-control-sm"
+                           value="{{ cache.name|truncatechars:30 }}" style="width:200px">
+                  </div>
+                  {% if cache.corrected_coordinates %}
+                  <div class="col-auto">
+                    <div class="form-check mt-3">
+                      <input class="form-check-input" type="checkbox" name="use_corrected"
+                             value="1" id="use-corrected-ref" checked>
+                      <label class="form-check-label small" for="use-corrected-ref">
+                        {% trans "Use corrected coords" %}
+                      </label>
+                    </div>
+                  </div>
+                  {% endif %}
+                  <div class="col-auto">
+                    <button type="submit" class="btn btn-sm btn-success">{% trans "Add to locations" %}</button>
+                  </div>
+                  <div class="col-auto">
+                    <button type="button" class="btn btn-sm btn-outline-secondary"
+                            onclick="toggleRefPointForm()">{% trans "Cancel" %}</button>
+                  </div>
+                </div>
+              </form>
+            </div>
+          </div>
+
+          {# Personal flags + tags #}
+          <div class="mt-2 d-flex flex-wrap gap-1">
+            {% if cache.found %}<span class="badge bg-success">{% blocktrans with d=cache.found_date|date:"Y-m-d" %}✓ Found {{ d }}{% endblocktrans %}</span>{% endif %}
+            {% if cache.ftf %}<span class="badge bg-warning text-dark">FTF</span>{% endif %}
+            {% if cache.dnf %}<span class="badge bg-danger">{% blocktrans with d=cache.dnf_date|date:"Y-m-d" %}DNF {{ d }}{% endblocktrans %}</span>{% endif %}
+            {% if cache.user_flag %}<span class="badge bg-warning text-dark">🚩 {% trans "Flagged" %}</span>{% endif %}
+            {% if cache.watch %}<span class="badge bg-info text-dark">{% trans "Watching" %}</span>{% endif %}
+            {% if cache.is_premium %}<span class="badge bg-info text-dark">{% trans "Premium" %}</span>{% endif %}
+            {% if cache.has_trackable %}<span class="badge bg-secondary">{% trans "Has trackable" %}</span>{% endif %}
+            <form method="post" action="{% url 'geocaches:toggle_lock' cache.display_code %}" class="d-inline">
+              {% csrf_token %}
+              {% if cache.import_locked %}
+              <button type="submit" class="badge bg-dark border-0" title="{% trans 'Click to unlock' %}">🔒 {% trans "Import locked" %} ×</button>
+              {% else %}
+              <button type="submit" class="badge bg-secondary border-0" title="{% trans 'Click to lock this cache against imports' %}">🔓 {% trans "Lock" %}</button>
+              {% endif %}
+            </form>
+            {% for tag in cache.tags.all %}
+            <form method="post" action="{% url 'geocaches:tag_edit' cache.display_code %}" class="d-inline">
+              {% csrf_token %}
+              <input type="hidden" name="_action" value="remove">
+              <input type="hidden" name="tag_id" value="{{ tag.id }}">
+              <button type="submit" class="badge bg-primary border-0 text-decoration-none"
+                      title="{% trans 'Remove tag' %}">{{ tag.name }} ×</button>
+            </form>
+            {% endfor %}
+            <form method="post" action="{% url 'geocaches:tag_edit' cache.display_code %}" class="d-inline">
+              {% csrf_token %}
+              <input type="hidden" name="_action" value="add">
+              <input type="text" name="tag_name" class="form-control form-control-sm d-inline-block"
+                     placeholder="{% trans 'Add tag…' %}" style="width:100px" list="all-tags-list">
+              <datalist id="all-tags-list">
+                {% for tag in all_tags %}<option value="{{ tag.name }}">{% endfor %}
+              </datalist>
+              <button type="submit" class="btn btn-sm btn-outline-primary py-0">+</button>
+            </form>
+          </div>
+
+        </div>
+      </div>
+
+      {# GC note #}
+      {% if cache.gc_note %}
+      <div class="card mb-2 border-warning">
+        <div class="card-header py-1 small fw-semibold bg-warning-subtle">{% trans "Personal note" %}</div>
+        <div class="card-body py-2 small">{{ cache.gc_note }}</div>
+      </div>
+      {% endif %}
+
+      {# Description (also shows AL metadata for adventure lab caches) #}
+      {% if cache.short_description or cache.long_description or cache.adventure %}
+      <div class="card mb-2">
+        <div class="card-header py-1 d-flex justify-content-between align-items-center">
+          <span class="small fw-semibold">{% trans "Description" %}</span>
+          {% if cache.short_description or cache.long_description %}
+          <div class="d-flex gap-2 align-items-center">
+            <div class="btn-group btn-group-sm" role="group">
+              <button type="button" class="btn btn-outline-secondary active" id="btn-rendered"
+                      onclick="showRendered()">{% trans "Rendered" %}</button>
+              <button type="button" class="btn btn-outline-secondary" id="btn-source"
+                      onclick="showSource()">{% trans "Source" %}</button>
+            </div>
+            <select class="form-select form-select-sm" style="width:auto" onchange="setDescBg(this.value)" title="{% trans 'Background colour' %}">
+              <option value="">{% trans "Default" %}</option>
+              <option value="#808080">{% trans "Grey" %}</option>
+              <option value="#1a3a1a">{% trans "Dark green" %}</option>
+              <option value="#000000">{% trans "Black" %}</option>
+            </select>
+          </div>
+          {% endif %}
+        </div>
+        <div class="card-body py-2" id="desc-body">
+
+          {# ALC parent: stat line + image alongside description text #}
+          {% if cache.adventure and not cache.al_detail %}
+          {% with adv=cache.adventure %}
+          <div class="mb-2 small">
+            {% if adv.adventure_type %}<span class="text-muted">{% trans "Type:" %}</span> {{ adv.adventure_type }}{% endif %}
+            {% if adv.stage_count %}
+            {% if adv.adventure_type %} &bull; {% endif %}
+            <span class="text-muted">{% trans "Stages:" %}</span> {{ adv.stage_count }}
+            {% if stages is not None %}(<span class="{% if stages_found_count == stages|length %}text-success{% elif stages_found_count > 0 %}text-warning{% endif %}">{% blocktrans with n=stages_found_count %}{{ n }} found{% endblocktrans %}</span>){% endif %}
+            {% endif %}
+            {% if adv.median_time_to_complete %} &bull; <span class="text-muted">{% trans "Est. time:" %}</span> {{ adv.median_time_to_complete }} min{% endif %}
+          </div>
+          {% if adv.themes %}
+          <div class="mb-2">
+            {% for theme in adv.themes %}<span class="badge bg-secondary me-1">{{ theme }}</span>{% endfor %}
+          </div>
+          {% endif %}
+          <hr class="my-2">
+          {% endwith %}
+          {% endif %}
+
+          {# ALC child: stat line before description #}
+          {% if cache.adventure and cache.al_detail %}
+          {% with det=cache.al_detail %}
+          <div class="mb-2 small">
+            <span class="text-muted">{% trans "Stage:" %}</span> {{ det.stage_number }}
+            {% if det and det.is_final %}<span class="badge bg-warning text-dark ms-1">{% trans "Final" %}</span>{% endif %}
+            {% if det and det.challenge_type %} &bull; <span class="text-muted">{% trans "Challenge:" %}</span> {{ det.challenge_type }}{% endif %}
+            {% if det and det.geofencing_radius %} &bull; <span class="text-muted">{% trans "Radius:" %}</span> {{ det.geofencing_radius }} m{% endif %}
+          </div>
+          <hr class="my-2">
+          {% endwith %}
+          {% endif %}
+
+          <div id="desc-rendered" style="overflow:auto">
+            {# ALC images float alongside the description text #}
+            {% if cache.adventure and not cache.al_detail and cache.adventure.key_image_url %}
+            {% cached_alc_image cache.adventure.key_image_url cache as alc_key_img %}
+            <img src="{{ alc_key_img }}" alt=""
+                 style="float:right;max-width:45%;height:auto;border:1px solid #dee2e6;border-radius:6px;margin:0 0 8px 12px">
+            {% endif %}
+            {% if cache.adventure and cache.al_detail and cache.al_detail.key_image_url %}
+            {% cached_alc_image cache.al_detail.key_image_url cache as alc_stage_key_img %}
+            <img src="{{ alc_stage_key_img }}" alt=""
+                 style="float:right;max-width:45%;height:auto;border:1px solid #dee2e6;border-radius:6px;margin:0 0 8px 12px">
+            {% endif %}
+            {% if cache.short_description %}
+            <div class="mb-2 pb-2 border-bottom desc-html">{% cache_description_html cache.short_description cache %}</div>
+            {% endif %}
+            {% if cache.long_description %}
+            <div class="desc-html" style="overflow:hidden">{% cache_description_html cache.long_description cache %}</div>
+            {% endif %}
+          </div>
+          <div id="desc-source" style="display:none">
+            {% if cache.short_description %}
+            <pre class="small mb-2 pb-2 border-bottom" style="white-space:pre-wrap;word-break:break-all">{{ cache.short_description }}</pre>
+            {% endif %}
+            {% if cache.long_description %}
+            <pre class="small" style="white-space:pre-wrap;word-break:break-all">{{ cache.long_description }}</pre>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+      {# ALC child: Question card (with choices + answer form) #}
+      {% if cache.adventure and cache.al_detail %}
+      {% with det=cache.al_detail %}
+      {% if det and det.question_text %}
+      <div class="card mb-2">
+        <div class="card-header py-1 small fw-semibold">{% trans "Question" %}</div>
+        <div class="card-body py-2 small">
+          <p class="mb-2" style="white-space:pre-wrap">{{ det.question_text }}</p>
+
+          {# Choices for SingleChoice / MultipleChoice #}
+          {% if det.answer_choices %}
+          <ul class="list-group list-group-flush mb-2">
+            {% for choice in det.answer_choices %}
+            <li class="list-group-item py-1 px-2 small">{{ choice }}</li>
+            {% endfor %}
+          </ul>
+          {% endif %}
+
+          {# Answer input — like passphrase on OCExtension #}
+          {% if det.answer_hash %}
+          <form method="post" action="{% url 'geocaches:al_answer_save' cache.display_code %}" class="d-flex gap-2 align-items-center flex-wrap mt-1">
+            {% csrf_token %}
+            <input type="text" name="user_answer" class="form-control form-control-sm"
+                   style="max-width:260px" value="{{ det.user_answer }}"
+                   placeholder="{% trans 'Your answer…' %}" autocomplete="off">
+            <button type="submit" class="btn btn-sm btn-outline-secondary"
+                    {% if not gc_public_guid %}title="{% trans 'Set your geocaching.com public GUID in Settings to enable answer checking' %}"{% endif %}>{% trans "Check" %}</button>
+            {% if det.answer_is_correct is True %}
+            <span class="badge bg-success">{% trans "✓ Correct" %}</span>
+            {% elif det.answer_is_correct is False %}
+            <span class="badge bg-danger">{% trans "✗ Wrong" %}</span>
+            {% endif %}
+            {% if not gc_public_guid %}
+            {% url 'preferences:settings' as settings_url %}
+            <span class="text-muted" style="font-size:0.75rem">{% blocktrans %}Set your public GUID in <a href="{{ settings_url }}">Settings</a> to enable checking.{% endblocktrans %}</span>
+            {% endif %}
+          </form>
+          {% endif %}
+        </div>
+      </div>
+      {% endif %}
+      {% endwith %}
+      {% endif %}
+
+      {# ALC child: Journal card #}
+      {% if cache.adventure and cache.al_detail %}
+      {% with journal=cache.al_journal %}
+      {% if journal %}
+      <div class="card mb-2">
+        <div class="card-header py-1 small fw-semibold">{% trans "Journal" %}</div>
+        <div class="card-body py-2 small">
+          {% if journal.journal_message %}
+          <p class="mb-2" style="white-space:pre-wrap">{{ journal.journal_message }}</p>
+          {% endif %}
+          {% if journal.journal_image_url %}
+          <img src="{{ journal.journal_image_url }}" alt="{% trans 'Journal image' %}"
+               style="max-width:100%;height:auto;border:1px solid #dee2e6;border-radius:6px">
+          {% endif %}
+        </div>
+      </div>
+      {% endif %}
+      {% endwith %}
+      {% endif %}
+
+      {% if cache.background_image_url %}
+      {% cached_cache_image cache.background_image_url cache as bg_img %}
+      <div class="card mb-2">
+        <div class="card-header py-1">
+          <span class="small fw-semibold">{% trans "Background Image" %}</span>
+        </div>
+        <div class="card-body py-2">
+          <img src="{{ bg_img }}" alt="{% blocktrans with name=cache.name %}Background image for {{ name }}{% endblocktrans %}" style="max-width:100%;height:auto">
+          <div class="mt-1">
+            <a href="{{ cache.background_image_url }}" target="_blank" class="small text-muted text-break">{{ cache.background_image_url }}</a>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+      {# OC description (collapsible) — shown when cache has both GC and OC descriptions #}
+      {% if cache.oc_extension and cache.oc_extension.long_description and cache.gc_code %}
+      <div class="card mb-2">
+        <div class="card-header py-1">
+          <a class="small fw-semibold text-decoration-none" data-bs-toggle="collapse"
+             href="#oc-desc-collapse" role="button" aria-expanded="false">
+            {% trans "Opencaching description" %} <span class="text-muted fw-normal">{% trans "(click to expand)" %}</span>
+          </a>
+        </div>
+        <div class="collapse" id="oc-desc-collapse">
+          <div class="card-body py-2">
+            {% if cache.oc_extension.short_description %}
+            <div class="mb-2 pb-2 border-bottom desc-html">{% cache_description_html cache.oc_extension.short_description cache %}</div>
+            {% endif %}
+            <div class="desc-html" style="overflow:hidden">{% cache_description_html cache.oc_extension.long_description cache %}</div>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+      {# OC attribution (mandatory per OC ToS) #}
+      {% if cache.oc_extension and cache.oc_extension.attribution_html %}
+      <div class="small text-muted mb-2 px-1">{{ cache.oc_extension.attribution_html|safe }}</div>
+      {% endif %}
+
+      {# Hint — display controlled by hint_display preference #}
+      {% if cache.hint %}
+      <div class="card mb-2">
+        {% if hint_display == "hidden" %}
+          <div class="card-header py-1 small fw-semibold d-flex justify-content-between">
+            {% trans "Hint" %}
+            <button class="btn btn-link btn-sm p-0 small" type="button"
+                    onclick="this.closest('.card').querySelector('.hint-text').classList.toggle('d-none')">
+              {% trans "show / hide" %}
+            </button>
+          </div>
+          <div class="card-body py-2 hint-text d-none font-monospace small">{{ cache.hint }}</div>
+        {% elif hint_display == "decrypted" %}
+          <div class="card-header py-1 small fw-semibold">{% trans "Hint" %}</div>
+          <div class="card-body py-2 font-monospace small">{{ cache.hint }}</div>
+        {% else %}{# encrypted: show ROT13, with decode toggle #}
+          <div class="card-header py-1 small fw-semibold d-flex justify-content-between">
+            {% trans "Hint" %} <small class="text-muted">{% trans "(ROT13)" %}</small>
+            <button class="btn btn-link btn-sm p-0 small" type="button"
+                    onclick="toggleHintDecode(this)">{% trans "decode" %}</button>
+          </div>
+          <div class="card-body py-2 font-monospace small">
+            <span class="hint-rot13">{{ cache.hint|rot13 }}</span>
+            <span class="hint-plain d-none">{{ cache.hint }}</span>
+          </div>
+        {% endif %}
+      </div>
+      {% endif %}
+
+      {# Attributes #}
+      {% with attrs=cache.attributes.all %}
+      {% if attrs %}
+      <div class="card mb-2">
+        <div class="card-header py-1 small fw-semibold">{% trans "Attributes" %}</div>
+        <div class="card-body py-2">
+          <div class="d-flex flex-wrap gap-1">
+            {% for attr in attrs %}
+              {% attribute_icon attr as attr_img %}
+              {% if attr_img %}
+                {{ attr_img }}
+              {% else %}
+                <span class="badge {% if attr.is_positive %}bg-success{% else %}bg-secondary{% endif %}">
+                  {% if not attr.is_positive %}{% trans "No" %} {% endif %}{{ attr.name }}
+                </span>
+              {% endif %}
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+      {% endif %}
+      {% endwith %}
+
+      {% include "geocaches/partials/_logs_panel.html" %}
+      {% include "geocaches/partials/_al_reviews_panel.html" %}
+
+    </div>
+
+    {# Draggable column divider (lg+ only) #}
+    <div class="gcf-detail-col-divider d-none d-lg-block" title="{% trans 'Drag to resize' %}"></div>
+
+    {# ==================== RIGHT COLUMN ==================== #}
+    <div class="col-lg-5 gcf-detail-right">
+      <div style="position:sticky;top:0">
+
+        {# Map #}
+        <div class="card mb-2">
+          <div class="card-header py-1 d-flex justify-content-between align-items-center gap-2 flex-wrap">
+            <span class="small fw-semibold">{% trans "Map" %}</span>
+            <div class="d-flex gap-2 flex-wrap">
+              {% if stages %}
+              <button type="button" class="btn btn-sm btn-primary" id="btn-stages"
+                      onclick="toggleStages(this)">{% trans "Stages" %}</button>
+              {% endif %}
+              {% if coord_waypoints %}
+              <button type="button" class="btn btn-sm btn-primary" id="btn-waypoints"
+                      onclick="toggleWaypoints(this)">{% trans "Waypoints" %}</button>
+              {% endif %}
+              <div class="btn-group btn-group-sm" role="group" id="draw-tools" aria-label="{% trans 'Draw tools' %}">
+                <button type="button" class="btn btn-outline-secondary" title="{% trans 'Draw rectangle' %}"
+                        onclick="gcfDetailDrawMode('gcf_rectangle', this)">▭</button>
+                <button type="button" class="btn btn-outline-secondary" title="{% trans 'Draw circle' %}"
+                        onclick="gcfDetailDrawMode('gcf_circle', this)">◯</button>
+                <button type="button" class="btn btn-outline-secondary" title="{% trans 'Draw polygon' %}"
+                        onclick="gcfDetailDrawMode('draw_polygon', this)">⬠</button>
+                <button type="button" class="btn btn-outline-secondary" title="{% trans 'Draw line' %}"
+                        onclick="gcfDetailDrawMode('draw_line_string', this)">╱</button>
+                <button type="button" class="btn btn-outline-danger" title="{% trans 'Delete selected shape' %}"
+                        onclick="gcfDetailDrawDeleteSelected()">🗑</button>
+                <button type="button" class="btn btn-outline-danger" title="{% trans 'Clear all drawings' %}"
+                        onclick="gcfDetailDrawClearAll()">✕</button>
+              </div>
+              <button type="button" class="btn btn-sm btn-outline-secondary"
+                      onclick="resetMapView()" title="{% trans 'Reset view to defaults' %}">{% trans "Reset view" %}</button>
+              <div class="btn-group btn-group-sm" role="group" id="layer-switcher">
+                <button type="button" class="btn btn-outline-secondary" data-layer="street"
+                        onclick="setLayer('street', this)">{% trans "Street" %}</button>
+                <button type="button" class="btn btn-outline-secondary" data-layer="outdoor"
+                        onclick="setLayer('outdoor', this)">{% trans "Outdoor" %}</button>
+                <button type="button" class="btn btn-outline-secondary" data-layer="aerial"
+                        onclick="setLayer('aerial', this)">{% trans "Aerial" %}</button>
+                <button type="button" class="btn btn-outline-secondary" data-layer="offline"
+                        id="detail-offline-btn" style="display:none"
+                        onclick="setLayer('offline', this)">{% trans "Offline" %}</button>
+              </div>
+            </div>
+          </div>
+          <div id="cache-map" style="height:320px"></div>
+          <div class="gcf-detail-map-resizer" title="{% trans 'Drag to resize map' %}"></div>
+        </div>
+
+        {# Adventure Lab stages #}
+        {% if stages %}
+        <div class="card mb-2">
+          <div class="card-header py-1 small fw-semibold">{% trans "Stages" %}</div>
+          <div class="card-body py-0">
+            <table class="table table-sm mb-0">
+              <thead><tr><th>#</th><th>{% trans "Stage" %}</th><th>{% trans "Coords" %}</th><th></th></tr></thead>
+              <tbody>
+                {% for s in stages %}
+                <tr>
+                  <td class="small align-top text-nowrap">
+                    {% if s.al_detail %}{{ s.al_detail.stage_number }}{% endif %}
+                    {% if s.al_detail and s.al_detail.is_final %}<span class="badge bg-warning text-dark ms-1" title="{% trans 'Final stage' %}">F</span>{% endif %}
+                  </td>
+                  <td class="small">
+                    {% with det=s.al_detail %}
+                    {% if det and det.key_image_url %}
+                    {% cached_alc_image det.key_image_url s as stage_thumb %}
+                    <img src="{{ stage_thumb }}" alt="" style="max-width:120px;max-height:90px;width:auto;height:auto;border:1px solid #dee2e6;border-radius:4px;float:right;margin-left:8px;object-fit:contain">
+                    {% endif %}
+                    <a href="{% url 'geocaches:detail' s.al_code %}">{{ s.name }}</a>
+                    {% if det and det.challenge_type %}<span class="badge bg-secondary ms-1" style="font-size:0.65rem">{{ det.challenge_type }}</span>{% endif %}
+                    {% if det and det.geofencing_radius %}<span class="text-muted ms-1" style="font-size:0.75rem">⊙ {{ det.geofencing_radius }}m</span>{% endif %}
+                    {% if det and det.question_text %}<div class="text-muted mt-1" style="white-space:pre-wrap;font-size:0.8rem">{{ det.question_text }}</div>{% endif %}
+                    {% endwith %}
+                    {% if s.al_journal and s.al_journal.journal_message %}
+                    <div class="mt-1 p-1 bg-light rounded" style="font-size:0.75rem">
+                      <span class="text-muted">📓</span> {{ s.al_journal.journal_message }}
+                    </div>
+                    {% endif %}
+                    {% if s.al_journal and s.al_journal.journal_image_url %}
+                    <div class="mt-1"><img src="{{ s.al_journal.journal_image_url }}" alt="{% trans 'Journal image' %}" style="max-height:80px;border-radius:3px"></div>
+                    {% endif %}
+                  </td>
+                  <td class="small font-monospace text-nowrap align-top">
+                    {% if s.latitude is not None %}{{ s.latitude|floatformat:4 }}, {{ s.longitude|floatformat:4 }}{% else %}—{% endif %}
+                  </td>
+                  <td class="small align-top text-nowrap">{% if s.found %}<span class="badge bg-success">{% trans "✓ Found" %}</span>{% endif %}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+        {% endif %}
+
+        {% include "geocaches/partials/_waypoints_panel.html" %}
+
+        {% include "geocaches/partials/_notes_panel.html" %}
+
+        {# Trackables in this cache (parsed from GPX) #}
+        {% with tbs=cache.trackable_mentions.all %}
+        {% if tbs %}
+        <div class="card mb-2">
+          <div class="card-header py-1 small fw-semibold">{% trans "Trackables in this cache" %}</div>
+          <div class="card-body py-2">
+            <ul class="list-unstyled mb-0 small">
+              {% for tb in tbs %}
+              <li>
+                <a href="https://www.geocaching.com/track/details.aspx?tracker={{ tb.ref_code }}"
+                   target="_blank" rel="noopener" class="font-monospace">{{ tb.ref_code }}</a>
+                {% if tb.name %}<span class="ms-1">{{ tb.name }}</span>{% endif %}
+              </li>
+              {% endfor %}
+            </ul>
+          </div>
+        </div>
+        {% endif %}
+        {% endwith %}
+
+        {# Custom fields #}
+        {% with fields=cache.custom_fields.all %}
+        {% if fields %}
+        <div class="card mb-2">
+          <div class="card-header py-1 small fw-semibold">{% trans "Custom fields" %}</div>
+          <div class="card-body py-0">
+            <table class="table table-sm mb-0">
+              <tbody>
+                {% for cf in fields %}
+                <tr>
+                  <td class="small text-muted">{{ cf.key }}</td>
+                  <td class="small">{{ cf.value }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+        {% endif %}
+        {% endwith %}
+
+        {# OC extension data #}
+        {% if cache.oc_extension %}
+        <div class="card mb-2">
+          <div class="card-header py-1 small fw-semibold">{% trans "Opencaching data" %}</div>
+          <div class="card-body py-2">
+            {% with oc=cache.oc_extension %}
+            <div class="row g-2 small">
+              {% if oc.rating is not None %}<div class="col-6"><span class="text-muted">{% trans "Rating" %}</span> {{ oc.rating }}</div>{% endif %}
+              {% if oc.recommendations %}<div class="col-6"><span class="text-muted">{% trans "Recommendations" %}</span> {% if oc.user_recommended %}<span style="color:#fd7e14" title="{% trans 'You recommended this cache' %}">★</span>{% endif %}{{ oc.recommendations }}</div>{% endif %}
+              {% if oc.trip_time %}<div class="col-6"><span class="text-muted">{% trans "Trip time" %}</span> {{ oc.trip_time }} h</div>{% endif %}
+              {% if oc.trip_distance %}<div class="col-6"><span class="text-muted">{% trans "Trip distance" %}</span> {{ oc.trip_distance }} km</div>{% endif %}
+              {% if oc.needs_maintenance %}<div class="col-12"><span class="badge bg-warning text-dark">{% trans "Needs maintenance" %}</span></div>{% endif %}
+              {% if oc.req_passwd %}<div class="col-12"><span class="badge bg-danger">{% trans "Passphrase required" %}</span></div>{% endif %}
+              <div class="col-12">
+                <form method="post" action="{% url 'geocaches:oc_passphrase_save' cache.display_code %}" class="d-flex gap-1 align-items-center mt-1">
+                  {% csrf_token %}
+                  <label class="small text-muted me-1 mb-0">{% trans "Passphrase" %}</label>
+                  <input type="text" name="passphrase" class="form-control form-control-sm"
+                         style="max-width:180px" value="{{ oc.passphrase }}"
+                         placeholder="{% trans '(none)' %}" autocomplete="off">
+                  <button type="submit" class="btn btn-sm btn-outline-secondary">{% trans "Save" %}</button>
+                </form>
+              </div>
+            </div>
+            {% endwith %}
+          </div>
+        </div>
+        {% endif %}
+
+        {# Import info #}
+        <div class="card mb-2">
+          <div class="card-header py-1 small fw-semibold">{% trans "Import info" %}</div>
+          <div class="card-body py-2 small">
+            <span class="text-muted">{% trans "Imported" %}</span> {{ cache.imported_at|date:"Y-m-d H:i" }}<br>
+            <span class="text-muted">{% trans "Updated" %}</span> {{ cache.updated_at|date:"Y-m-d H:i" }}
+            {% if cache.last_gpx_date %}
+            <br><span class="text-muted">{% trans "Last GPX" %}</span> {{ cache.last_gpx_date|date:"Y-m-d H:i" }}
+            {% endif %}
+            {% if cache.oc_code %}
+            <br><span class="text-muted">{% trans "OC code" %}</span> <span class="font-monospace">{{ cache.oc_code }}</span>
+            {% endif %}
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+  {% endif %}{# end is_placeholder #}
+</div>
+
+{% localize off %}
+<div id="cache-detail-config"
+     data-cache-lat="{{ cache.latitude }}"
+     data-cache-lon="{{ cache.longitude }}"
+     data-cache-code="{{ cache.display_code|escapejs }}"
+     data-cache-name="{{ cache.name|escapejs }}"
+     data-cache-type="{{ cache.cache_type }}"
+     data-cache-type-short="{{ cache_type_short }}"
+     data-platform="{% if cache.oc_code and not cache.gc_code %}oc{% else %}gc{% endif %}"
+     data-icon-set="{{ icon_set }}"
+     data-csrf-token="{{ csrf_token }}"
+     data-save-map-url="{% url 'geocaches:save_map_state' cache.display_code %}"
+     data-reset-map-url="{% url 'geocaches:reset_map_state' cache.display_code %}"
+     {% if cache.corrected_coordinates %}
+     data-corr-lat="{{ cache.corrected_coordinates.latitude }}"
+     data-corr-lon="{{ cache.corrected_coordinates.longitude }}"
+     {% endif %}
+     {% if map_state %}
+     data-map-state='{"lat":{{ map_state.lat }},"lon":{{ map_state.lon }},"zoom":{{ map_state.zoom }}}'
+     {% endif %}
+     data-stages='[{% for s in stages %}{% if s.latitude is not None %}{% if not forloop.first %},{% endif %}{"lat":{{ s.latitude }},"lon":{{ s.longitude }},"found":{% if s.found %}true{% else %}false{% endif %},"num":{% if s.al_detail %}{{ s.al_detail.stage_number }}{% else %}0{% endif %},"name":"{{ s.name|escapejs }}"}{% endif %}{% endfor %}]'
+     data-wp-add-url="{% url 'geocaches:waypoint_add' cache.display_code %}"
+     style="display:none"></div>
+{% endlocalize %}
+{{ map_waypoints|json_script:"cache-map-waypoints" }}
+{{ coord_waypoints|json_script:"cache-coord-waypoints" }}
+{% include "geocaches/partials/_log_side_panel.html" %}
+{% if defuse_available %}{% include "geocaches/partials/_defuse_modal.html" %}{% endif %}
+
+{% include "geocaches/partials/_waypoint_modal.html" %}
+
+{% if cache.adventure and not cache.al_detail and stages %}
+<div class="modal fade" id="alcTagPropagateModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-sm">
+    <div class="modal-content">
+      <div class="modal-header py-2">
+        <h6 class="modal-title mb-0">{% trans "Propagate tag change?" %}</h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" style="font-size:.7rem"></button>
+      </div>
+      <div class="modal-body small">
+        {% blocktrans count n=stages|length %}Apply this change to all <strong>{{ n }} stage</strong> of this adventure as well?{% plural %}Apply this change to all <strong>{{ n }} stages</strong> of this adventure as well?{% endblocktrans %}
+      </div>
+      <div class="modal-footer py-2 gap-2">
+        <button type="button" class="btn btn-sm btn-secondary" id="alc-tag-no">{% trans "Parent only" %}</button>
+        <button type="button" class="btn btn-sm btn-primary" id="alc-tag-yes">{% trans "Yes, all stages" %}</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+{% load static %}
+<style>
+  .desc-html img { max-width: 100%; height: auto; }
+  .desc-html table { max-width: 100%; border-collapse: collapse; }
+  .desc-html td, .desc-html th { padding: 2px 6px; border: 1px solid #dee2e6; }
+  #cache-map { z-index: 0; }
+  #cache-map .maplibregl-ctrl-top-left .mapbox-gl-draw_ctrl-draw-btn { display: none; }
+
+  /* Draggable column divider (lg+ only) */
+  @media (min-width: 992px) {
+    .gcf-detail-row {
+      flex-wrap: nowrap;
+      --gcf-detail-left-w: 58.333%;
+    }
+    .gcf-detail-row > .gcf-detail-left {
+      flex: 0 0 var(--gcf-detail-left-w);
+      max-width: var(--gcf-detail-left-w);
+    }
+    .gcf-detail-row > .gcf-detail-right {
+      flex: 1 1 auto;
+      max-width: none;
+      min-width: 0;
+    }
+    .gcf-detail-col-divider {
+      flex: 0 0 8px;
+      cursor: col-resize;
+      position: relative;
+      margin: 0 -4px;
+    }
+    .gcf-detail-col-divider::before {
+      content: '';
+      position: absolute;
+      left: 3px; right: 3px; top: 0; bottom: 0;
+      background: transparent;
+      border-radius: 1px;
+      transition: background 0.15s;
+    }
+    .gcf-detail-col-divider:hover::before,
+    .gcf-detail-col-divider:active::before {
+      background: rgba(13, 110, 253, 0.35);
+    }
+  }
+
+  /* Vertical map resizer */
+  .gcf-detail-map-resizer {
+    height: 8px;
+    cursor: row-resize;
+    background: transparent;
+    border-top: 1px solid #dee2e6;
+    transition: background 0.15s;
+    user-select: none;
+  }
+  .gcf-detail-map-resizer:hover,
+  .gcf-detail-map-resizer:active {
+    background: rgba(13, 110, 253, 0.35);
+  }
+
+  /* Live measurement tooltip during drawing */
+  .gcf-draw-measure-tip {
+    position: fixed;
+    pointer-events: none;
+    background: rgba(0, 0, 0, 0.78);
+    color: #fff;
+    font: 11px/1.3 sans-serif;
+    padding: 3px 7px;
+    border-radius: 3px;
+    z-index: 1100;
+    white-space: nowrap;
+  }
+</style>
+{% include "geocaches/partials/_file_browser.html" %}
+
+{# Manual location / elevation editor — dialog opened from the Location / Elev #}
+{# lines, populates dropdowns from the downloaded boundary files. #}
+{% load l10n %}
+<div class="modal fade" id="cache-location-edit" tabindex="-1" aria-hidden="true"
+     data-options-url="{% url 'geocaches:cache_location_options' cache.display_code %}"
+     data-country="{{ cache.iso_country_code|default_if_none:'' }}"
+     data-state="{{ cache.state|default_if_none:'' }}"
+     data-county="{{ cache.county|default_if_none:'' }}"
+     data-elevation="{% if cache.elevation_user is not None %}{{ cache.elevation_user|unlocalize }}{% endif %}">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form method="post" action="{% url 'geocaches:cache_save_location' cache.display_code %}">
+        {% csrf_token %}
+        <div class="modal-header">
+          <h5 class="modal-title">{% trans "Edit location & elevation" %}</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <p class="text-muted small mb-3">
+            {% trans "Manually-set values stick — the enrichment passes (online and offline polygons) skip caches edited here. Clearing every location field re-enables enrichment." %}
+          </p>
+          <div class="mb-3">
+            <label class="form-label small" for="cache-loc-country">{% trans "Country" %}</label>
+            <select class="form-select form-select-sm" name="country" id="cache-loc-country"></select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label small" for="cache-loc-state">{% trans "State / region" %}</label>
+            <select class="form-select form-select-sm" name="state" id="cache-loc-state" disabled></select>
+            <small class="text-muted" id="cache-loc-state-note"></small>
+          </div>
+          <div class="mb-3">
+            <label class="form-label small" for="cache-loc-county">{% trans "County" %}</label>
+            <select class="form-select form-select-sm" name="county" id="cache-loc-county" disabled></select>
+            <small class="text-muted" id="cache-loc-county-note"></small>
+          </div>
+          <div class="mb-0">
+            <label class="form-label small" for="cache-loc-elevation">{% trans "Elevation (m)" %}</label>
+            <input class="form-control form-control-sm" type="number" step="0.1"
+                   name="elevation_user" id="cache-loc-elevation" inputmode="decimal">
+            <small class="text-muted">{% trans "Leave blank to use the system-supplied value." %}</small>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">{% trans "Cancel" %}</button>
+          <button type="submit" class="btn btn-primary btn-sm">{% trans "Save" %}</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script src="{% static 'js/file-browser.js' %}"></script>
+<script src="{% static 'js/export-gpx.js' %}"></script>
+<script src="{% static 'js/cache-detail.js' %}"></script>
+<script src="{% static 'js/cache-location-edit.js' %}"></script>
+<script>
+  gcfLoadMapLibre({
+    draw: true,
+    scripts: [
+      '{% static "js/map-styles.js" %}',
+      '{% static "js/map-offline.js" %}',
+      '{% static "js/map-icons.js" %}',
+      '{% static "js/cache-detail-map.js" %}'
+    ],
+    onReady: function() {
+      if (typeof gcfDetailMapInit === 'function') gcfDetailMapInit();
+    }
+  });
+</script>
+{% if cache.adventure and not cache.al_detail and stages %}
+<script>
+(function () {
+  var modalEl = document.getElementById('alcTagPropagateModal');
+  if (!modalEl) return;
+  var modal = new bootstrap.Modal(modalEl);
+  var pendingForm = null;
+
+  var tagEditPath = '{% url "geocaches:tag_edit" cache.display_code %}';
+  document.querySelectorAll('form').forEach(function (form) {
+    if (form.getAttribute('action') === tagEditPath) {
+      form.addEventListener('submit', function (e) {
+        e.preventDefault();
+        pendingForm = form;
+        modal.show();
+      });
+    }
+  });
+
+  document.getElementById('alc-tag-yes').addEventListener('click', function () {
+    modal.hide();
+    if (!pendingForm) return;
+    var inp = document.createElement('input');
+    inp.type = 'hidden';
+    inp.name = 'propagate';
+    inp.value = 'yes';
+    pendingForm.appendChild(inp);
+    pendingForm.submit();
+    pendingForm = null;
+  });
+
+  document.getElementById('alc-tag-no').addEventListener('click', function () {
+    modal.hide();
+    if (!pendingForm) return;
+    pendingForm.submit();
+    pendingForm = null;
+  });
+})();
+</script>
+{% endif %}
+{% endblock %}
