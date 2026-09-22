@@ -1,0 +1,309 @@
+{% load i18n %}
+    <div class="tab-pane{% if active_tab == 'accounts' %} active show{% endif %}" id="accounts">
+
+      {# ---- Geocaching username ---- #}
+      <div class="card mb-3">
+        <div class="card-body">
+          <h6 class="mb-2">{% trans "Geocaching username" %}</h6>
+          <form method="post" action="{% url 'preferences:save_gc_username' %}">
+            {% csrf_token %}
+            <div class="d-flex align-items-end gap-3">
+              <div>
+                <input type="text" name="gc_username" class="form-control form-control-sm"
+                       style="max-width:260px" placeholder="{% trans 'e.g. YourGCName' %}"
+                       value="{{ gc_username }}">
+                <p class="text-muted small mt-1 mb-0">
+                  {% trans "Used to identify your logs in GPX exports (your logs appear first)." %}
+                </p>
+              </div>
+              <button type="submit" class="btn btn-sm btn-primary">{% trans "Save" %}</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      {# ---- Platform accounts ---- #}
+      <div class="card">
+        <div class="card-body">
+          <p class="text-muted small mb-3">
+            {% blocktrans %}Accounts identify you on geocaching platforms.
+            GCForge uses them to detect caches you own and logs you wrote.
+            Use the Authorize button to grant API access (needed for found status, log submission, etc.).{% endblocktrans %}
+          </p>
+
+          {% if account_msg %}
+          <div class="alert alert-{% if account_msg.ok %}success{% else %}danger{% endif %} fade show py-2 d-flex align-items-center justify-content-between" role="alert">
+            <span>{{ account_msg.text }}</span>
+            <button type="button" class="btn-close ms-2 flex-shrink-0" data-bs-dismiss="alert"></button>
+          </div>
+          {% endif %}
+
+          {% if user_accounts %}
+          <table class="table table-sm table-bordered mb-4" style="min-width:700px">
+            <thead class="table-light">
+              <tr>
+                <th>{% trans "Platform" %}</th>
+                <th>{% trans "Username" %}</th>
+                <th>{% trans "OAuth" %}</th>
+                <th>{% trans "Password" %}</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for row in user_accounts %}{% with acct=row.acct %}
+              <tr>
+                <td>{{ acct.get_platform_display }}</td>
+                <td>
+                  {{ acct.username }}
+                  {% if acct.is_default %}
+                    <span class="text-warning" title="{% trans 'Default account' %}">★</span>
+                  {% else %}
+                    <form method="post" action="{% url 'accounts:set_default_account' %}" class="d-inline">{% csrf_token %}
+                      <input type="hidden" name="acct_id" value="{{ acct.pk }}">
+                      <button class="btn btn-link p-0 text-secondary border-0"
+                              style="font-size:1em;vertical-align:baseline;"
+                              title="{% trans 'Set as default' %}">★</button>
+                    </form>
+                  {% endif %}
+                  {% if acct.user_id %}<br><small class="text-muted font-monospace">{{ acct.user_id }}</small>{% endif %}
+                </td>
+
+                {# OAuth / API token status #}
+                <td class="small">
+                  {% if acct.platform == 'gc' and row.has_gc_api %}
+                  {% if row.gc_api_verified %}
+                  <span id="gc-api-status" class="text-success small">&#10003; {% trans "Verified" %}</span>
+                  {% else %}
+                  <span id="gc-api-status" class="text-warning small">{% trans "Token file present — not verified" %}</span>
+                  {% endif %}
+                  <button class="btn btn-xs btn-outline-secondary py-0 px-1 ms-1"
+                          hx-post="{% url 'accounts:account_validate_gc' %}"
+                          hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
+                          hx-target="#gc-api-status"
+                          hx-swap="outerHTML"
+                          title="{% trans 'Validate GC API token by calling /users/me' %}">{% trans "Validate" %}</button>
+                  {% elif acct.platform == 'gc' %}
+                  <span class="text-muted">{% trans "No API tokens" %}</span>
+                  {% elif row.has_oauth %}
+                  <span id="oauth-status-{{ acct.pk }}" class="text-success">{% trans "Active" %}</span>
+                  <button class="btn btn-xs btn-outline-secondary py-0 px-1 ms-1"
+                          hx-post="{% url 'accounts:account_validate_oauth' %}"
+                          hx-vals='{"acct_id": "{{ acct.pk }}"}'
+                          hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
+                          hx-target="#oauth-status-{{ acct.pk }}"
+                          hx-swap="outerHTML"
+                          title="{% trans 'Check if token is still valid' %}">{% trans "Validate" %}</button>
+                  {% else %}
+                  <form method="post" action="{% url 'accounts:oauth_start' %}" class="d-inline">
+                    {% csrf_token %}
+                    <input type="hidden" name="acct_id" value="{{ acct.pk }}">
+                    <button class="btn btn-sm btn-outline-warning py-0">{% trans "Inactive — Authorize" %}</button>
+                  </form>
+                  {% endif %}
+                </td>
+
+                {# Password status #}
+                <td class="small">
+                  {% if row.has_password %}
+                  <span class="text-muted">{% trans "Stored in keyring" %}</span>
+                  <span id="pw-result-{{ acct.pk }}"></span>
+                  <button class="btn btn-xs btn-outline-secondary py-0 px-1 ms-1"
+                          hx-post="{% url 'accounts:account_test_password' %}"
+                          hx-vals='{"acct_id": "{{ acct.pk }}"}'
+                          hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
+                          hx-target="#pw-result-{{ acct.pk }}"
+                          hx-swap="innerHTML"
+                          title="{% trans 'Test credentials against the platform' %}">{% trans "Test" %}</button>
+                  {% else %}
+                  <span class="text-muted">{% trans "Not stored" %}</span>
+                  {% endif %}
+                </td>
+
+                {# Actions #}
+                <td class="text-nowrap">
+                  <button type="button" class="btn btn-sm btn-outline-primary py-0"
+                          data-bs-toggle="collapse" data-bs-target="#edit-acct-{{ acct.pk }}">{% trans "Edit" %}</button>
+                  {% if acct.platform != 'gc' and row.has_oauth %}
+                  <form method="post" action="{% url 'accounts:oauth_start' %}" class="d-inline">
+                    {% csrf_token %}
+                    <input type="hidden" name="acct_id" value="{{ acct.pk }}">
+                    <button class="btn btn-sm btn-outline-success py-0" title="{% trans 'Re-authorize' %}">{% trans "Re-auth" %}</button>
+                  </form>
+                  {% endif %}
+                  <form method="post" action="{% url 'accounts:delete_account' %}" class="d-inline">{% csrf_token %}
+                    <input type="hidden" name="acct_id" value="{{ acct.pk }}">
+                    <button class="btn btn-sm btn-outline-danger py-0"
+                            onclick="return confirm('{% blocktrans with label=acct.get_label %}Delete account {{ label }}?{% endblocktrans %}')">{% trans "Delete" %}</button>
+                  </form>
+                </td>
+              </tr>
+              <tr class="collapse" id="edit-acct-{{ acct.pk }}">
+                <td colspan="5" class="bg-light py-2 px-3">
+                  <form method="post" action="{% url 'accounts:edit_account' %}" class="row g-2 align-items-end flex-wrap">
+                    {% csrf_token %}
+                    <input type="hidden" name="acct_id" value="{{ acct.pk }}">
+                    <div class="col-auto">
+                      <label class="form-label small mb-0">{% trans "Platform" %}</label>
+                      <select name="acct_platform" class="form-select form-select-sm">
+                        {% for val, label in acct.PLATFORM_CHOICES %}
+                        <option value="{{ val }}" {% if acct.platform == val %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                      </select>
+                    </div>
+                    <div class="col-auto">
+                      <label class="form-label small mb-0">{% trans "User ID" %}</label>
+                      <input type="text" name="acct_user_id" class="form-control form-control-sm"
+                             value="{{ acct.user_id }}" style="max-width:120px">
+                    </div>
+                    <div class="col-auto">
+                      <label class="form-label small mb-0">{% trans "Username" %}</label>
+                      <input type="text" name="acct_username" class="form-control form-control-sm"
+                             value="{{ acct.username }}" style="max-width:180px" required>
+                    </div>
+                    <div class="col-auto">
+                      <label class="form-label small mb-0">{% trans "Label" %}</label>
+                      <input type="text" name="acct_label" class="form-control form-control-sm"
+                             value="{{ acct.label }}" style="max-width:180px">
+                    </div>
+                    <div class="col-auto">
+                      <label class="form-label small mb-0">{% trans "Profile URL" %}</label>
+                      <input type="url" name="acct_profile_url" class="form-control form-control-sm"
+                             value="{{ acct.profile_url }}" style="max-width:240px">
+                    </div>
+                    <div class="col-auto">
+                      <label class="form-label small mb-0">{% trans "Notes" %}</label>
+                      <input type="text" name="acct_notes" class="form-control form-control-sm"
+                             value="{{ acct.notes }}" style="max-width:200px">
+                    </div>
+                    <div class="w-100 mt-2"><small class="text-muted">{% trans "Password" %}</small></div>
+                    <div class="col-auto">
+                      <label class="form-label small mb-0">{% trans "New password" %}</label>
+                      <input type="password" name="acct_new_password" class="form-control form-control-sm"
+                             style="max-width:200px" autocomplete="new-password"
+                             placeholder="{% trans 'leave blank to keep current' %}">
+                    </div>
+                    <div class="col-auto align-self-end pb-1">
+                      <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="acct_store_password" value="1"
+                               id="store-pw-{{ acct.pk }}">
+                        <label class="form-check-label small" for="store-pw-{{ acct.pk }}">{% trans "Store in keystore" %}</label>
+                      </div>
+                    </div>
+                    {% if row.has_oauth %}
+                    <div class="col-12">
+                      <small class="text-muted">{% trans "Entering a new password will trigger re-authorization." %}</small>
+                    </div>
+                    {% endif %}
+                    {% if acct.platform != 'gc' %}
+                    <div class="w-100 mt-1"><small class="text-muted">{% trans "OKAPI credentials (opencaching only)" %}</small></div>
+                    <div class="col-auto">
+                      <label class="form-label small mb-0">{% trans "Consumer key" %}</label>
+                      <input type="text" name="acct_consumer_key" class="form-control form-control-sm font-monospace"
+                             value="{{ acct.consumer_key }}" style="max-width:280px" autocomplete="off">
+                    </div>
+                    <div class="col-auto">
+                      <small class="text-muted">{% trans "OAuth tokens stored securely in OS keyring" %}</small>
+                    </div>
+                    {% endif %}
+                    <div class="col-auto">
+                      <button type="submit" class="btn btn-sm btn-primary">{% trans "Save" %}</button>
+                      <button type="button" class="btn btn-sm btn-outline-secondary ms-1"
+                              data-bs-toggle="collapse" data-bs-target="#edit-acct-{{ acct.pk }}">{% trans "Cancel" %}</button>
+                    </div>
+                  </form>
+                </td>
+              </tr>
+              {% endwith %}{% endfor %}
+            </tbody>
+          </table>
+          {% else %}
+          <p class="text-muted small">{% trans "No accounts configured yet." %}</p>
+          {% endif %}
+
+          {# ---- Add account ---- #}
+          <h6 class="mt-3 mb-1">{% trans "Provide user information for a geocaching platform" %}</h6>
+          {% if registered_platforms|length >= 6 %}
+          <p class="text-muted small">{% trans "All platforms are already registered. Use the edit button above to update an account." %}</p>
+          {% else %}
+          <p class="text-muted small mb-2">
+            {% blocktrans %}For OpenCaching platforms, looks up your user ID and profile URL from the platform API.
+            For geocaching.com, enter your username and password. Use the Authorize button afterwards to grant API access (OC only).{% endblocktrans %}
+          </p>
+          <form method="post" action="{% url 'accounts:login_account' %}" class="row g-2 align-items-end flex-wrap">
+            {% csrf_token %}
+            <div class="col-auto">
+              <label class="form-label form-label-sm mb-1">{% trans "Platform" %}</label>
+              <select name="login_platform" class="form-select form-select-sm">
+                {% if "gc"    not in registered_platforms %}<option value="gc">geocaching.com</option>{% endif %}
+                {% if "oc_de" not in registered_platforms %}<option value="oc_de">opencaching.de</option>{% endif %}
+                {% if "oc_pl" not in registered_platforms %}<option value="oc_pl">opencaching.pl</option>{% endif %}
+                {% if "oc_uk" not in registered_platforms %}<option value="oc_uk">opencache.uk</option>{% endif %}
+                {% if "oc_nl" not in registered_platforms %}<option value="oc_nl">opencaching.nl</option>{% endif %}
+                {% if "oc_us" not in registered_platforms %}<option value="oc_us">opencaching.us</option>{% endif %}
+              </select>
+            </div>
+            <div class="col-auto">
+              <label class="form-label form-label-sm mb-1">{% trans "Username" %}</label>
+              <input type="text" name="login_username" class="form-control form-control-sm"
+                     style="max-width:200px" placeholder="{% trans 'Your username' %}" required>
+            </div>
+            <div class="col-auto">
+              <label class="form-label form-label-sm mb-1">{% trans "Password" %}</label>
+              <input type="password" name="login_password" class="form-control form-control-sm"
+                     style="max-width:200px" autocomplete="new-password">
+            </div>
+            <div class="col-auto align-self-end pb-1">
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="login_store_password" value="1"
+                       id="login-store-pw" checked>
+                <label class="form-check-label small" for="login-store-pw">{% trans "Store in keystore" %}</label>
+              </div>
+            </div>
+            <div class="col-12">
+              <details class="mt-1">
+                <summary class="text-muted small" style="cursor:pointer"
+                         title="{% trans 'Not needed for most users' %}">{% trans "Custom consumer key (advanced, OC only)" %}</summary>
+                <div class="row g-2 mt-1">
+                  <div class="col-auto">
+                    <input type="text" name="login_consumer_key" class="form-control form-control-sm font-monospace"
+                           style="max-width:280px" placeholder="{% trans 'overrides platform default' %}" autocomplete="off">
+                  </div>
+                </div>
+              </details>
+            </div>
+            <div class="col-auto">
+              <button type="submit" class="btn btn-sm btn-primary">{% trans "Add" %}</button>
+            </div>
+          </form>
+          {% endif %}
+        </div>
+      </div>
+
+      {# ---- Adventure Lab ---- #}
+      <div class="card mt-3">
+        <div class="card-body">
+          <h6 class="mb-2">{% trans "Adventure Lab" %}</h6>
+          <form method="post" action="{% url 'preferences:save_al_prefs' %}">
+            {% csrf_token %}
+            <div class="mb-2">
+              <label class="form-label small mb-1">{% trans "Your geocaching.com public GUID" %}</label>
+              <div class="d-flex gap-2 align-items-center">
+                <input type="text" name="gc_public_guid" id="gc_public_guid"
+                       class="form-control form-control-sm font-monospace"
+                       style="max-width:340px" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+                       value="{{ gc_public_guid }}">
+                <button type="button" class="btn btn-sm btn-outline-secondary"
+                        id="fetch-guid-btn" onclick="gcfFetchPublicGuid()">{% trans "Look up" %}</button>
+                <span id="fetch-guid-status" class="small text-muted"></span>
+              </div>
+              <p class="text-muted small mt-1 mb-0">
+                {% blocktrans %}Used to fetch your Adventure Lab founds. Click "Look up" to auto-detect it from geocaching.com
+                using your username above. Leave empty to skip found-state sync.{% endblocktrans %}
+              </p>
+            </div>
+            <button type="submit" class="btn btn-sm btn-primary">{% trans "Save" %}</button>
+          </form>
+        </div>
+      </div>
+
+    </div>

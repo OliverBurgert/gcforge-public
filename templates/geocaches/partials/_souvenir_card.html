@@ -1,0 +1,18 @@
+{% load cache_tags i18n %}
+{% comment %}One souvenir card. Expects ``s`` in context.{% endcomment %}
+<div class="gcf-souv-card">
+  {% if s.thumb_image_path %}
+    {% if s.url %}<a href="{{ s.url }}" target="_blank" rel="noopener">{% endif %}
+    <img src="{{ s.thumb_image_path|cached_image:'souvenir' }}" alt="{{ s.title }}" loading="lazy">
+    {% if s.url %}</a>{% endif %}
+  {% endif %}
+  <div class="gcf-souv-title" title="{{ s.title }}">{{ s.title }}</div>
+  {% if s.found_date %}<div class="gcf-souv-date">{{ s.found_date|date:"Y-m-d" }}</div>{% endif %}
+  <div class="gcf-souv-tags">
+    {% for t in s.tags.all %}<span class="badge text-bg-light border">{{ t.name }}</span>{% endfor %}
+    <button type="button" class="btn btn-link btn-sm gcf-souv-tagbtn" title="{% trans 'Edit tags' %}"
+            hx-get="{% url 'geocaches:dashboard_souvenirs_tag_editor' %}?sid={{ s.id }}"
+            hx-target="#souv-tag-modal-body" hx-swap="innerHTML"
+            data-bs-toggle="modal" data-bs-target="#souv-tag-modal">🏷</button>
+  </div>
+</div>

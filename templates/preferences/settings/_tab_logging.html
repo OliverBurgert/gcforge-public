@@ -1,0 +1,134 @@
+{% load i18n %}
+    <div class="tab-pane{% if active_tab == 'logging' %} active show{% endif %}" id="logging">
+      <div class="card mb-3">
+        <div class="card-body">
+          <h6 class="mb-2">{% trans "Log templates" %}</h6>
+          <p class="text-muted small mb-3">
+            {% blocktrans %}Reusable log text snippets with <code>[name]</code>-style placeholders.
+            Available placeholders:
+            <code>[name]</code>, <code>[gc_code]</code>, <code>[oc_code]</code>,
+            <code>[type]</code>, <code>[size]</code>, <code>[difficulty]</code>, <code>[terrain]</code>,
+            <code>[owner]</code>, <code>[hidden_date]</code>, <code>[country]</code>, <code>[state]</code>,
+            <code>[lat]</code>, <code>[lon]</code>, <code>[today]</code>, <code>[log_date]</code>,
+            <code>[log_type]</code>, <code>[username]</code>, <code>[find_count]</code>.
+            <br>
+            Templates appear in the compose toolbar's <strong>📋</strong> dropdown,
+            filtered by the selected log type (templates with scope <em>any</em> always show).{% endblocktrans %}
+          </p>
+
+          {% if log_templates %}
+          <table class="table table-sm mb-3">
+            <thead><tr><th>{% trans "Name" %}</th><th>{% trans "Scope" %}</th><th>{% trans "Body" %}</th><th></th></tr></thead>
+            <tbody>
+              {% for tpl in log_templates %}
+              <tr>
+                <td class="small fw-semibold align-top">
+                  {{ tpl.name }}
+                  {% if tpl.is_default %}<span class="badge bg-secondary ms-1" style="font-size:.65rem">{% trans "default" %}</span>{% endif %}
+                </td>
+                <td class="small text-muted align-top">{{ tpl.get_scope_display }}</td>
+                <td class="small text-muted">
+                  <pre class="mb-0" style="white-space:pre-wrap;font-family:inherit;font-size:.8rem">{{ tpl.body|truncatechars:280 }}</pre>
+                </td>
+                <td class="text-end align-top">
+                  <form method="post" action="{% url 'preferences:delete_log_template' %}" class="d-inline">
+                    {% csrf_token %}
+                    <input type="hidden" name="template_id" value="{{ tpl.id }}">
+                    <button type="submit" class="btn btn-sm btn-outline-danger py-0"
+                            onclick="return confirm('{% blocktrans with name=tpl.name %}Delete template &#39;{{ name }}&#39;?{% endblocktrans %}')">{% trans "Delete" %}</button>
+                  </form>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+          {% else %}
+          <p class="text-muted small fst-italic">{% trans "No templates yet — add one below." %}</p>
+          {% endif %}
+
+          <details class="border rounded p-3 bg-light" {% if not log_templates %}open{% endif %}>
+            <summary class="fw-semibold small">{% trans "Add or update a template" %}</summary>
+            <form method="post" action="{% url 'preferences:add_log_template' %}" class="mt-3">
+              {% csrf_token %}
+              <div class="row g-2 mb-2">
+                <div class="col-md-6">
+                  <label class="form-label small mb-0">{% trans "Name" %}</label>
+                  <input type="text" name="template_name" class="form-control form-control-sm"
+                         placeholder="{% trans 'e.g. Quick TFTC' %}" required>
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label small mb-0">{% trans "Scope" %}</label>
+                  <select name="template_scope" class="form-select form-select-sm">
+                    {% for value, label in log_template_scopes %}
+                    <option value="{{ value }}">{{ label }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                  <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="template_default" value="1" id="template_default">
+                    <label class="form-check-label small" for="template_default">{% trans "Default" %}</label>
+                  </div>
+                </div>
+              </div>
+              <div class="mb-2">
+                <label class="form-label small mb-0">{% trans "Body" %}</label>
+                {% include "geocaches/partials/_log_compose_toolbar.html" with textarea_id="template_body" show_templates=False %}
+                <textarea name="template_body" id="template_body" class="form-control form-control-sm" rows="5"
+                          placeholder="{% trans 'Thanks [owner] for [name]! This was my [find_count]th find.' %}"></textarea>
+              </div>
+              <button type="submit" class="btn btn-sm btn-success">{% trans "Save template" %}</button>
+              <span class="text-muted small ms-2">{% trans "A name that already exists will be updated in place." %}</span>
+            </form>
+          </details>
+        </div>
+      </div>
+
+      <div class="card mb-3">
+        <div class="card-body">
+          <form method="post" action="{% url 'preferences:save_logging_prefs' %}">
+            {% csrf_token %}
+            <h6 class="mb-2">{% trans "Log image upload" %}</h6>
+            <div class="row g-3 mb-3">
+              <div class="col-auto">
+                <label class="form-label small mb-1">{% trans "Default max size" %}</label>
+                <select name="log_image_max_px" class="form-select form-select-sm" style="width:auto">
+                  <option value="512"  {% if log_image_max_px == 512  %}selected{% endif %}>512 px</option>
+                  <option value="1024" {% if log_image_max_px == 1024 %}selected{% endif %}>1024 px</option>
+                  <option value="1600" {% if log_image_max_px == 1600 %}selected{% endif %}>1600 px</option>
+                  <option value="2048" {% if log_image_max_px == 2048 %}selected{% endif %}>2048 px</option>
+                  <option value="0"    {% if log_image_max_px == 0    %}selected{% endif %}>{% trans "Original (no resize)" %}</option>
+                </select>
+              </div>
+              <div class="col-auto d-flex align-items-end pb-1">
+                <div class="form-check mb-0">
+                  <input type="checkbox" class="form-check-input" name="log_image_strip_exif"
+                         id="pref-strip-exif" {% if log_image_strip_exif %}checked{% endif %}>
+                  <label class="form-check-label small" for="pref-strip-exif">
+                    {% trans "Strip EXIF by default (recommended for privacy)" %}
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <hr class="my-3">
+            <h6 class="mb-2">{% trans "Trackables" %}</h6>
+            <div class="form-check mb-2">
+              <input type="checkbox" class="form-check-input" name="auto_fetch_tb_on_log"
+                     id="pref-auto-fetch-tb" {% if auto_fetch_tb_on_log %}checked{% endif %}>
+              <label class="form-check-label small" for="pref-auto-fetch-tb">
+                {% trans "Auto-fetch trackables during logging" %}
+              </label>
+              <div class="form-text">
+                {% blocktrans %}When a cache log includes a TB action with a tracking code (discover /
+                retrieve / grab), automatically fetch the TB's metadata + images from GC
+                and store the tracking code locally. Off by default — turn on if you want
+                ad-hoc discoveries to populate your trackable list without a separate sync.{% endblocktrans %}
+              </div>
+            </div>
+
+            <button type="submit" class="btn btn-sm btn-primary mt-2">{% trans "Save" %}</button>
+          </form>
+        </div>
+      </div>
+    </div>

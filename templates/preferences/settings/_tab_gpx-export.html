@@ -1,0 +1,232 @@
+{% load i18n %}
+    <div class="tab-pane{% if active_tab == 'gpx-export' %} active show{% endif %}" id="gpx-export">
+      <div class="card mb-3">
+        <div class="card-body">
+
+          {# Presets toolbar #}
+          <div class="d-flex flex-wrap align-items-center gap-2 mb-3 pb-3 border-bottom">
+            <span class="small fw-semibold me-1">{% trans "Presets:" %}</span>
+            {% if gpx_export_presets %}
+            {% for preset in gpx_export_presets %}
+            <form method="post" action="{% url 'preferences:load_gpx_export_preset' %}" class="d-inline">
+              {% csrf_token %}<input type="hidden" name="preset_id" value="{{ preset.pk }}">
+              <button type="submit" class="btn btn-outline-secondary btn-sm py-0">{{ preset.name }}</button>
+            </form>
+            <form method="post" action="{% url 'preferences:delete_gpx_export_preset' %}" class="d-inline"
+                  onsubmit="return confirm('{% blocktrans with name=preset.name %}Delete preset \'{{ name }}\'?{% endblocktrans %}')">
+              {% csrf_token %}<input type="hidden" name="preset_id" value="{{ preset.pk }}">
+              <button type="submit" class="btn btn-outline-danger btn-sm py-0 px-1" title="{% trans 'Delete preset' %}">×</button>
+            </form>
+            {% endfor %}
+            <span class="text-muted small">|</span>
+            {% endif %}
+            <form method="post" action="{% url 'preferences:add_gpx_export_preset' %}" class="d-inline d-flex gap-1">
+              {% csrf_token %}
+              <input type="text" name="preset_name" class="form-control form-control-sm" style="width:140px" placeholder="{% trans 'New preset name…' %}" required>
+              <button type="submit" class="btn btn-outline-primary btn-sm py-0">{% trans "Save as preset" %}</button>
+            </form>
+            <form method="post" action="{% url 'preferences:reset_gpx_export' %}" class="d-inline ms-auto"
+                  onsubmit="return confirm('{% trans "Reset all GPX export settings to defaults?" %}')">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-outline-secondary btn-sm py-0">{% trans "Reset to defaults" %}</button>
+            </form>
+          </div>
+
+          <form method="post" action="{% url 'preferences:save_gpx_export' %}">
+            {% csrf_token %}
+
+            {# Notes section #}
+            <h6 class="mb-2">{% trans "Include notes as user notes in logs section" %}</h6>
+            <div class="mb-2 ps-2">
+              <div class="form-check mb-1">
+                <input class="form-check-input" type="checkbox" name="notes_gcforge" id="gpx_notes_gcforge"
+                       {% if gpx_export.notes_gcforge %}checked{% endif %}>
+                <label class="form-check-label small" for="gpx_notes_gcforge">
+                  {% trans "Add GCForge user notes" %}
+                  <span class="text-muted">{% trans '(plain text, heading: "Note from [date]:")' %}</span>
+                </label>
+              </div>
+              <div class="form-check mb-1">
+                <input class="form-check-input" type="checkbox" name="notes_gc_user" id="gpx_notes_gc_user"
+                       {% if gpx_export.notes_gc_user %}checked{% endif %}>
+                <label class="form-check-label small" for="gpx_notes_gc_user">
+                  {% trans "Add user notes from geocaching.com" %}
+                  <span class="text-muted">{% trans "(personal note stored on the cache)" %}</span>
+                </label>
+              </div>
+              <div class="form-check mb-1">
+                <input class="form-check-input" type="checkbox" name="notes_field_notes" id="gpx_notes_field_notes"
+                       {% if gpx_export.notes_field_notes %}checked{% endif %}>
+                <label class="form-check-label small" for="gpx_notes_field_notes">
+                  {% trans "Add field notes" %}
+                  <span class="text-muted">{% trans '(heading: "Field note from [date]:")' %}</span>
+                </label>
+              </div>
+              <div class="form-check mb-3">
+                <input class="form-check-input" type="checkbox" name="notes_corrected" id="gpx_notes_corrected"
+                       {% if gpx_export.notes_corrected %}checked{% endif %}>
+                <label class="form-check-label small" for="gpx_notes_corrected">
+                  {% trans "Add corrected coordinates comment" %}
+                  <span class="text-muted">{% trans "(lat/lon, note, updated at)" %}</span>
+                </label>
+              </div>
+              <div class="d-flex gap-4">
+                <div class="form-check">
+                  <input class="form-check-input" type="radio" name="notes_fuse" id="gpx_notes_fuse_yes"
+                         value="fuse" {% if gpx_export.notes_fuse %}checked{% endif %}>
+                  <label class="form-check-label small" for="gpx_notes_fuse_yes">{% trans "Fuse to one note" %}</label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input" type="radio" name="notes_fuse" id="gpx_notes_fuse_no"
+                         value="separate" {% if not gpx_export.notes_fuse %}checked{% endif %}>
+                  <label class="form-check-label small" for="gpx_notes_fuse_no">{% trans "Export as separate notes" %}</label>
+                </div>
+              </div>
+            </div>
+
+            <hr class="my-3">
+
+            {# Child Waypoints #}
+            <h6 class="mb-2">{% trans "Child Waypoints" %}</h6>
+            <div class="mb-2 ps-2">
+              <div class="form-check mb-1">
+                <input class="form-check-input" type="checkbox" name="wp_hidden" id="gpx_wp_hidden"
+                       {% if gpx_export.wp_hidden %}checked{% endif %}>
+                <label class="form-check-label small" for="gpx_wp_hidden"
+                       title="{% trans 'Exports child waypoints even if marked as hidden' %}">
+                  {% trans "Export hidden waypoints" %}
+                </label>
+              </div>
+              <div class="form-check mb-1">
+                <input class="form-check-input" type="checkbox" name="wp_completed" id="gpx_wp_completed"
+                       {% if gpx_export.wp_completed %}checked{% endif %}
+                       onchange="document.getElementById('gpx_wp_completed_opts').style.display=this.checked?'':'none'">
+                <label class="form-check-label small" for="gpx_wp_completed">{% trans "Export solved/completed waypoints" %}</label>
+              </div>
+              <div id="gpx_wp_completed_opts" class="ps-4 mb-1"
+                   style="{% if not gpx_export.wp_completed %}display:none{% endif %}">
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" name="wp_completed_as_hidden" id="gpx_wp_completed_as_hidden"
+                         {% if gpx_export.wp_completed_as_hidden %}checked{% endif %}>
+                  <label class="form-check-label small text-muted" for="gpx_wp_completed_as_hidden">
+                    {% trans "Export completed waypoints as hidden" %}
+                    <span class="badge bg-secondary fw-normal" style="font-size:.7rem">{% trans "not yet implemented" %}</span>
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <hr class="my-3">
+
+            {# Corrected Coordinates #}
+            <h6 class="mb-2">{% trans "Corrected Coordinates" %}</h6>
+            <div class="mb-2 ps-2">
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="cc_original_as_wp" id="gpx_cc_original_as_wp"
+                       {% if gpx_export.cc_original_as_wp %}checked{% endif %}>
+                <label class="form-check-label small" for="gpx_cc_original_as_wp">
+                  {% trans "Add original coordinates as child waypoint" %}
+                  <span class="text-muted">{% trans "(prefix OW, type Reference Point)" %}</span>
+                </label>
+              </div>
+            </div>
+
+            <hr class="my-3">
+
+            {# Logs #}
+            <h6 class="mb-2">{% trans "Logs" %}</h6>
+            <div class="mb-2 ps-2">
+              <div class="d-flex align-items-center gap-2 mb-2">
+                <label class="form-label small mb-0" for="gpx_logs_max">{% trans "Maximum number of logs to export" %}</label>
+                <input type="number" name="logs_max" id="gpx_logs_max" min="0"
+                       class="form-control form-control-sm" style="width:90px"
+                       value="{{ gpx_export.logs_max }}" placeholder="{% trans 'All' %}">
+                <span class="text-muted small">{% trans "(blank = all; does not count note entries)" %}</span>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="logs_my_on_top" id="gpx_logs_my_on_top"
+                       {% if gpx_export.logs_my_on_top %}checked{% endif %}>
+                <label class="form-check-label small" for="gpx_logs_my_on_top">{% trans "Put my logs on top (below notes)" %}</label>
+              </div>
+            </div>
+
+            <hr class="my-3">
+
+            {# Adventure Labs #}
+            <h6 class="mb-2">{% trans "Adventure Labs" %}</h6>
+            <div class="mb-2 ps-2">
+              <p class="small fw-semibold mb-1">{% trans "Export stages as child waypoints in parent cache:" %}</p>
+              <div class="d-flex flex-column gap-1 mb-3">
+                <div class="form-check">
+                  <input class="form-check-input" type="radio" name="alc_stages" id="gpx_alc_child_only"
+                         value="child_only" {% if gpx_export.alc_stages == "child_only" %}checked{% endif %}>
+                  <label class="form-check-label small" for="gpx_alc_child_only">
+                    {% trans "Only as child waypoints — stages are not exported as separate cache records" %}
+                  </label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input" type="radio" name="alc_stages" id="gpx_alc_child_and_export"
+                         value="child_and_export" {% if gpx_export.alc_stages == "child_and_export" %}checked{% endif %}>
+                  <label class="form-check-label small" for="gpx_alc_child_and_export">
+                    {% trans "As child waypoints and export stages as individual cache records" %}
+                  </label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input" type="radio" name="alc_stages" id="gpx_alc_dont_export"
+                         value="dont_export" {% if gpx_export.alc_stages == "dont_export" %}checked{% endif %}>
+                  <label class="form-check-label small" for="gpx_alc_dont_export">{% trans "Don't export ALC stages" %}</label>
+                </div>
+              </div>
+
+              <p class="small fw-semibold mb-1">{% trans "Completed stages:" %}</p>
+              <div class="d-flex flex-column gap-1">
+                <div class="form-check">
+                  <input class="form-check-input" type="radio" name="alc_completed" id="gpx_alc_found_invisible"
+                         value="found_invisible" {% if gpx_export.alc_completed == "found_invisible" %}checked{% endif %}>
+                  <label class="form-check-label small" for="gpx_alc_found_invisible">
+                    {% trans 'Export as "found" and invisible' %}
+                    <span class="badge bg-secondary fw-normal" style="font-size:.7rem">{% trans "not yet implemented" %}</span>
+                  </label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input" type="radio" name="alc_completed" id="gpx_alc_found_visible"
+                         value="found_visible" {% if gpx_export.alc_completed == "found_visible" %}checked{% endif %}>
+                  <label class="form-check-label small" for="gpx_alc_found_visible">{% trans 'Export as "found" and visible' %}</label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input" type="radio" name="alc_completed" id="gpx_alc_completed_skip"
+                         value="dont_export" {% if gpx_export.alc_completed == "dont_export" %}checked{% endif %}>
+                  <label class="form-check-label small" for="gpx_alc_completed_skip">{% trans "Don't export separately" %}</label>
+                </div>
+              </div>
+            </div>
+
+            <hr class="my-3">
+
+            {# Events #}
+            <h6 class="mb-2">{% trans "Events" %}</h6>
+            <div class="mb-2 ps-2">
+              <div class="form-check mb-2">
+                <input class="form-check-input" type="checkbox" name="events_exclude_past" id="gpx_events_exclude_past"
+                       {% if gpx_export.events_exclude_past %}checked{% endif %}>
+                <label class="form-check-label small" for="gpx_events_exclude_past">
+                  {% trans "Exclude past events" %}
+                  <span class="text-muted">{% trans "(skip events whose date is before today)" %}</span>
+                </label>
+              </div>
+              <div class="d-flex align-items-center gap-2">
+                <label class="form-label small mb-0" for="gpx_events_days_ahead">{% trans "Export events for the next" %}</label>
+                <input type="number" name="events_days_ahead" id="gpx_events_days_ahead" min="1"
+                       class="form-control form-control-sm" style="width:90px"
+                       value="{{ gpx_export.events_days_ahead }}" placeholder="{% trans 'All' %}">
+                <span class="text-muted small">{% trans "days only (blank = no limit)" %}</span>
+              </div>
+            </div>
+
+            <hr class="my-3">
+            <button type="submit" class="btn btn-primary btn-sm">{% trans "Save GPX export settings" %}</button>
+
+          </form>
+        </div>
+      </div>
+    </div>{# end gpx-export #}

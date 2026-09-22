@@ -1,0 +1,13 @@
+{% load i18n %}
+<h6 class="mt-4 d-flex align-items-center gap-2 flex-wrap">
+  {% trans "Finds by placed date" %}
+  <select id="dash-type-pd" name="stat_type" class="form-select form-select-sm fw-normal" style="width:auto"
+          hx-get="{% url 'geocaches:dashboard_stat_table' %}?table=placed_date"
+          hx-target="#dash-table-pd" hx-swap="innerHTML">
+    {% for value, label in type_options %}
+    <option value="{{ value }}" {% if value == tables.selected_type %}selected{% endif %}>{{ label }}</option>
+    {% endfor %}
+  </select>
+</h6>
+{% include "geocaches/partials/_dashboard_calendar.html" with cal=tables.placed_date %}
+{% include "geocaches/partials/_dashboard_missing_btn.html" with which="placed_date" min_id="min-pd" type_id="dash-type-pd" section_id="dash-table-pd" %}

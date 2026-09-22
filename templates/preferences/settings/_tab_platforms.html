@@ -1,0 +1,61 @@
+{% load i18n %}
+    <div class="tab-pane{% if active_tab == 'platforms' %} active show{% endif %}" id="platforms">
+      <div class="card">
+        <div class="card-body">
+          <p class="text-muted small mb-3">
+            {% blocktrans %}Application-level API keys for OpenCaching platforms. These are registered once per installation of GCForge
+            and shared by all user accounts on a given platform.<br>
+            GCForge ships with built-in keys for all supported OpenCaching nodes. You only need to enter a key here if you want
+            to override the default with your own registration at <code>&lt;node&gt;/okapi/signup.html</code>. Leave a field blank to use the built-in default.{% endblocktrans %}
+          </p>
+
+          <form method="post" action="{% url 'accounts:save_platform_keys' %}">
+            {% csrf_token %}
+
+            <table class="table table-sm table-bordered align-middle mb-3">
+              <thead class="table-light">
+                <tr>
+                  <th>{% trans "Platform" %}</th>
+                  <th>{% trans "Consumer key" %}</th>
+                  <th>{% trans "Consumer secret" %}</th>
+                  <th>{% trans "Status" %}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for pk in platform_keys %}
+                <tr>
+                  <td class="fw-semibold">{{ pk.label }}<br><small class="text-muted fw-normal">{{ pk.node_url }}</small></td>
+                  <td>
+                    <input type="text" name="okapi_key_{{ pk.platform }}"
+                           class="form-control form-control-sm font-monospace"
+                           value="{{ pk.custom_key }}"
+                           placeholder="{% if pk.has_bundled %}{% trans 'built-in default' %}{% else %}{% trans 'none — register at signup page' %}{% endif %}"
+                           autocomplete="off">
+                  </td>
+                  <td>
+                    <input type="password" name="okapi_secret_{{ pk.platform }}"
+                           class="form-control form-control-sm font-monospace"
+                           value="{{ pk.custom_secret }}"
+                           placeholder="{% if pk.has_bundled %}{% trans 'built-in default' %}{% else %}—{% endif %}"
+                           autocomplete="off">
+                  </td>
+                  <td class="small">
+                    {% if pk.custom_key %}
+                      <span class="badge bg-info text-dark">{% trans "custom key" %}</span>
+                    {% elif pk.has_bundled %}
+                      <span class="badge bg-success">{% trans "built-in" %}</span>
+                    {% else %}
+                      <span class="badge bg-secondary">{% trans "no key" %}</span>
+                      <a href="{{ pk.signup_url }}" target="_blank" rel="noopener" class="ms-1 small">{% trans "register" %}</a>
+                    {% endif %}
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+
+            <button type="submit" class="btn btn-sm btn-primary">{% trans "Save" %}</button>
+          </form>
+        </div>
+      </div>
+    </div>

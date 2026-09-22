@@ -1,0 +1,420 @@
+{% comment %}
+Map container — included in base.html after #content.
+Hidden by default; shown when layout switches to split or map.
+{% endcomment %}
+{% load i18n %}
+
+<div class="detail-divider" id="detail-divider"></div>
+<iframe id="detail-panel" src="about:blank" frameborder="0" title="{% trans 'Cache detail' %}" allowfullscreen></iframe>
+
+<div class="map-divider" id="map-divider"></div>
+
+<div id="map-container">
+  <div id="map"></div>
+
+  {% comment %} Search box — top-centre {% endcomment %}
+  <div class="map-search-box" id="map-search-box">
+    <input type="text" id="map-search-input" class="form-control form-control-sm"
+           placeholder="{% trans 'Search location or coordinates…' %}" autocomplete="off">
+    <div class="map-search-results" id="map-search-results" style="display:none"></div>
+  </div>
+
+  {% comment %} Layer control — top right {% endcomment %}
+  <div class="map-layer-control" id="map-layer-control">
+    <button class="map-layer-btn" id="map-layer-toggle" title="{% trans 'Map layers' %}">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M12 2 L2 7 L12 12 L22 7 Z"/>
+        <path d="M2 12 L12 17 L22 12" opacity="0.6"/>
+        <path d="M2 17 L12 22 L22 17" opacity="0.3"/>
+      </svg>
+    </button>
+    <div class="map-layer-options" id="map-layer-options">
+      <label class="map-layer-option">
+        <input type="radio" name="map-style" value="street" checked onchange="gcfMapSetStyle(this.value)">
+        {% trans "Street" %}
+      </label>
+      <label class="map-layer-option">
+        <input type="radio" name="map-style" value="outdoor" onchange="gcfMapSetStyle(this.value)">
+        {% trans "Topo" %}
+      </label>
+      <label class="map-layer-option">
+        <input type="radio" name="map-style" value="aerial" onchange="gcfMapSetStyle(this.value)">
+        {% trans "Aerial" %}
+      </label>
+      <label class="map-layer-option" id="map-offline-label" style="display:none">
+        <input type="radio" name="map-style" value="offline" id="map-layer-offline" onchange="gcfMapSetStyle(this.value)">
+        {% trans "Offline" %}
+      </label>
+      <div class="map-layer-divider"></div>
+      <div class="map-layer-heading">{% trans "Boundaries" %}</div>
+      <label class="map-layer-option">
+        <input type="checkbox" id="boundary-country" onchange="gcfToggleBoundary('country', this.checked)">
+        {% trans "Countries" %}
+      </label>
+      <label class="map-layer-option">
+        <input type="checkbox" id="boundary-state" onchange="gcfToggleBoundary('state', this.checked)">
+        {% trans "States" %}
+      </label>
+      <label class="map-layer-option">
+        <input type="checkbox" id="boundary-county" onchange="gcfToggleBoundary('county', this.checked)">
+        {% trans "Counties" %}
+      </label>
+      <div id="radius-circle-section" style="display:none">
+        <div class="map-layer-divider"></div>
+        <div class="map-layer-heading">{% trans "Radius filter" %}</div>
+        <label class="map-layer-option">
+          <input type="checkbox" id="radius-circle-toggle" onchange="gcfToggleRadiusCircle(this.checked)">
+          {% trans "Show circle" %}
+        </label>
+        <label class="map-layer-option" id="radius-circle-shade-opt" style="display:none">
+          <input type="checkbox" id="radius-circle-shade" onchange="gcfToggleRadiusShade(this.checked)">
+          {% trans "Shade interior" %}
+        </label>
+      </div>
+      <div class="map-layer-divider"></div>
+      <div class="map-layer-heading">{% trans "Display" %}</div>
+      <label class="map-layer-option">
+        <input type="checkbox" id="layer-sep-circles" onchange="gcfToggleSepCircles(this.checked)">
+        {% if distance_unit == "mi" %}{% trans "0.1 mi circles" %}{% else %}{% trans "161m circles" %}{% endif %}
+      </label>
+      <label class="map-layer-option">
+        <input type="checkbox" id="layer-alc-circles" onchange="gcfToggleAlcCircles(this.checked)">
+        {% trans "ALC geofencing circles" %}
+      </label>
+      <label class="map-layer-option">
+        <input type="checkbox" id="layer-notify-circles" onchange="gcfToggleNotifyCircles(this.checked)">
+        {% trans "Instant-notification circles" %}
+      </label>
+      <label class="map-layer-option">
+        <input type="checkbox" id="layer-corrected" onchange="gcfToggleCorrectedCoords(this.checked)">
+        {% trans "Orig. WP if corrected" %}
+      </label>
+      <label class="map-layer-option">
+        <input type="checkbox" id="layer-waypoints" onchange="gcfToggleWaypoints(this.checked)">
+        {% trans "Waypoints" %}
+      </label>
+      <label class="map-layer-option">
+        <input type="checkbox" id="layer-lod" onchange="gcfToggleLodPanel(this.checked)">
+        {% trans "LOD sliders" %}
+      </label>
+      <div class="map-layer-divider"></div>
+      <div class="map-layer-heading">{% trans "Labels" %}</div>
+      <label class="map-layer-option">
+        <input type="radio" name="map-labels" value="" checked onchange="gcfToggleLabels(null)">
+        {% trans "Off" %}
+      </label>
+      <label class="map-layer-option">
+        <input type="radio" name="map-labels" value="name" onchange="gcfToggleLabels('name')">
+        {% trans "Name" %}
+      </label>
+      <label class="map-layer-option">
+        <input type="radio" name="map-labels" value="code" onchange="gcfToggleLabels('code')">
+        {% trans "Code" %}
+      </label>
+    </div>
+  </div>
+
+  {% comment %} Zoom to filtered caches — top right, below layer control {% endcomment %}
+  <div class="map-zoom-filtered-control">
+    <button class="map-layer-btn" id="map-zoom-filtered-btn" title="{% trans 'Zoom to filtered caches' %}"
+            onclick="gcfZoomToFiltered()">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="10" cy="10" r="7"/>
+        <path d="M21 21l-4.35-4.35"/>
+        <path d="M7 10h6M10 7v6"/>
+      </svg>
+    </button>
+  </div>
+
+  {% comment %} Locations quick-jump — top right, below zoom-to-filtered {% endcomment %}
+  <div class="map-locations-control" id="map-locations-control">
+    <button class="map-layer-btn" id="map-locations-toggle" title="{% trans 'Jump to location' %}">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/>
+        <circle cx="12" cy="9" r="2.5"/>
+      </svg>
+    </button>
+    <div class="map-locations-list" id="map-locations-list"></div>
+  </div>
+
+  {% comment %} Saved areas — top right, below locations {% endcomment %}
+  <div class="map-areas-control" id="map-areas-control">
+    <button class="map-layer-btn" id="map-areas-toggle" title="{% trans 'Saved area filters' %}">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <rect x="3" y="3" width="18" height="18" rx="2"/>
+        <path d="M9 3v18M15 3v18M3 9h18M3 15h18" opacity="0.5"/>
+      </svg>
+    </button>
+    <div class="map-areas-list" id="map-areas-list"></div>
+  </div>
+
+  {% comment %} Draw toolbar — left side, below navigation controls {% endcomment %}
+  <div class="map-draw-toolbar" id="map-draw-toolbar" style="display:none">
+    <button class="map-layer-btn" id="map-draw-rect-btn" title="{% trans 'Draw Rectangle' %}" onclick="gcfDrawRect()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <rect x="3" y="5" width="18" height="14" rx="1"/>
+      </svg>
+    </button>
+    <button class="map-layer-btn" id="map-draw-circle-btn" title="{% trans 'Draw Circle' %}" onclick="gcfDrawCircle()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="9"/>
+      </svg>
+    </button>
+    <button class="map-layer-btn" id="map-draw-polygon-btn" title="{% trans 'Draw Polygon — click vertices, double-click to close' %}" onclick="gcfDrawPolygon()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polygon points="12,3 21,9 17,20 7,20 3,9"/>
+      </svg>
+    </button>
+    <button class="map-layer-btn" id="map-draw-corridor-btn" title="{% trans 'Draw Corridor — click vertices, double-click to finish' %}" onclick="gcfDrawCorridor()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polyline points="3,19 8,6 14,15 20,5"/>
+      </svg>
+    </button>
+    <button class="map-layer-btn" id="map-draw-gpx-btn" title="{% trans 'Import GPX track' %}" onclick="gcfOpenGpxImport()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polyline points="3,18 7,8 12,14 17,5 21,9"/>
+        <polyline points="17,13 21,9 17,5" fill="none"/>
+      </svg>
+    </button>
+    <button class="map-layer-btn" id="map-route-btn" title="{% trans 'Plan route' %}" onclick="gcfToggleRoutePanel()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="6" cy="19" r="2.5"/>
+        <circle cx="18" cy="5" r="2.5"/>
+        <path d="M8 18 C 14 16, 10 8, 16 6" stroke-dasharray="2 2"/>
+      </svg>
+    </button>
+    <button class="map-layer-btn" id="map-draw-al-circle-btn" title="{% trans 'Draw ALC fetch circle' %}" onclick="gcfDrawAlCircle()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="9" stroke="#e67e00"/>
+        <text x="12" y="16" text-anchor="middle" font-size="7" fill="#e67e00" stroke="none" font-family="sans-serif" font-weight="bold">AL</text>
+      </svg>
+    </button>
+    <button class="map-layer-btn" id="map-criteria-search-btn" title="{% trans 'Search & fetch by criteria (owner, type, …)' %}" onclick="gcfOpenCriteriaSearch()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="11" cy="11" r="7"/>
+        <path d="M21 21l-4.35-4.35"/>
+      </svg>
+    </button>
+    <button class="map-layer-btn" id="map-draw-clear-btn" title="{% trans 'Clear All Shapes' %}" onclick="gcfDrawClearAll()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/>
+      </svg>
+    </button>
+  </div>
+
+  {% comment %} Corridor width panel — shown only when corridor drawing is active {% endcomment %}
+  <div id="map-corridor-width-panel" class="map-corridor-panel" style="display:none">
+    <label class="mb-0" style="white-space:nowrap">Corridor width</label>
+    <input type="number" id="map-corridor-width" value="1" min="0.1" step="0.1"
+           style="width:4.5em" class="form-control form-control-sm py-0"
+           oninput="gcfSetCorridorWidth(this.value)">
+    <span>km</span>
+  </div>
+
+  {% comment %} Route planner panel — toggled by the Plan Route toolbar button {% endcomment %}
+  <div id="map-route-panel" class="map-route-panel" style="display:none">
+    <div class="map-route-head">
+      <strong>{% trans "Plan route" %}</strong>
+      <button type="button" class="btn-close btn-close-sm" title="{% trans 'Close' %}"
+              onclick="gcfToggleRoutePanel()"></button>
+    </div>
+
+    <div class="d-flex align-items-center gap-1 mb-1">
+      <select id="route-saved-select" class="form-select form-select-sm py-0"
+              onchange="gcfRouteLoadSaved(this)">
+        <option value="">{% trans "Saved routes…" %}</option>
+      </select>
+      <button type="button" class="map-route-mini-btn" title="{% trans 'Delete saved route' %}"
+              onclick="gcfRouteDeleteSaved()">🗑</button>
+    </div>
+
+    <select id="route-location-select" class="form-select form-select-sm mb-1"
+            onchange="gcfRouteAddLocation(this)">
+      <option value="">{% trans "Add saved location…" %}</option>
+    </select>
+
+    <div class="map-route-address mb-1">
+      <input type="text" id="route-address-input" class="form-control form-control-sm"
+             placeholder="{% trans 'Add address or coordinates…' %}" autocomplete="off">
+      <div id="route-address-results" class="map-route-results" style="display:none"></div>
+    </div>
+
+    <ol id="route-waypoint-list" class="map-route-list"></ol>
+    <div id="route-empty-hint" class="map-route-hint">
+      {% trans "Right-click the map or a cache → “Add to route”, or use the controls above." %}
+    </div>
+
+    <div class="d-flex align-items-center gap-2 mb-1">
+      <label class="form-label small mb-0 text-nowrap">{% trans "Mode" %}</label>
+      <select id="route-profile" class="form-select form-select-sm py-0">
+        <option value="hiking-beta">{% trans "Walking" %}</option>
+        <option value="trekking">{% trans "Cycling (trekking)" %}</option>
+        <option value="fastbike">{% trans "Cycling (fast)" %}</option>
+        <option value="shortest">{% trans "Cycling (shortest)" %}</option>
+        <option value="car-fast">{% trans "Driving" %}</option>
+      </select>
+      <input type="number" id="route-width" value="1" min="0.1" step="0.1"
+             style="width:4.5em" class="form-control form-control-sm py-0"
+             title="{% trans 'Corridor width (km)' %}">
+      <span class="small text-muted">{% trans "km" %}</span>
+    </div>
+
+    <div class="d-flex flex-wrap gap-1">
+      <button type="button" class="btn btn-sm btn-primary" onclick="gcfRouteCompute()">{% trans "Route" %}</button>
+      <button type="button" class="btn btn-sm btn-outline-secondary" onclick="gcfRouteSave()">{% trans "Save" %}</button>
+      <button type="button" class="btn btn-sm btn-outline-secondary" onclick="gcfRouteExportGpx()">{% trans "Export GPX" %}</button>
+      <button type="button" class="btn btn-sm btn-outline-secondary" onclick="gcfRouteOpenBrouterWeb()">{% trans "Fine-tune…" %}</button>
+      <button type="button" class="btn btn-sm btn-outline-secondary" onclick="gcfRouteOpenTable()">{% trans "Table" %}</button>
+      <button type="button" class="btn btn-sm btn-outline-danger" onclick="gcfRouteClear()">{% trans "Clear" %}</button>
+    </div>
+
+    <div id="route-summary" class="map-route-summary small text-muted mt-1"></div>
+  </div>
+
+  {% comment %} Draw status — count badge + actions {% endcomment %}
+  <div class="map-draw-status" id="map-draw-status" style="display:none">
+    <span id="map-draw-filter-group" style="display:contents">
+      <span id="map-draw-count" class="badge bg-primary">0 caches selected</span>
+      <button class="btn btn-sm btn-warning" onclick="gcfPinAsFilter()">Pin as filter</button>
+      <button class="btn btn-sm btn-outline-secondary" onclick="gcfSaveArea()">Save area…</button>
+      <button class="btn btn-sm btn-info" id="map-fetch-preview-btn" style="display:none" onclick="gcfOpenFetchDialog()">Preview API</button>
+      <button class="btn btn-sm btn-success" id="map-fetch-sync-btn" style="display:none" onclick="gcfOpenSyncDialog()">Sync</button>
+    </span>
+    <button class="btn btn-sm btn-warning" id="map-alc-fetch-btn" style="display:none" onclick="gcfFetchAlcInArea()">Fetch ALCs in area</button>
+    <button class="btn btn-sm btn-outline-warning" id="map-alc-refresh-btn" style="display:none" onclick="gcfRefreshAlcInArea()">Refresh ALC</button>
+  </div>
+
+
+  {% comment %} Cache type quick-filter bar — bottom right {% endcomment %}
+  <div class="map-type-filter" id="map-type-filter">
+    <span class="map-type-label">Show only:</span>
+    <button class="map-type-btn map-type-meta" title="Select all" onclick="gcfTypeFilterSetAll(true)">+</button>
+    <button class="map-type-btn map-type-meta" title="Clear all" onclick="gcfTypeFilterSetAll(false)">&minus;</button>
+    <span class="map-type-sep"></span>
+    <button class="map-type-btn active" data-type="T" title="Traditional" onclick="gcfTypeFilterClick(this)">T</button>
+    <button class="map-type-btn active" data-type="M" title="Multi-Cache" onclick="gcfTypeFilterClick(this)">M</button>
+    <button class="map-type-btn active" data-type="U" title="Mystery" onclick="gcfTypeFilterClick(this)">U</button>
+    <button class="map-type-btn active" data-type="E" title="Earthcache" onclick="gcfTypeFilterClick(this)">E</button>
+    <button class="map-type-btn active" data-type="V" title="Virtual" onclick="gcfTypeFilterClick(this)">V</button>
+    <button class="map-type-btn active" data-type="Ev" title="Event" onclick="gcfTypeFilterClick(this)">Ev</button>
+    <button class="map-type-btn active" data-type="L" title="Adventure Lab" onclick="gcfTypeFilterClick(this)">L</button>
+    <button class="map-type-btn active" data-type="W" title="Webcam" onclick="gcfTypeFilterClick(this)">W</button>
+    <button class="map-type-btn active" data-type="B" title="Letterbox" onclick="gcfTypeFilterClick(this)">B</button>
+    <button class="map-type-btn active" data-type="Wh" title="Wherigo" onclick="gcfTypeFilterClick(this)">Wh</button>
+  </div>
+
+  {% comment %} LOD controls — bottom left {% endcomment %}
+  <div class="map-lod-control" id="map-lod-control" style="display:none">
+    <div class="map-lod-row">
+      <label title="Zoom level at which clusters dissolve into individual markers">Uncluster</label>
+      <input type="range" id="lod-cluster" min="8" max="18" step="1" value="14"
+             oninput="gcfSetClusterZoom(+this.value)" title="Cluster max zoom">
+      <span id="lod-cluster-val" class="map-lod-val">14</span>
+    </div>
+    <div class="map-lod-row">
+      <label title="Zoom level at which waypoints and connecting lines appear">Lines</label>
+      <input type="range" id="lod-lines" min="8" max="18" step="1" value="13"
+             oninput="gcfSetLinesZoom(+this.value)" title="Waypoint/line min zoom">
+      <span id="lod-lines-val" class="map-lod-val">13</span>
+    </div>
+  </div>
+
+  {% comment %} Loading overlay — shown while markers are being fetched {% endcomment %}
+  <div class="map-loading-overlay" id="map-loading-overlay">
+    <div class="spinner-border text-primary" role="status"></div>
+    <span>Loading caches…</span>
+  </div>
+
+  {% include "geocaches/partials/_map_fetch_dialog.html" %}
+
+  {% comment %} ALC fetch / refresh dialog {% endcomment %}
+  <div class="modal fade" id="alcFetchDialog" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-sm">
+      <div class="modal-content">
+        <div class="modal-header py-2">
+          <h6 class="modal-title" id="alcFetchDialogTitle">Fetch ALCs in area</h6>
+          <button type="button" class="btn-close btn-close-sm" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body py-2">
+          <div class="mb-1">
+            <label class="form-label small mb-1">Tags <span class="text-muted fw-normal">(comma-separated, optional)</span></label>
+            <input type="text" id="alc-fetch-tags" class="form-control form-control-sm"
+                   placeholder="e.g. al-finds, 2026">
+            <div id="alc-fetch-tag-suggestions" class="mt-1"></div>
+          </div>
+        </div>
+        <div class="modal-footer py-2">
+          <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-warning btn-sm" id="alc-fetch-confirm-btn"
+                  onclick="gcfConfirmAlcAction()">Fetch</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {% comment %} GPX track import dialog {% endcomment %}
+  <div class="modal fade" id="gpxImportDialog" tabindex="-1" aria-labelledby="gpxImportLabel" aria-hidden="true">
+    <div class="modal-dialog modal-sm">
+      <div class="modal-content">
+        <div class="modal-header py-2">
+          <h6 class="modal-title" id="gpxImportLabel">{% trans "Import GPX Track" %}</h6>
+          <button type="button" class="btn-close btn-close-sm" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body py-2">
+          <div class="mb-2">
+            <label class="form-label small mb-1">{% trans "GPX file" %}</label>
+            <input type="file" class="form-control form-control-sm" id="gpx-file-input"
+                   accept=".gpx" onchange="gcfGpxFileChanged(this)">
+          </div>
+          <div id="gpx-track-info" class="small text-muted mb-2" style="display:none"></div>
+          <div class="d-flex align-items-center gap-2">
+            <label class="form-label small mb-0 text-nowrap">{% trans "Corridor width" %}</label>
+            <input type="number" class="form-control form-control-sm" id="gpx-width-input"
+                   value="1" min="0.1" step="0.1" style="width:5em">
+            <span class="small text-muted">{% trans "km" %}</span>
+          </div>
+        </div>
+        <div class="modal-footer py-2">
+          <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">{% trans "Cancel" %}</button>
+          <button type="button" class="btn btn-primary btn-sm" id="gpx-import-btn"
+                  onclick="gcfImportGpxConfirm()" disabled>{% trans "Load track" %}</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {% comment %} Route itinerary table dialog {% endcomment %}
+  <div class="modal fade" id="routeTableDialog" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header py-2">
+          <h6 class="modal-title">{% trans "Route itinerary" %}</h6>
+          <button type="button" class="btn-close btn-close-sm" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body py-2">
+          <div class="d-flex align-items-center gap-3 mb-2 flex-wrap">
+            <label class="small mb-0">
+              <input type="checkbox" id="route-table-caches" onchange="gcfRouteTableRender()">
+              {% trans "Include caches in corridor" %}
+            </label>
+            <button type="button" class="btn btn-sm btn-outline-secondary"
+                    onclick="gcfRouteTableToggleReverse()">{% trans "Reverse (way home)" %}</button>
+            <button type="button" class="btn btn-sm btn-outline-secondary"
+                    onclick="gcfRouteTableCopy()">{% trans "Copy to clipboard" %}</button>
+            <button type="button" class="btn btn-sm btn-outline-secondary"
+                    onclick="gcfRouteTableDownload()">{% trans "Download CSV" %}</button>
+            <span id="route-table-summary" class="small text-muted ms-auto"></span>
+          </div>
+          <div id="route-table-container"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {% csrf_token %}
+  <script>
+    var _gcfLocations = {{ locations_json|safe }};
+    var _gcfMapPrefs  = {{ map_prefs_json|safe }};
+    var _gcfTagsUrl   = '{% url "geocaches:tags_json" %}';
+  </script>
+</div>

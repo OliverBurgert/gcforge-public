@@ -1,0 +1,361 @@
+{% load i18n %}
+    <div class="tab-pane{% if active_tab == 'database' %} active show{% endif %}" id="database">
+
+      {% if db_switch_msg %}
+      <div class="alert alert-{% if db_switch_msg.ok %}success{% else %}danger{% endif %} small py-2 mb-3 d-flex align-items-center justify-content-between">
+        <span>{{ db_switch_msg.text }}</span>
+        <button type="button" class="btn-close ms-2 flex-shrink-0" data-bs-dismiss="alert"></button>
+      </div>
+      {% endif %}
+
+      {% if backup_msg %}
+      <div class="alert alert-{% if backup_msg.ok %}success{% else %}danger{% endif %} small py-2 mb-3 d-flex align-items-center justify-content-between">
+        <span>{{ backup_msg.text }}</span>
+        <button type="button" class="btn-close ms-2 flex-shrink-0" data-bs-dismiss="alert"></button>
+      </div>
+      {% endif %}
+
+      {% include "preferences/_profiles_card.html" %}
+
+      {# ----- Active Database ----- #}
+      <div class="card mb-3">
+        <div class="card-header py-1 small fw-semibold">{% trans "Active Database" %}</div>
+        <div class="card-body py-2">
+
+          {% for db in available_databases %}
+            {% if db.active %}
+            <p class="small mb-2">
+              <strong>{% trans "Current:" %}</strong>
+              <span class="font-monospace">{{ db.name }}</span>
+              <span class="text-muted">{{ db.location }}</span>
+              {% if db.exists %}&mdash; {{ db.size|filesizeformat }}{% endif %}
+              <span class="badge bg-success ms-1">{% trans "Active" %}</span>
+            </p>
+            {% endif %}
+          {% endfor %}
+
+          <h6 class="small fw-semibold text-muted text-uppercase mb-2" style="font-size:.7rem;letter-spacing:.05em">{% trans "Available databases" %}</h6>
+          <table class="table table-sm table-bordered mb-3">
+            <thead class="table-light">
+              <tr>
+                <th>{% trans "Name" %}</th>
+                <th>{% trans "Location" %}</th>
+                <th>{% trans "Size" %}</th>
+                <th style="width:10rem"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for db in available_databases %}
+              <tr>
+                <td class="small font-monospace">
+                  {% if db.active %}<strong>{{ db.name }}</strong>{% else %}{{ db.name }}{% endif %}
+                </td>
+                <td class="small text-muted">{{ db.location }}</td>
+                <td class="small text-muted text-end text-nowrap">
+                  {% if db.exists %}{{ db.size|filesizeformat }}{% else %}<em>{% trans "will be created on first use" %}</em>{% endif %}
+                </td>
+                <td class="text-nowrap">
+                  {% if db.active %}
+                    <span class="badge bg-success">{% trans "Active" %}</span>
+                  {% else %}
+                    <form method="post" action="{% url 'preferences:switch_database' %}" class="d-inline">
+                      {% csrf_token %}
+                      <input type="hidden" name="db_path" value="{{ db.path }}">
+                      <button type="submit" class="btn btn-sm btn-outline-primary py-0"
+                              onclick="return confirm('{% blocktrans with name=db.name %}Switch to {{ name }}?\n\nYou will need to restart the server after switching.{% endblocktrans %}')">
+                        {% trans "Switch" %}
+                      </button>
+                    </form>
+                    {% if db.is_backup %}
+                    <span class="text-warning ms-1" title="{% trans 'This is a backup file. Switching will use it as the active database — changes will modify the backup file directly.' %}">&#9888;</span>
+                    {% endif %}
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+
+          <hr class="my-3">
+
+          <h6 class="small fw-semibold text-muted text-uppercase mb-2" style="font-size:.7rem;letter-spacing:.05em">{% trans "Create new database" %}</h6>
+          <form method="post" action="{% url 'preferences:create_database' %}">
+            {% csrf_token %}
+            <input type="hidden" name="set_active" value="1">
+            <div class="row g-2 align-items-end">
+              <div class="col-md-4">
+                <label class="form-label small mb-0">{% trans "Database name" %}</label>
+                <div class="input-group input-group-sm">
+                  <input type="text" name="db_name" class="form-control form-control-sm"
+                         placeholder="{% trans 'e.g. test' %}" pattern="[a-zA-Z0-9_-]+" title="{% trans 'Letters, numbers, dashes, and underscores only' %}">
+                  <span class="input-group-text">.sqlite3</span>
+                </div>
+              </div>
+              <div class="col-auto">
+                <button type="submit" class="btn btn-sm btn-success"
+                        onclick="return confirm('{% trans "Create a new empty database and switch to it?\n\nYou will need to restart the server after creation." %}')">
+                  {% trans "Create" %}
+                </button>
+              </div>
+            </div>
+            <p class="text-muted small mt-1 mb-0">
+              {% blocktrans %}Creates a new empty database in <code>data/databases/</code> and runs migrations on it.{% endblocktrans %}
+            </p>
+          </form>
+
+          <div class="mt-3 small text-muted">
+            <strong>{% trans "&#9888; Switching databases requires a server restart." %}</strong>
+            {% trans "After clicking Switch or Create, restart the Django server." %}
+          </div>
+          {% if has_backup_databases %}
+          <p class="small text-muted mt-1 mb-0">
+            {% blocktrans %}<strong>&#9888; Backup files:</strong> switching to a backup makes it the active database.
+            Changes will modify the backup file directly.{% endblocktrans %}
+          </p>
+          {% endif %}
+
+        </div>
+      </div>
+
+      {# ----- Database information ----- #}
+      <div class="card mb-3">
+        <div class="card-header py-1 small fw-semibold">{% trans "Database information" %}</div>
+        <div class="card-body py-2">
+          <div class="row g-2 small">
+            <div class="col-md-6">
+              <table class="table table-sm table-borderless mb-0">
+                <tbody>
+                  <tr>
+                    <td class="text-muted pe-3" style="width:10rem">{% trans "Geocaches" %}</td>
+                    <td><strong>{{ db_stats.geocache_count }}</strong>
+                      <span class="text-muted ms-1">{% blocktrans with n=db_stats.found_count %}({{ n }} found){% endblocktrans %}</span></td>
+                  </tr>
+                  <tr>
+                    <td class="text-muted">{% trans "Logs" %}</td>
+                    <td><strong>{{ db_stats.log_count }}</strong></td>
+                  </tr>
+                  <tr>
+                    <td class="text-muted">{% trans "Waypoints" %}</td>
+                    <td><strong>{{ db_stats.waypoint_count }}</strong></td>
+                  </tr>
+                  <tr>
+                    <td class="text-muted">{% trans "Tags" %}</td>
+                    <td><strong>{{ db_stats.tag_count }}</strong></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="col-md-6">
+              <table class="table table-sm table-borderless mb-0">
+                <tbody>
+                  <tr>
+                    <td class="text-muted pe-3" style="width:10rem">{% trans "File size on disk" %}</td>
+                    <td><strong>{{ db_stats.file_size|filesizeformat }}</strong></td>
+                  </tr>
+                  <tr>
+                    <td class="text-muted">{% trans "Reclaimable (free pages)" %}</td>
+                    <td>
+                      {% if frag.fragmentation_pct >= 10 %}
+                        <strong class="text-warning">{{ frag.free_bytes|filesizeformat }} ({{ frag.fragmentation_pct|floatformat:0 }}%)</strong>
+                      {% else %}
+                        <strong>{{ frag.free_bytes|filesizeformat }} ({{ frag.fragmentation_pct|floatformat:0 }}%)</strong>
+                      {% endif %}
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="text-muted">{% trans "SQLite version" %}</td>
+                    <td><strong class="font-monospace">{{ db_stats.sqlite_version }}</strong></td>
+                  </tr>
+                  <tr>
+                    <td class="text-muted">{% trans "File location" %}</td>
+                    <td class="font-monospace text-muted" style="word-break:break-all">{{ db_stats.db_path }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {# ----- Database Backup and Restore ----- #}
+      <div class="card mb-3">
+        <div class="card-header py-1 small fw-semibold">{% trans "Database Backup and Restore" %}</div>
+        <div class="card-body py-2">
+
+          {# Auto-backup settings #}
+          <h6 class="small fw-semibold text-muted text-uppercase mb-2" style="font-size:.7rem;letter-spacing:.05em">{% trans "Automatic daily backup" %}</h6>
+          <p class="text-muted small mb-2">
+            {% blocktrans %}A backup is created automatically once per day when the server starts.
+            Auto-backups are named <code>auto_rotate_gcforge_backup_YYYY-MM-DD.sqlite3</code> and are
+            subject to the rotation limit below — the oldest ones are deleted when the limit is exceeded.
+            Files without the <code>auto_rotate_</code> prefix are never deleted automatically.{% endblocktrans %}
+          </p>
+          <form method="post" action="{% url 'preferences:save_backup_prefs' %}" class="mb-4">
+            {% csrf_token %}
+            <div class="row g-3 align-items-end">
+              <div class="col-12">
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" name="backup_auto_enabled" value="1"
+                         id="backup_auto_enabled" {% if backup_auto_enabled %}checked{% endif %}>
+                  <label class="form-check-label" for="backup_auto_enabled">
+                    <strong>{% trans "Enable automatic daily backup" %}</strong>
+                  </label>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label small mb-0">{% trans "Backup folder" %}</label>
+                <input type="text" name="backup_dir" class="form-control form-control-sm font-monospace"
+                       value="{{ backup_dir }}" placeholder="{{ backup_dir_effective }}">
+                <div class="text-muted small mt-1">
+                  {% blocktrans with eff=backup_dir_effective %}Leave blank to use default: <code>{{ eff }}</code>{% endblocktrans %}
+                </div>
+              </div>
+              <div class="col-auto">
+                <label class="form-label small mb-0">{% trans "Auto-backups to keep" %}</label>
+                <input type="number" name="backup_rotate_count" class="form-control form-control-sm"
+                       style="width:90px" min="1" max="50" value="{{ backup_rotate_count }}">
+              </div>
+              <div class="col-auto">
+                <button type="submit" class="btn btn-sm btn-primary">{% trans "Save" %}</button>
+              </div>
+            </div>
+          </form>
+
+          <hr class="my-3">
+
+          {# Manual backup #}
+          <h6 class="small fw-semibold text-muted text-uppercase mb-2" style="font-size:.7rem;letter-spacing:.05em">{% trans "Create backup now" %}</h6>
+          <p class="text-muted small mb-2">
+            {% blocktrans %}Creates a backup immediately. Leave the fields blank to use the default location and a
+            timestamped filename. Manual backups are kept permanently — prefix the filename with
+            <code>auto_rotate_</code> to include it in the rotation limit.{% endblocktrans %}
+          </p>
+          <form method="post" action="{% url 'preferences:backup_now' %}" class="mb-4">
+            {% csrf_token %}
+            <div class="row g-2 align-items-end">
+              <div class="col-md-5">
+                <label class="form-label small mb-0">{% trans "Folder" %} <span class="text-muted">{% trans "(optional)" %}</span></label>
+                <input type="text" name="manual_backup_dir" class="form-control form-control-sm font-monospace"
+                       placeholder="{{ backup_dir_effective }}">
+              </div>
+              <div class="col-md-4">
+                <label class="form-label small mb-0">{% trans "Filename" %} <span class="text-muted">{% trans "(optional)" %}</span></label>
+                <input type="text" name="manual_backup_name" class="form-control form-control-sm"
+                       placeholder="gcforge_backup_…">
+              </div>
+              <div class="col-auto">
+                <button type="submit" class="btn btn-sm btn-success">{% trans "Backup now" %}</button>
+              </div>
+            </div>
+          </form>
+
+          <hr class="my-3">
+
+          {# Existing backups #}
+          <h6 class="small fw-semibold text-muted text-uppercase mb-2" style="font-size:.7rem;letter-spacing:.05em">{% trans "Existing backups" %}</h6>
+          {% if backups %}
+          <table class="table table-sm table-bordered mb-3">
+            <thead class="table-light">
+              <tr><th>{% trans "Filename" %}</th><th>{% trans "Size" %}</th><th>{% trans "Date" %}</th><th>{% trans "Retention" %}</th><th></th></tr>
+            </thead>
+            <tbody>
+              {% for b in backups %}
+              <tr>
+                <td class="small font-monospace">{{ b.name }}</td>
+                <td class="small text-muted text-end text-nowrap" style="width:6rem">{{ b.size|filesizeformat }}</td>
+                <td class="small text-muted text-nowrap" style="width:11rem">{{ b.mtime|date:"Y-m-d H:i" }}</td>
+                <td class="text-nowrap" style="width:8rem">
+                  {% if b.auto_rotate %}
+                    <span class="badge bg-secondary" title="{% trans 'Deleted automatically when the rotation limit is exceeded' %}">{% trans "Auto-rotate" %}</span>
+                  {% else %}
+                    <span class="badge bg-success" title="{% trans 'Never deleted automatically' %}">{% trans "Permanent" %}</span>
+                  {% endif %}
+                </td>
+                <td class="text-nowrap" style="width:16rem">
+                  <a href="{% url 'preferences:backup_download' b.name %}"
+                     class="btn btn-sm btn-outline-secondary py-0">{% trans "Download" %}</a>
+                  <form method="post" action="{% url 'preferences:backup_restore' %}" class="d-inline">
+                    {% csrf_token %}
+                    <input type="hidden" name="backup_name" value="{{ b.name }}">
+                    <button type="submit" class="btn btn-sm btn-outline-warning py-0"
+                            onclick="return confirm('{% blocktrans with name=b.name %}Restore from {{ name }}?\n\nA safety backup of the current database will be created first.{% endblocktrans %}')">
+                      {% trans "Restore" %}
+                    </button>
+                  </form>
+                  <form method="post" action="{% url 'preferences:backup_delete' %}" class="d-inline">
+                    {% csrf_token %}
+                    <input type="hidden" name="backup_name" value="{{ b.name }}">
+                    <button type="submit" class="btn btn-sm btn-outline-danger py-0"
+                            onclick="return confirm('{% blocktrans with name=b.name %}Delete {{ name }}?\n\nThis cannot be undone.{% endblocktrans %}')">
+                      {% trans "Delete" %}
+                    </button>
+                  </form>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+          {% else %}
+          <p class="text-muted small">{% blocktrans with eff=backup_dir_effective %}No backups found in <code>{{ eff }}</code>.{% endblocktrans %}</p>
+          {% endif %}
+
+          <hr class="my-3">
+
+          {# Restore from file #}
+          <h6 class="small fw-semibold text-muted text-uppercase mb-2" style="font-size:.7rem;letter-spacing:.05em">{% trans "Restore from file" %}</h6>
+          <p class="text-muted small mb-2">
+            {% blocktrans %}Upload a <code>.sqlite3</code> backup file to restore from. A safety backup of the
+            current database is created automatically before restoring.{% endblocktrans %}
+          </p>
+          <form method="post" action="{% url 'preferences:backup_restore' %}" enctype="multipart/form-data">
+            {% csrf_token %}
+            <div class="row g-2 align-items-end">
+              <div class="col-auto">
+                <input type="file" name="restore_file" accept=".sqlite3"
+                       class="form-control form-control-sm" required>
+              </div>
+              <div class="col-auto">
+                <button type="submit" class="btn btn-sm btn-warning"
+                        onclick="return confirm('{% trans "Restore from the selected file?\n\nA safety backup of the current database will be created first." %}')">
+                  {% trans "Restore from file" %}
+                </button>
+              </div>
+            </div>
+          </form>
+
+        </div>
+      </div>
+
+      {# ----- Database Maintenance ----- #}
+      <div class="card mb-3">
+        <div class="card-header py-1 small fw-semibold">{% trans "Database Maintenance" %}</div>
+        <div class="card-body py-2">
+          <p class="text-muted small mb-2">
+            {% blocktrans %}VACUUM rewrites the database file, reclaiming space left by deleted and updated rows.
+            It is safe to run at any time — if interrupted, the original database is untouched.
+            While running, other database operations are queued (typically a few seconds to a minute).
+            GCForge runs this automatically at startup when free space exceeds 10% of total size and 50 MB.{% endblocktrans %}
+          </p>
+          <div class="mb-3 small">
+            <span class="text-muted">{% trans "Free space reclaimable:" %}</span>
+            {% if frag.fragmentation_pct >= 10 %}
+              <strong class="text-warning">{{ frag.free_bytes|filesizeformat }} ({{ frag.fragmentation_pct|floatformat:0 }}%)</strong>
+              {% if frag.free_bytes >= 52428800 %}
+              <span class="badge bg-warning text-dark ms-1">{% trans "Vacuum recommended" %}</span>
+              {% endif %}
+            {% else %}
+              <strong class="text-success">{{ frag.free_bytes|filesizeformat }} ({{ frag.fragmentation_pct|floatformat:0 }}%)</strong>
+              <span class="text-muted ms-1">{% trans "— no action needed" %}</span>
+            {% endif %}
+          </div>
+          <form method="post" action="{% url 'preferences:vacuum_now' %}">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-sm btn-outline-secondary"
+                    onclick="return confirm('{% trans "Run VACUUM now?\n\nThis rewrites the database to reclaim free space. The server remains responsive but database operations may queue briefly." %}')">
+              {% trans "Run VACUUM now" %}
+            </button>
+          </form>
+        </div>
+      </div>
+
+    </div>

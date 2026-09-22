@@ -1,0 +1,48 @@
+{% comment %}
+WP-04: the three "Custom filter" dialogs' option-heavy content (country/tag/
+attribute lists, saved-filter trees, where-clause history) is fetched lazily
+instead of embedded in every list render — see
+docs/architecture-review-2026-09-workplan.md WP-04.
+
+hx-trigger listens for Bootstrap's show.bs.modal event, which bubbles up
+from whichever of the three modals is opened first; hx-trigger="… once"
+means the request fires exactly once per page load. hx-swap="none" leaves
+this wrapper's own content untouched — the response is three
+hx-swap-oob="true" fragments (_filter_dialog_options.html) that populate
+all three modal-content divs below at once, so opening a second or third
+dialog afterwards shows already-loaded content instantly. hx-vals sends the
+query string that was current in the address bar at the moment the dialog
+was opened (not the one active when this page was first rendered), since an
+in-place htmx filter change never re-renders this wrapper.
+{% endcomment %}
+<div id="filter-dialogs-lazy"
+     hx-get="{% url 'geocaches:filter_dialog_options' %}"
+     hx-trigger="show.bs.modal once"
+     hx-vals='js:{qs: window.location.search}'
+     hx-swap="none">
+
+  <div class="modal fade" id="tabbedFilterDialog" tabindex="-1" aria-labelledby="tabbedFilterDialogLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+      <div class="modal-content" id="tabbedFilterDialogContent">
+        {% include "geocaches/partials/_filter_dialog_placeholder.html" %}
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="treeFilterDialog" tabindex="-1" aria-labelledby="treeFilterDialogLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+      <div class="modal-content" id="treeFilterDialogContent">
+        {% include "geocaches/partials/_filter_dialog_placeholder.html" %}
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="whereClauseDialog" tabindex="-1" aria-labelledby="whereClauseDialogLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+      <div class="modal-content" id="whereClauseDialogContent">
+        {% include "geocaches/partials/_filter_dialog_placeholder.html" %}
+      </div>
+    </div>
+  </div>
+
+</div>

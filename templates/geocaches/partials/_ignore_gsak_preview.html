@@ -1,0 +1,45 @@
+{% load i18n %}
+{% for db in dbs %}
+<div class="card mb-3">
+  <div class="card-header py-2 px-3">
+    <span class="fw-semibold small font-monospace">{{ db.name }}</span>
+    {% if not db.error %}
+    <span class="text-muted small ms-2">{% blocktrans count n=db.rows|length %}{{ n }} entry{% plural %}{{ n }} entries{% endblocktrans %}</span>
+    {% endif %}
+  </div>
+  {% if db.error %}
+  <div class="card-body py-2 px-3">
+    <span class="text-danger small">{{ db.error }}</span>
+  </div>
+  {% elif not db.rows %}
+  <div class="card-body py-2 px-3 text-muted small">{% trans "No entries in Ignore table." %}</div>
+  {% else %}
+  <div class="card-body p-0">
+    <table class="table table-sm table-bordered mb-0" style="font-size:0.8rem">
+      <thead class="table-light">
+        <tr>
+          <th class="px-2 py-1">{% trans "Code" %}</th>
+          <th class="px-2 py-1">{% trans "Name" %}</th>
+          <th class="px-2 py-1"></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in db.rows %}
+        <tr>
+          <td class="px-2 py-1 font-monospace">{{ row.code }}</td>
+          <td class="px-2 py-1">{{ row.name }}</td>
+          <td class="px-2 py-1">
+            {% if row.exists %}
+            <span class="badge bg-secondary" style="font-size:0.7rem">{% trans "already ignored" %}</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+</div>
+{% empty %}
+<p class="text-muted small">{% trans "Select at least one database to preview." %}</p>
+{% endfor %}

@@ -1,0 +1,48 @@
+{% load i18n cache_tags %}
+{% comment %}Treasure collection detail (modal body): criteria + treasure artwork.{% endcomment %}
+{% if error %}
+  <p class="text-danger small mb-0">{% trans "Couldn’t load treasure details." %} {{ error }}</p>
+{% elif detail %}
+  <div class="d-flex gap-3 align-items-center mb-2">
+    {% if collection.image_url %}
+    <img src="{{ collection.image_url|cached_image:'treasure' }}" alt="{{ collection.name }}"
+         style="width:88px;height:88px;object-fit:contain">
+    {% endif %}
+    <div>
+      <div class="h6 mb-1">{{ collection.name }}</div>
+      <div class="text-muted small">{{ collection.found }}/{{ collection.total }}
+        {% if collection.premium_only %} · {% trans "Premium" %}{% endif %}</div>
+    </div>
+  </div>
+  {% if collection.description %}<p class="small text-muted">{{ collection.description }}</p>{% endif %}
+
+  {% if detail.criteria %}
+  <div class="small mb-3">
+    {% if detail.rules_desc %}<div class="fw-semibold">{{ detail.rules_desc }}</div>{% endif %}
+    <ul class="mb-0">{% for cr in detail.criteria %}<li>{{ cr }}</li>{% endfor %}</ul>
+  </div>
+  {% endif %}
+
+  {% if detail.has_locked and not reveal %}
+  <button type="button" class="btn btn-sm btn-outline-secondary mb-2"
+          hx-get="{% url 'geocaches:dashboard_treasures_detail' %}?collection={{ collection.collection_id }}&reveal=1"
+          hx-target="#treasure-detail-modal-body" hx-swap="innerHTML">
+    {% trans "Reveal locked treasures" %}</button>
+  {% endif %}
+
+  <div class="gcf-treasure-items">
+    {% for it in detail.items %}
+    <div class="gcf-treasure-item{% if it.locked %} locked{% endif %}" title="{{ it.name }}">
+      {% if it.image_url %}
+      <img src="{{ it.image_url|cached_image:'treasure' }}" alt="{{ it.name }}" loading="lazy">
+      <div class="gcf-treasure-item-name">{{ it.name }}</div>
+      {% else %}
+      <div class="gcf-treasure-ph">?</div>
+      <div class="gcf-treasure-item-name">{% trans "Locked" %}</div>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+{% else %}
+  <p class="text-muted small mb-0">{% trans "No details available." %}</p>
+{% endif %}

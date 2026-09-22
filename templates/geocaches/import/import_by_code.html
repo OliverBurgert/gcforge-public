@@ -1,0 +1,40 @@
+{% extends "geocaches/partials/_import_base.html" %}
+{% load i18n %}
+{% block import_title %}{% trans "Import by Code" %}{% endblock %}
+{% block import_heading %}{% trans "Import by GC / OC Code" %}{% endblock %}
+{% block form_action %}{% url 'geocaches:import_by_code' %}{% endblock %}
+
+{% block help_text %}
+<p class="text-muted small mb-3">
+  {% blocktrans %}Enter a single cache code — the source is detected automatically from the prefix
+  (<code>GC</code> → geocaching.com, <code>OC</code> / <code>OP</code> / <code>OK</code> … → opencaching).{% endblocktrans %}
+</p>
+{% if error %}
+<div class="alert alert-danger py-2 small">{{ error }}</div>
+{% endif %}
+{% if ignored_warning %}
+<div class="alert alert-warning py-2 small mb-3">
+  {% blocktrans with code=code %}<strong>{{ code }}</strong> is on your internal ignore list.{% endblocktrans %}
+  <form method="post" action="{% url 'geocaches:import_by_code' %}" class="mt-2 d-flex flex-wrap gap-2">
+    {% csrf_token %}
+    <input type="hidden" name="code" value="{{ code }}">
+    <input type="hidden" name="tags" value="{{ tags_value }}">
+    <button type="submit" name="confirm_ignore" value="remove" class="btn btn-sm btn-warning">{% trans "Remove from ignore list and import" %}</button>
+    <button type="submit" name="confirm_ignore" value="keep" class="btn btn-sm btn-outline-warning">{% trans "Import anyway (keep on ignore list)" %}</button>
+    <a href="{% url 'geocaches:import_by_code' %}" class="btn btn-sm btn-outline-secondary">{% trans "Cancel" %}</a>
+  </form>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block file_field %}
+<div class="mb-3">
+  <label class="form-label small fw-semibold">{% trans "Cache code" %}</label>
+  <input type="text" name="code" class="form-control form-control-sm font-monospace"
+         placeholder="{% trans 'e.g. GC12345 or OCDEA1B' %}" value="{{ code }}"
+         autofocus autocomplete="off" style="max-width:200px">
+</div>
+{% endblock %}
+
+{% block submit_label %}{% trans "Import" %}{% endblock %}
+{% block spinner_label %}{% trans "Importing…" %}{% endblock %}

@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% load i18n static %}
+{% block title %}{% trans "Settings" %} — GCForge{% endblock %}
+
+{% block content %}
+<div class="px-3 py-3" id="settings-wrapper" style="max-width:900px">
+  <h5 class="mb-3">{% trans "Settings" %}</h5>
+
+  <ul class="nav nav-tabs mb-4" id="settingsTabs">
+    <li class="nav-item"><a class="nav-link{% if active_tab == 'general' %} active{% endif %}"           href="#general"           data-bs-toggle="tab">{% trans "General" %}</a></li>
+    <li class="nav-item"><a class="nav-link{% if active_tab == 'list-view' %} active{% endif %}"         href="#list-view"         data-bs-toggle="tab">{% trans "List View" %}</a></li>
+    <li class="nav-item"><a class="nav-link{% if active_tab == 'cache-detail-view' %} active{% endif %}" href="#cache-detail-view" data-bs-toggle="tab">{% trans "Cache Details View" %}</a></li>
+    <li class="nav-item"><a class="nav-link{% if active_tab == 'logging' %} active{% endif %}"           href="#logging"           data-bs-toggle="tab">{% trans "Logging" %}</a></li>
+    <li class="nav-item"><a class="nav-link{% if active_tab == 'enrichment' %} active{% endif %}"        href="#enrichment"        data-bs-toggle="tab">{% trans "Enrichment" %}</a></li>
+    <li class="nav-item"><a class="nav-link{% if active_tab == 'platforms' %} active{% endif %}"         href="#platforms"         data-bs-toggle="tab">{% trans "Platforms" %}</a></li>
+    <li class="nav-item"><a class="nav-link{% if active_tab == 'accounts' %} active{% endif %}"          href="#accounts"          data-bs-toggle="tab">{% trans "Accounts" %}</a></li>
+    <li class="nav-item"><a class="nav-link{% if active_tab == 'reference-points' %} active{% endif %}"  href="#reference-points"  data-bs-toggle="tab">{% trans "Locations" %}</a></li>
+    <li class="nav-item"><a class="nav-link{% if active_tab == 'map' %} active{% endif %}"               href="#map"               data-bs-toggle="tab">{% trans "Map" %}</a></li>
+    <li class="nav-item"><a class="nav-link{% if active_tab == 'dashboard' %} active{% endif %}"         href="#dashboard"         data-bs-toggle="tab">{% trans "Dashboard" %}</a></li>
+    <li class="nav-item"><a class="nav-link{% if active_tab == 'gpx-export' %} active{% endif %}"        href="#gpx-export"        data-bs-toggle="tab">{% trans "GPX Export" %}</a></li>
+    <li class="nav-item"><a class="nav-link{% if active_tab == 'database' %} active{% endif %}"          href="#database"          data-bs-toggle="tab">{% trans "Database" %}</a></li>
+    <li class="nav-item"><a class="nav-link{% if active_tab == 'offline' %} active{% endif %}" id="offline-tab" href="#offline" data-bs-toggle="tab">{% trans "Offline Maps" %}</a></li>
+    <li class="nav-item"><a class="nav-link{% if active_tab == 'images' %} active{% endif %}"            href="#images"            data-bs-toggle="tab">{% trans "Images" %}</a></li>
+  </ul>
+
+  <div class="tab-content">
+
+    {% include "preferences/settings/_tab_general.html" %}
+    {% include "preferences/settings/_tab_list-view.html" %}
+    {% include "preferences/settings/_tab_cache-detail-view.html" %}
+    {% include "preferences/settings/_tab_logging.html" %}
+    {% include "preferences/settings/_tab_enrichment.html" %}
+    {% include "preferences/settings/_tab_accounts.html" %}
+    {% include "preferences/settings/_tab_platforms.html" %}
+    {% include "preferences/settings/_tab_reference-points.html" %}
+    {# ===== MAP ===== #}
+    {% include "preferences/settings/_tab_dashboard.html" %}
+    {% include "preferences/settings/_tab_map.html" %}
+    {% include "preferences/settings/_tab_database.html" %}
+    {% include "preferences/settings/_tab_gpx-export.html" %}
+    {% include "preferences/settings/_tab_offline.html" %}
+    {% include "preferences/settings/_tab_images.html" %}
+  </div>{# end tab-content #}
+</div>
+
+<div id="settings-config"
+     data-rp-list="{{ rp_list_json }}"
+     data-map-styles-url="{% static 'js/map-styles.js' %}"
+     data-settings-map-url="{% static 'js/settings-map.js' %}"
+     data-offline-map-url="{% static 'js/offline-map.js' %}"
+     style="display:none"></div>
+{% endblock %}{# content #}
+
+{% block extra_js %}
+<style>
+  #rp-map { z-index: 0; }
+  .gcf-rp-marker {
+    width: 14px; height: 14px;
+    background: #0d6efd;
+    border: 2px solid #fff;
+    border-radius: 50%;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.5);
+    cursor: pointer;
+    transition: background 0.15s, width 0.15s, height 0.15s;
+  }
+  .gcf-rp-marker.edit {
+    width: 18px; height: 18px;
+    background: #fd7e14;
+  }
+  .gcf-rp-add-marker {
+    width: 14px; height: 14px;
+    background: #198754;
+    border: 2px solid #fff;
+    border-radius: 50%;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.5);
+  }
+</style>
+<script src="{% static 'js/settings.js' %}"></script>
+{% endblock %}{# extra_js #}

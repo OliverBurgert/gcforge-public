@@ -1,0 +1,128 @@
+{% comment %}
+Trackable action sections inside the log compose dialog.
+
+Sections:
+  1. "In this cache"     — per-row Discover/Retrieve radio.
+  2. "My inventory"      — auto-loaded on first expand. Per row: Drop here +
+                           Visit here checkboxes. Auto-visit (per-TB persistent
+                           setting on Trackable) pre-checks Visit + populates
+                           text. Auto-visit is edited on the profile page.
+  3. "Discover by code"  — free-form rows for TBs not in cache and not in
+                           inventory (event tables etc).
+  4. "Grab by code"      — last-resort grab. Verify exposes the current holder
+                           and offers a Message Center link. A default-on
+                           checkbox chains grab → drop → retrieve so the
+                           current cache appears in the TB history.
+
+Submit posts flattened arrays:
+  tb_action_<idx>   = discover | retrieve | drop | visit | grab | grab_chain
+  tb_ref_<idx>      = TB####### (when known)
+  tb_tracking_<idx> = 6-char tracking code (private, required for
+                       discover/retrieve/grab/grab_chain)
+  tb_text_<idx>     = log text for that TB
+{% endcomment %}
+{% load i18n static %}
+{% if tb_enabled %}
+<div id="tb-sections-config"
+     data-url-verify="{% url 'geocaches:trackable_verify' %}"
+     style="display:none"></div>
+<div class="card mb-2" id="tb-sections">
+  <div class="card-header py-1 small fw-semibold d-flex align-items-center">
+    <span>{% trans "Trackables" %}</span>
+    <span class="text-muted ms-2" id="tb-summary"></span>
+  </div>
+  <div class="card-body py-2">
+
+    {# 1. TBs in this cache #}
+    <details {% if tb_mentions %}open{% endif %} class="mb-2">
+      <summary class="small fw-semibold">{% trans "In this cache" %}
+        <span class="text-muted">({{ tb_mentions|length }})</span>
+      </summary>
+      {% if tb_mentions %}
+      <div class="mt-2">
+        {% for tb in tb_mentions %}
+        <div class="tb-row border rounded p-2 mb-2"
+             data-tb-row="cache" data-tb-ref="{{ tb.ref_code }}">
+          <div class="d-flex align-items-center gap-2 small">
+            <span class="font-monospace">{{ tb.ref_code }}</span>
+            <span class="flex-grow-1">{{ tb.name }}</span>
+            <div class="btn-group btn-group-sm" role="group">
+              <input type="radio" class="btn-check" name="tb_action_{{ forloop.counter0 }}"
+                     id="tba-{{ forloop.counter0 }}-none" value="" checked
+                     onchange="gcfTbToggle(this)">
+              <label class="btn btn-outline-secondary" for="tba-{{ forloop.counter0 }}-none">—</label>
+              <input type="radio" class="btn-check" name="tb_action_{{ forloop.counter0 }}"
+                     id="tba-{{ forloop.counter0 }}-discover" value="discover"
+                     onchange="gcfTbToggle(this)">
+              <label class="btn btn-outline-info" for="tba-{{ forloop.counter0 }}-discover">{% trans "Discover" %}</label>
+              <input type="radio" class="btn-check" name="tb_action_{{ forloop.counter0 }}"
+                     id="tba-{{ forloop.counter0 }}-retrieve" value="retrieve"
+                     onchange="gcfTbToggle(this)">
+              <label class="btn btn-outline-warning" for="tba-{{ forloop.counter0 }}-retrieve">{% trans "Retrieve" %}</label>
+            </div>
+          </div>
+          <div class="tb-mini mt-2" style="display:none">
+            <div class="tb-verify-row d-flex align-items-center gap-1 mb-1 small">
+              <label class="mb-0">{% trans "Tracking code" %}</label>
+              <input type="text" class="form-control form-control-sm font-monospace"
+                     style="max-width:8em" maxlength="20" data-tb-tracking
+                     placeholder="{% trans 'e.g. CVWPRJ' %}" autocomplete="off">
+              <button type="button" class="btn btn-sm btn-outline-secondary" data-tb-verify>{% trans "Verify" %}</button>
+              <span class="small" data-tb-verify-status></span>
+            </div>
+            <textarea class="form-control form-control-sm" rows="2"
+                      data-tb-text placeholder="{% trans 'Optional log text' %}"></textarea>
+            <div class="mt-1 small">
+              <label class="text-muted me-2">{% trans "Attach images:" %}</label>
+              <input type="file" class="form-control form-control-sm d-inline-block" style="width:auto;max-width:24rem"
+                     data-tb-images accept="image/jpeg,image/png,image/gif" multiple>
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="text-muted small mt-2">{% trans "No trackables recorded in this cache." %}</div>
+      {% endif %}
+    </details>
+
+    {# 2. My inventory — auto-loaded on first expand #}
+    <details class="mb-2" id="tb-inv-section">
+      <summary class="small fw-semibold">{% trans "My inventory" %}
+        <span class="text-muted" data-tb-inv-count></span>
+      </summary>
+      <div class="mt-2" data-tb-inv-rows
+           data-url="{% url 'geocaches:trackable_inventory' %}?gc_code={{ tb_cache_gc_code|urlencode }}">
+        <div class="text-muted small" data-tb-inv-status>{% trans "Loading…" %}</div>
+      </div>
+    </details>
+
+    {# 3. Discover by code (event tables etc.) #}
+    <details class="mb-2">
+      <summary class="small fw-semibold">{% trans "Discover by code" %}</summary>
+      <div class="mt-2" data-tb-discover-extra>
+        <p class="text-muted small mb-1">
+          {% trans "For trackables not in this cache and not in your inventory. Each row is submitted as a 'Discovered It' log." %}
+        </p>
+        <button type="button" class="btn btn-sm btn-outline-secondary"
+                data-tb-discover-add>+ {% trans "Add tracking code" %}</button>
+      </div>
+    </details>
+
+    {# 4. Grab by code — last resort #}
+    <details class="mb-0">
+      <summary class="small fw-semibold">{% trans "Grab by code" %} <span class="badge bg-warning text-dark">{% trans "last resort" %}</span></summary>
+      <div class="mt-2 small" data-tb-grab-extra>
+        <div class="alert alert-warning py-2 mb-2" role="alert">
+          <strong>{% trans "Grabbing is a last resort." %}</strong>
+          {% trans "Only use it when a TB hasn't been logged for an unreasonably long time. After you Verify a code below, a link to the current holder (or to the cache the TB is currently listed in) appears here. Please reach out — or wait a little longer — before grabbing." %}
+        </div>
+        <button type="button" class="btn btn-sm btn-outline-secondary"
+                data-tb-grab-add>+ {% trans "Add tracking code" %}</button>
+      </div>
+    </details>
+
+  </div>
+</div>
+<script src="{% static 'js/log-tb-sections.js' %}"></script>
+{% endif %}

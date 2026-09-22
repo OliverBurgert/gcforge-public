@@ -1,0 +1,115 @@
+{% load cache_tags i18n static %}
+<div class="mb-2">
+  <label class="form-label small mb-0">{% trans "Log type" %}</label>
+  <select name="log_type" class="form-select form-select-sm">
+    {% for value, label in log_type_choices %}
+    <option value="{{ value }}" {% if value == selected_log_type %}selected{% endif %}>{{ label }}</option>
+    {% endfor %}
+  </select>
+</div>
+
+<div class="mb-2">
+  <label class="form-label small mb-0">{% trans "Date / Time" %} <span class="text-muted">({{ cache_tz_name }})</span></label>
+  <input type="datetime-local" name="logged_at" class="form-control form-control-sm"
+         value="{{ logged_at_value }}">
+</div>
+
+<div class="mb-2">
+  <label class="form-label small mb-0">{% trans "Log text" %}</label>
+  {% include "geocaches/partials/_log_compose_toolbar.html" %}
+  <textarea name="text" id="logFormText" class="form-control form-control-sm" rows="4"
+            placeholder="TFTC!">{{ log_text_value }}</textarea>
+  {% if pending_field_notes %}
+  <div class="mt-1 d-flex flex-wrap gap-1">
+    {% for fn in pending_field_notes %}
+    <button type="button" class="btn btn-outline-secondary btn-sm py-0"
+            style="font-size:.75rem"
+            onclick="gcfInsertFieldNote({{ fn.body|tojson }}, {{ fn.log_type|tojson }}, {{ fn.local_dt|tojson }})"
+            title="{{ fn.body|truncatechars:120 }}">
+      {{ fn.label }}{% if fn.date_label %} ({{ fn.date_label }}){% endif %}
+    </button>
+    {% endfor %}
+  </div>
+  {% endif %}
+</div>
+
+{% if requires_passphrase %}
+<div class="mb-2">
+  <label class="form-label small mb-0">
+    {% trans "Passphrase" %} <span class="badge bg-warning text-dark" style="font-size:.65rem">{% trans "required" %}</span>
+  </label>
+  <input type="text" name="passphrase" id="logFormPassphrase" class="form-control form-control-sm"
+         value="{{ stored_passphrase }}" autocomplete="off" placeholder="{% trans 'Enter cache passphrase' %}">
+  {% if pending_field_notes %}
+  <div class="mt-1 d-flex flex-wrap gap-1">
+    {% for fn in pending_field_notes %}
+    <button type="button" class="btn btn-outline-secondary btn-sm py-0"
+            style="font-size:.75rem"
+            onclick="gcfInsertPassphrase({{ fn.body|tojson }})"
+            title="{{ fn.body|truncatechars:120 }}">
+      {{ fn.label }}{% if fn.date_label %} ({{ fn.date_label }}){% endif %}
+    </button>
+    {% endfor %}
+  </div>
+  {% endif %}
+</div>
+{% endif %}
+
+{% if submit_platforms %}
+<div class="mb-2">
+  <label class="form-label small mb-0">{% trans "Submit to" %}</label>
+  {% for p in submit_platforms %}
+  <div class="form-check">
+    <input class="form-check-input" type="checkbox" name="platforms" value="{{ p.id }}"
+           id="logPlat_{{ p.id }}" {% if p.checked %}checked{% endif %} {% if not p.enabled %}disabled{% endif %}>
+    <label class="form-check-label small" for="logPlat_{{ p.id }}">
+      {{ p.label }}
+      {% if not p.enabled %}<span class="text-muted">{% trans "(no credentials)" %}</span>{% endif %}
+    </label>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<div class="mb-0">
+  <label class="form-label small mb-0">{% trans "Find #" %} <span class="text-muted">{% trans "(optional)" %}</span></label>
+  <div class="d-flex align-items-center gap-1">
+    <input type="number" name="sequence_number" id="logFormSequenceNumber"
+           class="form-control form-control-sm" style="width:6em"
+           {% if sequence_number_value %}value="{{ sequence_number_value }}"{% endif %}
+           min="1" placeholder="">
+    <button type="button" class="btn btn-sm btn-outline-secondary py-0"
+            id="logFormRefreshFinds" title="{% trans 'Refresh from platforms' %}"
+            data-url="{% url 'preferences:refresh_total_finds' %}">🔄</button>
+    <span class="text-muted small" id="logFormRefreshFindsStatus" aria-live="polite"></span>
+  </div>
+</div>
+
+{% if can_give_fav or can_recommend %}
+<div class="mb-0 mt-2 d-flex gap-3 flex-wrap" id="fav-rec-section">
+  {% if can_give_fav %}
+  <div class="form-check" id="fav-check-wrap" style="display:none!important">
+    <input class="form-check-input" type="checkbox" name="give_favourite" id="logGiveFav" value="1">
+    <label class="form-check-label small" for="logGiveFav">{% trans "Give ♥ favourite point" %}</label>
+  </div>
+  {% endif %}
+  {% if can_recommend %}
+  <div class="form-check" id="rec-check-wrap" style="display:none!important">
+    <input class="form-check-input" type="checkbox" name="recommend" id="logRecommend" value="1">
+    <label class="form-check-label small" for="logRecommend">{% trans "Recommend ★" %}</label>
+  </div>
+  {% endif %}
+</div>
+{% endif %}
+
+{% if submit_platforms %}
+{# Image slots — hidden file inputs injected here by JS #}
+<div data-role="image-slots"></div>
+{# Image list display #}
+<div data-role="image-list" class="mb-1"></div>
+{% endif %}
+
+{# Trackable action sections — only rendered for GC caches with a gc_code #}
+{% include "geocaches/partials/_log_tb_sections.html" %}
+
+<script src="{% static 'js/log-form-fields.js' %}"></script>

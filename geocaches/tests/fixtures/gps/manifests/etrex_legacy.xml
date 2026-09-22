@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Device xmlns="http://www.garmin.com/xmlschemas/GarminDevice/v2">
+  <Model>
+    <PartNumber>006-A0000-00</PartNumber>
+    <SoftwareVersion>200</SoftwareVersion>
+    <Description>eTrex Legacy</Description>
+  </Model>
+</Device>

@@ -1,0 +1,1613 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-09-11 23:23+0200\n"
+"PO-Revision-Date: 2026-05-19 16:20+0200\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: de\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: .\static\js\bulk-logging.js:75 .\static\js\bulk-logging.js:79
+msgid "Submit failed."
+msgstr "Übermittlung fehlgeschlagen."
+
+#: .\static\js\cache-detail-map.js:469
+msgid "Add waypoint here"
+msgstr "Wegpunkt hier anlegen"
+
+#: .\static\js\cache-detail-map.js:479
+msgid "Update country/state/county from here"
+msgstr "Land/Region/Landkreis von hier aktualisieren"
+
+#: .\static\js\cache-detail-map.js:483
+msgid "Update elevation from here"
+msgstr "Höhe von hier aktualisieren"
+
+#: .\static\js\cache-detail-map.js:507 .\static\js\cache-detail-map.js:511
+msgid "Update failed."
+msgstr "Aktualisierung fehlgeschlagen."
+
+#: .\static\js\cache-detail-map.js:1065 .\static\js\map-context-menu.js:138
+#: .\static\js\map-context-menu.js:184 .\static\js\map-context-menu.js:271
+msgid "Street View"
+msgstr "Street View"
+
+#: .\static\js\cache-detail-map.js:1070 .\static\js\map-context-menu.js:130
+#: .\static\js\map-context-menu.js:162 .\static\js\map-context-menu.js:259
+msgid "Range circle…"
+msgstr "Umkreis…"
+
+#: .\static\js\cache-detail-map.js:1124 .\static\js\map-context-menu.js:448
+msgid "Radius in km (use \".\" as decimal separator):"
+msgstr "Radius in km (Dezimaltrenner „.\"):"
+
+#: .\static\js\cache-detail.js:20
+msgid "less"
+msgstr "weniger"
+
+#: .\static\js\cache-detail.js:20
+msgid "more"
+msgstr "mehr"
+
+#: .\static\js\cache-detail.js:55
+msgid "encode"
+msgstr "verschlüsseln"
+
+#: .\static\js\cache-detail.js:55
+msgid "decode"
+msgstr "entschlüsseln"
+
+#: .\static\js\cache-detail.js:288
+msgid "Edit waypoint"
+msgstr "Wegpunkt bearbeiten"
+
+#: .\static\js\cache-detail.js:288
+msgid "Add waypoint"
+msgstr "Wegpunkt hinzufügen"
+
+#: .\static\js\cache-detail.js:337 .\static\js\cache-detail.js:378
+msgid "Enter bearing and distance above."
+msgstr "Gib oben Kurs und Distanz ein."
+
+#: .\static\js\cache-detail.js:393
+msgid "Invalid basis coordinates."
+msgstr "Ungültige Basis-Koordinaten."
+
+#: .\static\js\cache-detail.js:404
+msgid "Result: %(lat)s, %(lon)s"
+msgstr "Ergebnis: %(lat)s, %(lon)s"
+
+#: .\static\js\cache-list.js:491
+msgid "Delete this saved filter?"
+msgstr "Diesen gespeicherten Filter löschen?"
+
+#: .\static\js\cache-list.js:537
+msgid "Tree JSON is empty."
+msgstr "JSON-Baum ist leer."
+
+#: .\static\js\cache-list.js:543
+msgid "Invalid JSON: "
+msgstr "Ungültiges JSON: "
+
+#: .\static\js\cache-list.js:575 .\static\js\cache-list.js:909
+msgid "Apply failed (status "
+msgstr "Anwenden fehlgeschlagen (Status "
+
+#: .\static\js\cache-list.js:578 .\static\js\cache-list.js:912
+msgid "Network error: "
+msgstr "Netzwerkfehler: "
+
+#: .\static\js\cache-list.js:586 .\static\js\cache-list.js:920
+#: .\static\js\cache-list.js:1427
+msgid "Enter a name in the \"Save as…\" field."
+msgstr "Gib einen Namen im Feld \"Speichern als…\" ein."
+
+#: .\static\js\cache-list.js:609 .\static\js\cache-list.js:933
+#: .\static\js\cache-list.js:1443
+msgid "Save failed: "
+msgstr "Speichern fehlgeschlagen: "
+
+#: .\static\js\cache-list.js:626 .\static\js\cache-list.js:943
+#: .\static\js\cache-list.js:1445
+msgid "Saved as "
+msgstr "Gespeichert als "
+
+#: .\static\js\cache-list.js:897 .\static\js\cache-list.js:925
+msgid "No conditions were set."
+msgstr "Es wurden keine Bedingungen gesetzt."
+
+#: .\static\js\cache-list.js:973
+msgid "Select a saved filter first."
+msgstr "Zuerst einen gespeicherten Filter auswählen."
+
+#: .\static\js\cache-list.js:980
+msgid "No conditions to add."
+msgstr "Keine Bedingungen zum Hinzufügen."
+
+#: .\static\js\cache-list.js:994
+msgid "Built-in filters cannot be deleted."
+msgstr "Eingebaute Filter können nicht gelöscht werden."
+
+#: .\static\js\cache-list.js:997
+#, javascript-format
+msgid "Delete saved filter \"%s\"?"
+msgstr "Gespeicherten Filter \"%s\" löschen?"
+
+#: .\static\js\cache-list.js:1004 .\static\js\cache-list.js:1482
+#: .\static\js\map-route.js:267
+msgid "Delete failed."
+msgstr "Löschen fehlgeschlagen."
+
+#: .\static\js\cache-list.js:1008
+#, javascript-format
+msgid "\"%s\" deleted."
+msgstr "\"%s\" gelöscht."
+
+#: .\static\js\cache-list.js:1428
+msgid "SQL textarea is empty."
+msgstr "SQL-Textfeld ist leer."
+
+#: .\static\js\cache-list.js:1452 .\static\js\cache-list.js:1456
+msgid "Named"
+msgstr "Benannt"
+
+#: .\static\js\cache-list.js:1466
+msgid "Recent"
+msgstr "Kürzlich"
+
+#: .\static\js\cache-list.js:1476
+msgid "Delete this saved WHERE clause?"
+msgstr "Diesen gespeicherten WHERE-Ausdruck löschen?"
+
+#: .\static\js\cache-list.js:1489
+msgid "Deleted."
+msgstr "Gelöscht."
+
+#: .\static\js\cache-list.js:1508
+msgid "Geolocation is not supported by this browser."
+msgstr "Standortbestimmung wird von diesem Browser nicht unterstützt."
+
+#: .\static\js\cache-list.js:1539
+msgid "Current Location"
+msgstr "Aktueller Standort"
+
+#: .\static\js\cache-list.js:1548 .\static\js\map-context-menu.js:688
+#, javascript-format
+msgid "Failed to save location: %s"
+msgstr "Standort konnte nicht gespeichert werden: %s"
+
+#: .\static\js\cache-list.js:1548 .\static\js\trackable-list.js:113
+#: .\static\js\trackable-list.js:525 .\static\js\trackable-list.js:556
+#: .\static\js\trackable-list.js:642
+msgid "unknown error"
+msgstr "unbekannter Fehler"
+
+#: .\static\js\cache-list.js:1553
+msgid "Failed to save location."
+msgstr "Standort konnte nicht gespeichert werden."
+
+#: .\static\js\cache-list.js:1559
+msgid "Location unavailable."
+msgstr "Standort nicht verfügbar."
+
+#: .\static\js\cache-list.js:1560
+msgid "Location permission denied."
+msgstr "Standortzugriff verweigert."
+
+#: .\static\js\cache-list.js:1561
+msgid "Location request timed out."
+msgstr "Zeitüberschreitung bei Standortanfrage."
+
+#: .\static\js\cache-list.js:1638
+msgid "Send failed"
+msgstr "Senden fehlgeschlagen"
+
+#: .\static\js\cache-list.js:1642
+msgid "✓ Sent %(count)s to %(model)s"
+msgstr "✓ %(count)s an %(model)s gesendet"
+
+#: .\static\js\cache-list.js:1645
+#, javascript-format
+msgid "Send to GPS: %s"
+msgstr "An GPS senden: %s"
+
+#: .\static\js\cache-list.js:1654
+msgid "Detecting…"
+msgstr "Erkenne…"
+
+#: .\static\js\cache-list.js:1658
+msgid "No device found"
+msgstr "Kein Gerät gefunden"
+
+#: .\static\js\cache-list.js:1659
+msgid ""
+"No Garmin device detected. Plug it in and ensure it is in mass-storage mode, "
+"or use \"Browse for device folder…\"."
+msgstr ""
+"Kein Garmin-Gerät erkannt. Schließe es an und stelle sicher, dass es im "
+"Massenspeicher-Modus ist, oder nutze „Geräteordner suchen…\"."
+
+#: .\static\js\cache-list.js:1671
+msgid "Multiple Garmin devices detected. Type the number to send to:"
+msgstr "Mehrere Garmin-Geräte erkannt. Gib die Nummer des Ziels ein:"
+
+#: .\static\js\cache-list.js:1675
+msgid "Cancelled"
+msgstr "Abgebrochen"
+
+#: .\static\js\cache-list.js:1680
+msgid "Invalid choice."
+msgstr "Ungültige Auswahl."
+
+#: .\static\js\cache-list.js:1685
+#, javascript-format
+msgid "Detection failed: %s"
+msgstr "Erkennung fehlgeschlagen: %s"
+
+#: .\static\js\cache-list.js:1699
+msgid "Select GPS device root folder"
+msgstr "GPS-Gerät-Hauptordner wählen"
+
+#: .\static\js\cache-list.js:1700
+msgid "Send to this folder"
+msgstr "An diesen Ordner senden"
+
+#: .\static\js\cache-list.js:1848
+msgid "Full update will refresh"
+msgstr "Vollständige Aktualisierung erneuert Datenbestand"
+
+#: .\static\js\cache-list.js:1848
+msgid "cache(s)."
+msgstr "Cache(s)."
+
+#: .\static\js\cache-list.js:1849
+msgid "Estimated API usage: ~"
+msgstr "Geschätzte API-Nutzung: ~"
+
+#: .\static\js\cache-list.js:1849
+msgid "calls (~2 per GC cache: data batch + per-cache logs)"
+msgstr "Aufrufe (~2 pro GC-Cache: Daten-Batch + Logs pro Cache)"
+
+#: .\static\js\cache-list.js:1850
+msgid "Estimated time: ~"
+msgstr "Geschätzte Zeit: ~"
+
+#: .\static\js\cache-list.js:1850
+msgid "minute(s)"
+msgstr "Minute(n)"
+
+#: .\static\js\cache-list.js:1851
+msgid "This may consume significant GC API quota. Proceed?"
+msgstr "Dies kann erhebliche GC-API-Quota verbrauchen. Fortfahren?"
+
+#: .\static\js\cache-location-edit.js:39
+msgid "none"
+msgstr "keine"
+
+#: .\static\js\cache-location-edit.js:68
+msgid "current"
+msgstr "aktuell"
+
+#: .\static\js\cache-location-edit.js:97
+msgid "Region boundaries for this country are not downloaded."
+msgstr "Regionsgrenzen für dieses Land sind nicht heruntergeladen."
+
+#: .\static\js\cache-location-edit.js:119
+msgid "County boundaries for this country/state are not downloaded."
+msgstr ""
+"Landkreisgrenzen für dieses Land/Bundesland sind nicht heruntergeladen."
+
+#: .\static\js\cache-map.js:147 .\static\js\cache-map.js:168
+#, javascript-format
+msgid "Z %s"
+msgstr "Z %s"
+
+#: .\static\js\cache-map.js:607
+msgid "Active"
+msgstr "Aktiv"
+
+#: .\static\js\cache-map.js:608
+msgid "Disabled"
+msgstr "Deaktiviert"
+
+#: .\static\js\cache-map.js:609
+msgid "Archived"
+msgstr "Archiviert"
+
+#: .\static\js\cache-map.js:610
+msgid "Unpublished"
+msgstr "Unveröffentlicht"
+
+#: .\static\js\cache-map.js:611
+msgid "Locked"
+msgstr "Gesperrt"
+
+#: .\static\js\cache-map.js:632
+msgid "Found"
+msgstr "Gefunden"
+
+#: .\static\js\cache-map.js:635
+msgid "Mine"
+msgstr "Eigene"
+
+#: .\static\js\dashboard-maps.js:158
+#, javascript-format
+msgid "%s finds"
+msgstr "%s Funde"
+
+#: .\static\js\dashboard-maps.js:240
+#, javascript-format
+msgid "Found in %s country:"
+msgid_plural "Found in %s countries:"
+msgstr[0] "In %s Land gefunden:"
+msgstr[1] "In %s Ländern gefunden:"
+
+#: .\static\js\dashboard-maps.js:253 .\static\js\dashboard-maps.js:389
+msgid "Show found caches (right-click for found/unfound/all)"
+msgstr ""
+"Gefundene Caches anzeigen (Rechtsklick für gefunden/nicht gefunden/alle)"
+
+#: .\static\js\dashboard-maps.js:314
+msgid "World — countries"
+msgstr "Welt — Länder"
+
+#: .\static\js\dashboard-maps.js:333
+msgid "No continent has finds yet."
+msgstr "Noch kein Kontinent mit Funden."
+
+#: .\static\js\dashboard-maps.js:371
+#, javascript-format
+msgid "Found in %s region:"
+msgid_plural "Found in %s regions:"
+msgstr[0] "In %s Region gefunden:"
+msgstr[1] "In %s Regionen gefunden:"
+
+#: .\static\js\dashboard-maps.js:457
+msgid "Show found"
+msgstr "Gefundene anzeigen"
+
+#: .\static\js\dashboard-maps.js:458 .\static\js\dashboard-maps.js:460
+msgid "Show unfound"
+msgstr "Nicht gefundene anzeigen"
+
+#: .\static\js\dashboard-maps.js:459
+msgid "Show all"
+msgstr "Alle anzeigen"
+
+#: .\static\js\dashboard-maps.js:530
+#, javascript-format
+msgid "%s find in unmapped regions"
+msgid_plural "%s finds in unmapped regions"
+msgstr[0] "%s Fund in nicht kartierten Regionen"
+msgstr[1] "%s Funde in nicht kartierten Regionen"
+
+#: .\static\js\dashboard-maps.js:531
+#, javascript-format
+msgid "%s find in unmapped counties"
+msgid_plural "%s finds in unmapped counties"
+msgstr[0] "%s Fund in nicht zugeordneten Landkreisen"
+msgstr[1] "%s Funde in nicht zugeordneten Landkreisen"
+
+#: .\static\js\dashboard-maps.js:541 .\static\js\map-route.js:660
+msgid "Code"
+msgstr "Code"
+
+#: .\static\js\dashboard-maps.js:542 .\static\js\map-route.js:609
+#: .\static\js\map-route.js:660
+msgid "Name"
+msgstr "Name"
+
+#: .\static\js\dashboard-maps.js:543
+msgid "Country"
+msgstr "Land"
+
+#: .\static\js\dashboard-maps.js:544
+msgid "State"
+msgstr "Bundesland"
+
+#: .\static\js\dashboard-maps.js:545
+msgid "County"
+msgstr "Landkreis"
+
+#: .\static\js\dashboard-maps.js:574
+msgid "Select as filter"
+msgstr "Als Filter übernehmen"
+
+#: .\static\js\dashboard-maps.js:656
+msgid "No counties have finds yet."
+msgstr "Noch keine Landkreise mit Funden."
+
+#: .\static\js\dashboard-maps.js:667 .\static\js\dashboard-maps.js:669
+msgid "Unmapped"
+msgstr "Nicht zugeordnet"
+
+#: .\static\js\dashboard-maps.js:718
+msgid "Regions"
+msgstr "Regionen"
+
+#: .\static\js\dashboard-maps.js:718
+msgid "Counties"
+msgstr "Landkreise"
+
+#: .\static\js\dashboard-maps.js:725
+msgid "Boundary not downloaded."
+msgstr "Grenzdaten nicht heruntergeladen."
+
+#: .\static\js\dashboard-maps.js:726
+msgid "Settings → Dashboard"
+msgstr "Einstellungen → Dashboard"
+
+#: .\static\js\dashboard-maps.js:732
+msgid "Loading…"
+msgstr "Lade…"
+
+#: .\static\js\dashboard-maps.js:750
+#, javascript-format
+msgid "Could not load region data for %s."
+msgstr "Regionsdaten für %s konnten nicht geladen werden."
+
+#: .\static\js\dashboard-maps.js:794
+msgid "Could not load boundary data."
+msgstr "Grenzdaten konnten nicht geladen werden."
+
+#: .\static\js\dashboard-maps.js:844
+msgid "Map library failed to load."
+msgstr "Kartenbibliothek konnte nicht geladen werden."
+
+#: .\static\js\export-gpx.js:24
+#, javascript-format
+msgid "Last used: %s"
+msgstr "Zuletzt verwendet: %s"
+
+#: .\static\js\export-gpx.js:38
+msgid "Preparing GPX download…"
+msgstr "GPX-Download wird vorbereitet…"
+
+#: .\static\js\export-gpx.js:46
+msgid "Exporting GPX…"
+msgstr "GPX-Export läuft…"
+
+#: .\static\js\export-gpx.js:48
+msgid "Export failed"
+msgstr "Export fehlgeschlagen"
+
+#: .\static\js\export-gpx.js:53
+msgid "GPX export: %(caches)s caches, %(wps)s WPs → %(dest)s"
+msgstr "GPX-Export: %(caches)s Caches, %(wps)s WPs → %(dest)s"
+
+#: .\static\js\export-gpx.js:73
+msgid "Select export folder"
+msgstr "Export-Ordner wählen"
+
+#: .\static\js\export-gpx.js:74
+msgid "Select current folder"
+msgstr "Aktuellen Ordner wählen"
+
+#: .\static\js\file-browser.js:25
+msgid "Select file(s) or folder"
+msgstr "Datei(en) oder Ordner wählen"
+
+#: .\static\js\file-browser.js:25
+msgid "Select file"
+msgstr "Datei wählen"
+
+#: .\static\js\file-browser.js:66
+msgid "Request failed"
+msgstr "Anfrage fehlgeschlagen"
+
+#: .\static\js\file-browser.js:166
+#, javascript-format
+msgid "%s file selected"
+msgid_plural "%s files selected"
+msgstr[0] "%s Datei ausgewählt"
+msgstr[1] "%s Dateien ausgewählt"
+
+#: .\static\js\file-browser.js:178
+msgid "Empty directory"
+msgstr "Leeres Verzeichnis"
+
+#: .\static\js\file-browser.js:188
+msgid "Select this folder"
+msgstr "Diesen Ordner wählen"
+
+#: .\static\js\gpx-detect.js:37
+msgid "Opencaching"
+msgstr "Opencaching"
+
+#: .\static\js\gpx-detect.js:43
+msgid "Opencaching files include waypoints inline — no companion file needed."
+msgstr ""
+"Opencaching-Dateien enthalten Wegpunkte inline — keine zusätzliche Datei "
+"nötig."
+
+#: .\static\js\gpx-detect.js:45
+msgid "geocaching.com"
+msgstr "geocaching.com"
+
+#: .\static\js\gpx-detect.js:66
+msgid ""
+"When importing a <code>.gpx</code> file, the companion <code>-wpts.gpx</"
+"code> file in the same folder is detected and imported automatically. For "
+"<code>.zip</code> archives, waypoints inside the archive are always included."
+msgstr ""
+"Beim Import einer <code>.gpx</code>-Datei wird die zugehörige <code>-"
+"wpts.gpx</code>-Datei im selben Ordner automatisch erkannt und importiert. "
+"Bei <code>.zip</code>-Archiven sind die enthaltenen Wegpunkte immer dabei."
+
+#: .\static\js\import-fieldnotes.js:29
+#, javascript-format
+msgid "Fetching caches… (%s task(s) running)"
+msgstr "Rufe Caches ab… (%s Aufgabe(n) laufen)"
+
+#: .\static\js\import-fieldnotes.js:29
+msgid "Fetch complete."
+msgstr "Abruf abgeschlossen."
+
+#: .\static\js\import-fieldnotes.js:33
+msgid "Caches fetched successfully — importing…"
+msgstr "Caches erfolgreich abgerufen — importiere…"
+
+#: .\static\js\import-fieldnotes.js:66
+msgid "No tasks started — check platform accounts in Settings."
+msgstr ""
+"Keine Aufgaben gestartet — Plattform-Konten in den Einstellungen prüfen."
+
+#: .\static\js\import-fieldnotes.js:73
+#, javascript-format
+msgid "Fetch failed: %s"
+msgstr "Abruf fehlgeschlagen: %s"
+
+#: .\static\js\log-compose-toolbar.js:165
+msgid "Link URL:"
+msgstr "Link-URL:"
+
+#: .\static\js\log-image-dialog.js:48
+msgid "(already attached; choose new file to replace)"
+msgstr "(bereits angehängt; neue Datei wählen, um zu ersetzen)"
+
+#: .\static\js\log-image-dialog.js:89
+msgid "Please select a file."
+msgstr "Bitte eine Datei auswählen."
+
+#: .\static\js\log-image-dialog.js:131
+msgid "Edit"
+msgstr "Bearbeiten"
+
+#: .\static\js\log-tb-sections.js:60
+msgid "enter a code"
+msgstr "Code eingeben"
+
+#: .\static\js\log-tb-sections.js:64
+msgid "checking…"
+msgstr "prüfe…"
+
+#: .\static\js\log-tb-sections.js:74
+msgid "invalid"
+msgstr "ungültig"
+
+#: .\static\js\log-tb-sections.js:97
+msgid "Currently held by"
+msgstr "Aktuell gehalten von"
+
+#: .\static\js\log-tb-sections.js:98
+msgid "Send message"
+msgstr "Nachricht senden"
+
+#: .\static\js\log-tb-sections.js:99
+msgid "Profile"
+msgstr "Profil"
+
+#: .\static\js\log-tb-sections.js:104
+msgid "Currently listed in cache"
+msgstr "Aktuell im Cache"
+
+#: .\static\js\log-tb-sections.js:108
+msgid "No current holder or cache reported."
+msgstr "Kein aktueller Halter oder Cache angegeben."
+
+#: .\static\js\log-tb-sections.js:130
+msgid "failed"
+msgstr "fehlgeschlagen"
+
+#: .\static\js\log-tb-sections.js:137
+msgid "No trackables in your inventory."
+msgstr "Keine Trackables in deinem Inventar."
+
+#: .\static\js\log-tb-sections.js:159
+msgid "Drop here"
+msgstr "Hier ablegen"
+
+#: .\static\js\log-tb-sections.js:166
+msgid "Visit here"
+msgstr "Hier besuchen"
+
+#: .\static\js\log-tb-sections.js:166
+msgid "(auto)"
+msgstr "(auto)"
+
+#: .\static\js\log-tb-sections.js:172 .\static\js\log-tb-sections.js:204
+msgid "Optional log text"
+msgstr "Optionaler Log-Text"
+
+#: .\static\js\log-tb-sections.js:195 .\static\js\log-tb-sections.js:214
+msgid "Tracking code"
+msgstr "Tracking-Code"
+
+#: .\static\js\log-tb-sections.js:198 .\static\js\log-tb-sections.js:217
+msgid "Verify"
+msgstr "Prüfen"
+
+#: .\static\js\log-tb-sections.js:225
+msgid "Also drop & retrieve here"
+msgstr "Auch hier ablegen & mitnehmen"
+
+#: .\static\js\log-tb-sections.js:226
+msgid "(records this cache in the TB history)"
+msgstr "(zeichnet diesen Cache in der TB-Historie auf)"
+
+#: .\static\js\log-tb-sections.js:230
+msgid "Optional log text (used for all three logs in the chain)"
+msgstr ""
+"Optionaler Log-Text (wird für alle drei Logs der Ausführungs-Kette verwendet)"
+
+#: .\static\js\map-context-menu.js:115
+msgid "Preview API caches"
+msgstr "API-Caches vorschauen"
+
+#: .\static\js\map-context-menu.js:120
+msgid "Delete shape"
+msgstr "Form löschen"
+
+#: .\static\js\map-context-menu.js:134 .\static\js\map-context-menu.js:174
+#: .\static\js\map-context-menu.js:234
+msgid "Set as center point"
+msgstr "Als Zentrum festlegen"
+
+#: .\static\js\map-context-menu.js:142 .\static\js\map-context-menu.js:188
+#: .\static\js\map-context-menu.js:275
+msgid "Zoom in"
+msgstr "Hineinzoomen"
+
+#: .\static\js\map-context-menu.js:146 .\static\js\map-context-menu.js:192
+#: .\static\js\map-context-menu.js:279
+msgid "Zoom out"
+msgstr "Herauszoomen"
+
+#: .\static\js\map-context-menu.js:166 .\static\js\map-context-menu.js:263
+#: .\static\js\map-context-menu.js:614 .\static\js\map-context-menu.js:649
+msgid "Nearest cache"
+msgstr "Nächster Cache"
+
+#: .\static\js\map-context-menu.js:170 .\static\js\map-context-menu.js:267
+msgid "Search nearby"
+msgstr "In der Umgebung suchen"
+
+#: .\static\js\map-context-menu.js:179 .\static\js\map-context-menu.js:239
+msgid "Add to route"
+msgstr "Zur Route hinzufügen"
+
+#: .\static\js\map-context-menu.js:215
+msgid "Open detail"
+msgstr "Detailseite öffnen"
+
+#: .\static\js\map-context-menu.js:224
+msgid "Open on geocaching.com"
+msgstr "Auf geocaching.com öffnen"
+
+#: .\static\js\map-context-menu.js:229
+msgid "Open on opencaching.de"
+msgstr "Auf opencaching.de öffnen"
+
+#: .\static\js\map-context-menu.js:246
+msgid "Hide on map (this session)"
+msgstr "Auf Karte verbergen (Sitzung)"
+
+#: .\static\js\map-context-menu.js:249
+msgid "Hide on map (always)"
+msgstr "Auf Karte verbergen (dauerhaft)"
+
+#: .\static\js\map-context-menu.js:388
+msgid "Copy coordinates"
+msgstr "Koordinaten kopieren"
+
+#: .\static\js\map-context-menu.js:453
+#, javascript-format
+msgid ""
+"Invalid radius: \"%s\". Use a number like 2 or 0.5 (dot as decimal "
+"separator)."
+msgstr ""
+"Ungültiger Radius: „%s\". Verwende eine Zahl wie 2 oder 0.5 (Punkt als "
+"Dezimaltrenner)."
+
+#: .\static\js\map-context-menu.js:547
+msgid "Remove this circle"
+msgstr "Diesen Kreis entfernen"
+
+#: .\static\js\map-context-menu.js:555
+msgid "Remove all"
+msgstr "Alle entfernen"
+
+#: .\static\js\map-context-menu.js:569
+msgid "No results"
+msgstr "Keine Ergebnisse"
+
+#: .\static\js\map-context-menu.js:573
+msgid "Nearby"
+msgstr "In der Nähe"
+
+#: .\static\js\map-context-menu.js:580
+msgid "Reverse geocode failed"
+msgstr "Reverse-Geocoding fehlgeschlagen"
+
+#: .\static\js\map-context-menu.js:589
+msgid "Not enough caches loaded to find nearest."
+msgstr "Zu wenig Caches geladen, um den nächsten zu finden."
+
+#: .\static\js\map-context-menu.js:607
+msgid "No other caches found."
+msgstr "Keine weiteren Caches gefunden."
+
+#: .\static\js\map-context-menu.js:625
+msgid "No caches loaded."
+msgstr "Keine Caches geladen."
+
+#: .\static\js\map-context-menu.js:642
+msgid "No caches found."
+msgstr "Keine Caches gefunden."
+
+#: .\static\js\map-context-menu.js:668
+msgid "CSRF token not found."
+msgstr "CSRF-Token nicht gefunden."
+
+#: .\static\js\map-context-menu.js:692
+msgid "Failed to save location"
+msgstr "Standort konnte nicht gespeichert werden"
+
+#: .\static\js\map-context-menu.js:697
+#, javascript-format
+msgid "From cache %s"
+msgstr "Aus Cache %s"
+
+#: .\static\js\map-context-menu.js:714 .\static\js\map-context-menu.js:718
+msgid "Mapped location"
+msgstr "Kartenposition"
+
+#: .\static\js\map-draw.js:1222
+msgid "Draw shapes on the map first."
+msgstr "Zeichne zuerst Formen auf der Karte."
+
+#: .\static\js\map-draw.js:1225
+msgid "Save area filter as:"
+msgstr "Gebietsfilter speichern als:"
+
+#: .\static\js\map-draw.js:1247 .\static\js\map-draw.js:1523
+#: .\static\js\settings.js:114 .\static\js\settings.js:118
+#, javascript-format
+msgid "Error: %s"
+msgstr "Fehler: %s"
+
+#: .\static\js\map-draw.js:1250 .\static\js\map-route.js:204
+#, javascript-format
+msgid "Save failed: %s"
+msgstr "Speichern fehlgeschlagen: %s"
+
+#: .\static\js\map-draw.js:1269
+msgid "No saved areas"
+msgstr "Keine gespeicherten Gebiete"
+
+#: .\static\js\map-draw.js:1280
+#, javascript-format
+msgid "Load %s"
+msgstr "%s laden"
+
+#: .\static\js\map-draw.js:1286
+msgid "Delete"
+msgstr "Löschen"
+
+#: .\static\js\map-draw.js:1333
+#, javascript-format
+msgid "Delete saved area \"%s\"?"
+msgstr "Gespeichertes Gebiet „%s\" löschen?"
+
+#: .\static\js\map-draw.js:1341
+#, javascript-format
+msgid "Delete failed: %s"
+msgstr "Löschen fehlgeschlagen: %s"
+
+#: .\static\js\map-draw.js:1507
+msgid "%(segments)s segment, %(points)s points, ~%(km)s km"
+msgid_plural "%(segments)s segments, %(points)s points, ~%(km)s km"
+msgstr[0] "%(segments)s Segment, %(points)s Punkte, ~%(km)s km"
+msgstr[1] "%(segments)s Segmente, %(points)s Punkte, ~%(km)s km"
+
+#: .\static\js\map-draw.js:1517
+msgid "Large track — rendering may be slow"
+msgstr "Großer Track — die Anzeige kann langsam sein"
+
+#: .\static\js\map-fetch.js:229
+msgid "Failed to load providers"
+msgstr "Anbieter konnten nicht geladen werden"
+
+#: .\static\js\map-fetch.js:235 .\static\js\pq-management.js:180
+msgid "Loading..."
+msgstr "Lade…"
+
+#: .\static\js\map-fetch.js:247
+msgid ""
+"%(platform)s: %(lightRem)s / %(lightLim)s light, %(fullRem)s / %(fullLim)s "
+"full"
+msgstr ""
+"%(platform)s: %(lightRem)s / %(lightLim)s light, %(fullRem)s / %(fullLim)s "
+"full"
+
+#: .\static\js\map-fetch.js:260
+msgid "Failed to load quota"
+msgstr "Kontingent konnte nicht geladen werden"
+
+#: .\static\js\map-fetch.js:342
+msgid "Select at least one provider"
+msgstr "Wähle mindestens einen Anbieter"
+
+#: .\static\js\map-fetch.js:361 .\static\js\map-fetch.js:385
+msgid "No previewable regions"
+msgstr "Keine vorschaubaren Gebiete"
+
+#: .\static\js\map-fetch.js:370
+msgid "Enter at least one search criterion"
+msgstr "Gib mindestens ein Suchkriterium ein"
+
+#: .\static\js\map-fetch.js:379
+msgid "Draw at least one region first"
+msgstr "Zeichne zuerst mindestens ein Gebiet"
+
+#: .\static\js\map-fetch.js:393 .\static\js\map-fetch.js:623
+msgid "Submitting..."
+msgstr "Sende…"
+
+#: .\static\js\map-fetch.js:406
+#, javascript-format
+msgid "Preview failed: %s"
+msgstr "Vorschau fehlgeschlagen: %s"
+
+#: .\static\js\map-fetch.js:415
+msgid "Preview request failed"
+msgstr "Vorschau-Anfrage fehlgeschlagen"
+
+#: .\static\js\map-fetch.js:423
+msgid "No preview tasks created"
+msgstr "Keine Vorschau-Aufgaben erstellt"
+
+#: .\static\js\map-fetch.js:490
+#, javascript-format
+msgid "Failed to fetch results for task %s"
+msgstr "Ergebnisse für Aufgabe %s konnten nicht abgerufen werden"
+
+#: .\static\js\map-fetch.js:514
+msgid "Preview cancelled — no caches were fetched yet"
+msgstr "Vorschau abgebrochen — es wurden noch keine Caches abgerufen"
+
+#: .\static\js\map-fetch.js:516
+msgid "No caches matched your criteria"
+msgstr "Keine Caches entsprechen deinen Kriterien"
+
+#: .\static\js\map-fetch.js:517
+msgid "No caches found in the selected area"
+msgstr "Keine Caches im gewählten Gebiet gefunden"
+
+#: .\static\js\map-fetch.js:519
+#, javascript-format
+msgid " — fetch error: %s"
+msgstr " — Abruf-Fehler: %s"
+
+#: .\static\js\map-fetch.js:549
+#, javascript-format
+msgid "%s cache found"
+msgid_plural "%s caches found"
+msgstr[0] "%s Cache gefunden"
+msgstr[1] "%s Caches gefunden"
+
+#: .\static\js\map-fetch.js:559
+msgid ""
+"Preview cancelled — %(total)s caches fetched so far (%(newCount)s new, %"
+"(existCount)s already synced)"
+msgstr ""
+"Vorschau abgebrochen — bisher %(total)s Caches abgerufen (%(newCount)s neu, %"
+"(existCount)s bereits synchronisiert)"
+
+#: .\static\js\map-fetch.js:560
+msgid ""
+"Preview: %(total)s caches (%(newCount)s new, %(existCount)s already synced)"
+msgstr ""
+"Vorschau: %(total)s Caches (%(newCount)s neu, %(existCount)s bereits "
+"synchronisiert)"
+
+#: .\static\js\map-fetch.js:564
+#, javascript-format
+msgid " — %s batch error"
+msgid_plural " — %s batch errors"
+msgstr[0] " — %s Batch-Fehler"
+msgstr[1] " — %s Batch-Fehler"
+
+#: .\static\js\map-fetch.js:577
+msgid "Run a preview first"
+msgstr "Erst eine Vorschau ausführen"
+
+#: .\static\js\map-fetch.js:596
+msgid "<strong>%(count)s</strong> caches from %(platform)s"
+msgstr "<strong>%(count)s</strong> Caches von %(platform)s"
+
+#: .\static\js\map-fetch.js:599
+msgid "ready to sync."
+msgstr "zur Synchronisierung bereit."
+
+#: .\static\js\map-fetch.js:640
+#, javascript-format
+msgid "Sync failed: %s"
+msgstr "Synchronisierung fehlgeschlagen: %s"
+
+#: .\static\js\map-fetch.js:648
+msgid "Sync request failed"
+msgstr "Sync-Anfrage fehlgeschlagen"
+
+#: .\static\js\map-fetch.js:656
+msgid "No sync tasks created"
+msgstr "Keine Sync-Aufgaben erstellt"
+
+#: .\static\js\map-fetch.js:712
+#, javascript-format
+msgid "%s new"
+msgstr "%s neu"
+
+#: .\static\js\map-fetch.js:713
+#, javascript-format
+msgid "%s updated"
+msgstr "%s aktualisiert"
+
+#: .\static\js\map-fetch.js:714
+#, javascript-format
+msgid "%s failed"
+msgstr "%s fehlgeschlagen"
+
+#: .\static\js\map-fetch.js:715
+#, javascript-format
+msgid "Synced: %s"
+msgstr "Synchronisiert: %s"
+
+#: .\static\js\map-fetch.js:715
+msgid "0 caches"
+msgstr "0 Caches"
+
+#: .\static\js\map-fetch.js:881
+msgid "Already synced"
+msgstr "Bereits synchronisiert"
+
+#: .\static\js\map-fetch.js:882
+msgid "New"
+msgstr "Neu"
+
+#: .\static\js\map-fetch.js:887
+msgid "Type:"
+msgstr "Typ:"
+
+#: .\static\js\map-fetch.js:887
+msgid "Size:"
+msgstr "Größe:"
+
+#: .\static\js\map-fetch.js:888
+msgid "D/T:"
+msgstr "D/T:"
+
+#: .\static\js\map-fetch.js:889
+msgid "Status:"
+msgstr "Status:"
+
+#: .\static\js\map-fetch.js:992
+msgid "Draw at least one ALC circle first"
+msgstr "Zeichne zuerst mindestens einen ALC-Kreis"
+
+#: .\static\js\map-fetch.js:996
+msgid "Fetch ALCs in area"
+msgstr "ALCs im Gebiet abrufen"
+
+#: .\static\js\map-fetch.js:996
+msgid "Fetch"
+msgstr "Abrufen"
+
+#: .\static\js\map-fetch.js:1003
+msgid "Draw at least one area shape first"
+msgstr "Zeichne zuerst mindestens eine Gebietsform"
+
+#: .\static\js\map-fetch.js:1029
+msgid "Refresh ALCs in area"
+msgstr "ALCs im Gebiet aktualisieren"
+
+#: .\static\js\map-fetch.js:1029 .\static\js\trackable-detail.js:32
+#: .\static\js\trackable-detail.js:45
+msgid "Refresh"
+msgstr "Aktualisieren"
+
+#: .\static\js\map-fetch.js:1103
+#, javascript-format
+msgid "ALC fetch failed: %s"
+msgstr "ALC-Abruf fehlgeschlagen: %s"
+
+#: .\static\js\map-fetch.js:1105
+msgid "ALC fetch started — track progress in the task indicator"
+msgstr "ALC-Abruf gestartet — Fortschritt in der Aufgabenanzeige verfolgen"
+
+#: .\static\js\map-fetch.js:1108
+msgid "ALC fetch request failed"
+msgstr "ALC-Abruf-Anfrage fehlgeschlagen"
+
+#: .\static\js\map-fetch.js:1125
+#, javascript-format
+msgid "ALC refresh failed: %s"
+msgstr "ALC-Aktualisierung fehlgeschlagen: %s"
+
+#: .\static\js\map-fetch.js:1127
+msgid "ALC refresh started — track progress in the task indicator"
+msgstr ""
+"ALC-Aktualisierung gestartet — Fortschritt in der Aufgabenanzeige verfolgen"
+
+#: .\static\js\map-fetch.js:1130
+msgid "ALC refresh request failed"
+msgstr "ALC-Aktualisierungs-Anfrage fehlgeschlagen"
+
+#: .\static\js\map-route.js:183
+msgid "Add at least one waypoint first."
+msgstr "Erst mindestens einen Wegpunkt hinzufügen."
+
+#: .\static\js\map-route.js:186
+msgid "Save route as:"
+msgstr "Route speichern als:"
+
+#: .\static\js\map-route.js:210
+msgid "Save failed."
+msgstr "Speichern fehlgeschlagen."
+
+#: .\static\js\map-route.js:252
+msgid "Select a saved route to delete."
+msgstr "Zu löschende gespeicherte Route auswählen."
+
+#: .\static\js\map-route.js:257
+#, javascript-format
+msgid "Delete saved route \"%s\"?"
+msgstr "Gespeicherte Route „%s\" löschen?"
+
+#: .\static\js\map-route.js:290
+msgid "Move up"
+msgstr "Nach oben"
+
+#: .\static\js\map-route.js:291
+msgid "Move down"
+msgstr "Nach unten"
+
+#: .\static\js\map-route.js:292
+msgid "Remove"
+msgstr "Entfernen"
+
+#: .\static\js\map-route.js:396 .\static\js\map-route.js:457
+msgid "Add at least two waypoints first."
+msgstr "Erst mindestens zwei Wegpunkte hinzufügen."
+
+#: .\static\js\map-route.js:400
+msgid "Routing…"
+msgstr "Routenberechnung…"
+
+#: .\static\js\map-route.js:415
+#, javascript-format
+msgid "Routing failed: %s"
+msgstr "Routenberechnung fehlgeschlagen: %s"
+
+#: .\static\js\map-route.js:431
+msgid "Routing failed."
+msgstr "Routenberechnung fehlgeschlagen."
+
+#: .\static\js\map-route.js:440
+#, javascript-format
+msgid "%s km"
+msgstr "%s km"
+
+#: .\static\js\map-route.js:448
+#, javascript-format
+msgid "↑ %s m"
+msgstr "↑ %s m"
+
+#: .\static\js\map-route.js:573
+msgid "Compute the route first."
+msgstr "Zuerst die Route berechnen."
+
+#: .\static\js\map-route.js:601
+msgid "%(stops)s stops · %(dist)s total"
+msgstr "%(stops)s Stopps · %(dist)s gesamt"
+
+#: .\static\js\map-route.js:610
+msgid "From start"
+msgstr "Ab Start"
+
+#: .\static\js\map-route.js:611
+msgid "Off-route"
+msgstr "Abstand"
+
+#: .\static\js\map-route.js:660
+msgid "Type"
+msgstr "Typ"
+
+#: .\static\js\map-route.js:661
+msgid "From start (km)"
+msgstr "Ab Start (km)"
+
+#: .\static\js\map-route.js:661
+msgid "Off-route (m)"
+msgstr "Abstand (m)"
+
+#: .\static\js\map-route.js:666
+msgid "Waypoint"
+msgstr "Wegpunkt"
+
+#: .\static\js\map-route.js:666
+msgid "Cache"
+msgstr "Cache"
+
+#: .\static\js\map-route.js:702
+msgid "Itinerary copied to clipboard."
+msgstr "Routenverlauf in die Zwischenablage kopiert."
+
+#: .\static\js\offline-map.js:256
+msgid "− Cancel"
+msgstr "− Abbrechen"
+
+#: .\static\js\offline-map.js:259
+msgid "+ Add Area"
+msgstr "+ Gebiet hinzufügen"
+
+#: .\static\js\offline-map.js:271
+msgid "Draw area"
+msgstr "Gebiet zeichnen"
+
+#: .\static\js\offline-map.js:285
+msgid "Drawing… (click & drag)"
+msgstr "Zeichnen… (klicken & ziehen)"
+
+#: .\static\js\offline-map.js:342
+msgid "Redraw"
+msgstr "Neu zeichnen"
+
+#: .\static\js\offline-map.js:391
+#, javascript-format
+msgid "Warning: zoom >%s can produce millions of tiles."
+msgstr "Warnung: Zoom >%s kann Millionen von Kacheln erzeugen."
+
+#: .\static\js\offline-map.js:398
+msgid "%(tiles)s tiles ≈ %(mb)s MB"
+msgstr "%(tiles)s Kacheln ≈ %(mb)s MB"
+
+#: .\static\js\pq-management.js:24
+msgid "selected"
+msgstr "ausgewählt"
+
+#: .\static\js\pq-management.js:25
+msgid "Select at least one pocket query first."
+msgstr "Wähle zuerst mindestens eine Pocket Query aus."
+
+#: .\static\js\pq-management.js:26
+msgid ""
+"Permanently delete the selected pocket queries on geocaching.com? This "
+"cannot be undone."
+msgstr ""
+"Ausgewählte Pocket Queries dauerhaft auf geocaching.com löschen? Dies kann "
+"nicht rückgängig gemacht werden."
+
+#: .\static\js\pq-management.js:181
+msgid "Request failed:"
+msgstr "Anfrage fehlgeschlagen:"
+
+#: .\static\js\pq-management.js:182
+msgid "Combined local candidate caches:"
+msgstr "Kombinierte lokale Kandidaten-Caches:"
+
+#: .\static\js\pq-management.js:183
+msgid "{n} cache(s) excluded — no hidden date"
+msgstr "{n} Cache(s) ausgeschlossen — kein Versteck-Datum"
+
+#: .\static\js\pq-management.js:184
+msgid "Selected PQs do not share identical search criteria:"
+msgstr "Ausgewählte PQs haben nicht identische Suchkriterien:"
+
+#: .\static\js\pq-management.js:185
+msgid "Some criteria cannot be fully verified locally:"
+msgstr "Manche Kriterien können lokal nicht vollständig überprüft werden:"
+
+#: .\static\js\pq-management.js:186
+msgid ""
+"This split needs more date ranges than PQs selected — create additional "
+"PQ(s) for:"
+msgstr ""
+"Diese Aufteilung benötigt mehr Datumsbereiche als ausgewählte PQs — lege "
+"zusätzliche PQ(s) an für:"
+
+#: .\static\js\pq-management.js:187
+msgid "These selected PQs are no longer needed for this split:"
+msgstr ""
+"Diese ausgewählten PQs werden für diese Aufteilung nicht mehr benötigt:"
+
+#: .\static\js\pq-management.js:188
+msgid "Pocket Query"
+msgstr "Pocket Query"
+
+#: .\static\js\pq-management.js:189
+msgid "Hidden date from"
+msgstr "Versteck-Datum von"
+
+#: .\static\js\pq-management.js:190
+msgid "Hidden date to"
+msgstr "Versteck-Datum bis"
+
+#: .\static\js\pq-management.js:191
+msgid "Caches"
+msgstr "Caches"
+
+#: .\static\js\pq-management.js:192
+msgid "(no lower bound)"
+msgstr "(keine Untergrenze)"
+
+#: .\static\js\pq-management.js:193
+msgid "(no upper bound)"
+msgstr "(keine Obergrenze)"
+
+#: .\static\js\pq-management.js:194
+msgid "No candidate caches found."
+msgstr "Keine Kandidaten-Caches gefunden."
+
+#: .\static\js\pq-management.js:195
+msgid ""
+"Write these {n} date range(s) into their PQs on geocaching.com now? This "
+"changes your live account and cannot be undone automatically."
+msgstr ""
+"Diese {n} Datumsbereich(e) jetzt in ihre PQs auf geocaching.com schreiben? "
+"Dies ändert dein Live-Konto und kann nicht automatisch rückgängig gemacht "
+"werden."
+
+#: .\static\js\pq-management.js:196
+msgid "PQs will also be renamed to: {names}"
+msgstr "PQs werden außerdem umbenannt in: {names}"
+
+#: .\static\js\pq-management.js:197
+msgid "Applying…"
+msgstr "Wird angewendet…"
+
+#: .\static\js\pq-management.js:198
+msgid "Applied"
+msgstr "Angewendet"
+
+#: .\static\js\pq-management.js:199
+msgid "Failed"
+msgstr "Fehlgeschlagen"
+
+#: .\static\js\settings-map.js:236
+msgid "New location"
+msgstr "Neuer Standort"
+
+#: .\static\js\settings.js:101
+msgid "Looking up…"
+msgstr "Suche…"
+
+#: .\static\js\settings.js:112
+msgid "Found and saved."
+msgstr "Gefunden und gespeichert."
+
+#: .\static\js\settings.js:114 .\static\js\trackable-list.js:555
+#: .\static\js\trackable-map-page.js:34
+msgid "unknown"
+msgstr "unbekannt"
+
+#: .\static\js\tools-ftf-markers.js:64
+msgid "Done"
+msgstr "Erledigt"
+
+#: .\static\js\trackable-detail-map.js:235
+msgid "Unknown"
+msgstr "Unbekannt"
+
+#: .\static\js\trackable-detail-map.js:236
+msgid "Current location"
+msgstr "Aktueller Standort"
+
+#: .\static\js\trackable-detail.js:22
+msgid "Refreshing…"
+msgstr "Aktualisiere…"
+
+#: .\static\js\trackable-detail.js:34
+msgid "Refreshed"
+msgstr "Aktualisiert"
+
+#: .\static\js\trackable-detail.js:35
+msgid "new log(s)"
+msgstr "neue Logs"
+
+#: .\static\js\trackable-detail.js:40
+msgid "Refresh failed"
+msgstr "Aktualisierung fehlgeschlagen"
+
+#: .\static\js\trackable-detail.js:47 .\static\js\trackable-detail.js:92
+msgid "Network error:"
+msgstr "Netzwerkfehler:"
+
+#: .\static\js\trackable-detail.js:76
+msgid "Done. Reloading…"
+msgstr "Fertig. Lade neu…"
+
+#: .\static\js\trackable-detail.js:80
+msgid "Action failed"
+msgstr "Aktion fehlgeschlagen"
+
+#: .\static\js\trackable-detail.js:84
+msgid "To fix:"
+msgstr "Zur Behebung:"
+
+#: .\static\js\trackable-detail.js:85
+msgid "open the TB edit page"
+msgstr "öffne die TB-Bearbeitungsseite"
+
+#: .\static\js\trackable-detail.js:85
+msgid "and enable \"Is Collectible\"."
+msgstr "und aktiviere „Is Collectible\"."
+
+#: .\static\js\trackable-detail.js:106
+msgid "Saved."
+msgstr "Gespeichert."
+
+#: .\static\js\trackable-detail.js:110
+msgid "Save failed"
+msgstr "Speichern fehlgeschlagen"
+
+#: .\static\js\trackable-list.js:28 .\static\js\trackable-list.js:69
+#: .\static\js\trackable-list.js:167 .\static\js\trackable-list.js:571
+msgid "Syncing…"
+msgstr "Synchronisiere…"
+
+#: .\static\js\trackable-list.js:29
+msgid "Fetching"
+msgstr "Rufe ab"
+
+#: .\static\js\trackable-list.js:29
+msgid "list…"
+msgstr "Liste…"
+
+#: .\static\js\trackable-list.js:39
+msgid "Nothing to sync for"
+msgstr "Nichts zu synchronisieren für"
+
+#: .\static\js\trackable-list.js:40
+msgid "already up-to-date"
+msgstr "bereits aktuell"
+
+#: .\static\js\trackable-list.js:43 .\static\js\trackable-list.js:59
+#: .\static\js\trackable-list.js:80 .\static\js\trackable-list.js:96
+#: .\static\js\trackable-list.js:179 .\static\js\trackable-list.js:583
+#: .\static\js\trackable-list.js:611
+msgid "Sync"
+msgstr "Synchronisieren"
+
+#: .\static\js\trackable-list.js:52 .\static\js\trackable-list.js:174
+msgid "Sync done:"
+msgstr "Sync fertig:"
+
+#: .\static\js\trackable-list.js:52 .\static\js\trackable-list.js:174
+msgid "synced,"
+msgstr "synchronisiert,"
+
+#: .\static\js\trackable-list.js:52 .\static\js\trackable-list.js:89
+#: .\static\js\trackable-list.js:174 .\static\js\trackable-list.js:320
+#: .\static\js\trackable-list.js:496 .\static\js\trackable-list.js:604
+msgid "failed."
+msgstr "fehlgeschlagen."
+
+#: .\static\js\trackable-list.js:60 .\static\js\trackable-list.js:181
+msgid "Sync failed:"
+msgstr "Sync fehlgeschlagen:"
+
+#: .\static\js\trackable-list.js:70
+msgid "Finding owned TBs without tracking codes…"
+msgstr "Suche eigene TBs ohne Tracking-Code…"
+
+#: .\static\js\trackable-list.js:79
+msgid "No owned TBs are missing a tracking code."
+msgstr "Keine eigenen TBs ohne Tracking-Code."
+
+#: .\static\js\trackable-list.js:89
+msgid "Tracking code sync:"
+msgstr "Tracking-Code-Sync:"
+
+#: .\static\js\trackable-list.js:89
+msgid "fetched,"
+msgstr "abgerufen,"
+
+#: .\static\js\trackable-list.js:97
+msgid "Tracking code sync failed:"
+msgstr "Tracking-Code-Sync fehlgeschlagen:"
+
+#: .\static\js\trackable-list.js:109
+msgid "Tracking codes:"
+msgstr "Tracking-Codes:"
+
+#: .\static\js\trackable-list.js:148
+msgid "Not a valid TB code:"
+msgstr "Kein gültiger TB-Code:"
+
+#: .\static\js\trackable-list.js:153
+msgid "Enter at least one TB code."
+msgstr "Gib mindestens einen TB-Code ein."
+
+#: .\static\js\trackable-list.js:193
+msgid "Discover"
+msgstr "Entdecken"
+
+#: .\static\js\trackable-list.js:194
+msgid "Retrieve"
+msgstr "Mitnehmen"
+
+#: .\static\js\trackable-list.js:195
+msgid "Just Fetch"
+msgstr "Nur abrufen"
+
+#: .\static\js\trackable-list.js:196
+msgid "Show on geocaching.com"
+msgstr "Auf geocaching.com öffnen"
+
+#: .\static\js\trackable-list.js:210
+msgid "by tracking code"
+msgstr "per Tracking-Code"
+
+#: .\static\js\trackable-list.js:215 .\static\js\trackable-list.js:237
+msgid "Verify codes…"
+msgstr "Codes prüfen…"
+
+#: .\static\js\trackable-list.js:216
+msgid "Open tabs"
+msgstr "Tabs öffnen"
+
+#: .\static\js\trackable-list.js:265
+msgid "Enter at least one tracking code."
+msgstr "Gib mindestens einen Tracking-Code ein."
+
+#: .\static\js\trackable-list.js:285
+msgid "This will open"
+msgstr "Dies öffnet"
+
+#: .\static\js\trackable-list.js:285
+msgid "browser tabs, one per code. Continue?"
+msgstr "Browser-Tabs, einer pro Code. Fortfahren?"
+
+#: .\static\js\trackable-list.js:320 .\static\js\trackable-list.js:496
+msgid "Done:"
+msgstr "Fertig:"
+
+#: .\static\js\trackable-list.js:320 .\static\js\trackable-list.js:496
+msgid "ok,"
+msgstr "ok,"
+
+#: .\static\js\trackable-list.js:327 .\static\js\trackable-list.js:379
+#: .\static\js\trackable-list.js:504 .\static\js\trackable-map-page.js:39
+msgid "Failed:"
+msgstr "Fehlgeschlagen:"
+
+#: .\static\js\trackable-list.js:355
+msgid "not recognised"
+msgstr "nicht erkannt"
+
+#: .\static\js\trackable-list.js:370
+msgid "None of the entered codes could be verified."
+msgstr "Keiner der eingegebenen Codes konnte geprüft werden."
+
+#: .\static\js\trackable-list.js:406
+msgid "Held by"
+msgstr "Gehalten von"
+
+#: .\static\js\trackable-list.js:418
+msgid "GC page"
+msgstr "GC-Seite"
+
+#: .\static\js\trackable-list.js:427
+msgid "Log message"
+msgstr "Log-Nachricht"
+
+#: .\static\js\trackable-list.js:462
+msgid "Enter a log message for"
+msgstr "Gib eine Log-Nachricht ein für"
+
+#: .\static\js\trackable-list.js:469
+msgid "Nothing to submit — all codes failed verification."
+msgstr ""
+"Nichts zu übermitteln — alle Codes sind bei der Prüfung fehlgeschlagen."
+
+#: .\static\js\trackable-list.js:545
+msgid "Resolving locations…"
+msgstr "Ermittle Standorte…"
+
+#: .\static\js\trackable-list.js:552 .\static\js\trackable-map-page.js:31
+msgid "Resolved"
+msgstr "Ermittelt"
+
+#: .\static\js\trackable-list.js:552 .\static\js\trackable-map-page.js:31
+msgid "of"
+msgstr "von"
+
+#: .\static\js\trackable-list.js:552
+msgid "missing location(s)."
+msgstr "fehlende(r) Standort(e)."
+
+#: .\static\js\trackable-list.js:555 .\static\js\trackable-map-page.js:34
+msgid "Error:"
+msgstr "Fehler:"
+
+#: .\static\js\trackable-list.js:556 .\static\js\trackable-list.js:562
+msgid "Resolve locations failed:"
+msgstr "Standortermittlung fehlgeschlagen:"
+
+#: .\static\js\trackable-list.js:572
+msgid "Finding filtered trackables…"
+msgstr "Gefilterte Trackables werden ermittelt…"
+
+#: .\static\js\trackable-list.js:582
+msgid "Nothing matches the current filter."
+msgstr "Nichts entspricht dem aktuellen Filter."
+
+#: .\static\js\trackable-list.js:599
+msgid "Refresh filtered"
+msgstr "Gefilterte aktualisieren"
+
+#: .\static\js\trackable-list.js:604
+msgid "Refresh done:"
+msgstr "Aktualisierung fertig:"
+
+#: .\static\js\trackable-list.js:604
+msgid "refreshed,"
+msgstr "aktualisiert,"
+
+#: .\static\js\trackable-list.js:612
+msgid "Refresh failed:"
+msgstr "Aktualisierung fehlgeschlagen:"
+
+#: .\static\js\trackable-map-page.js:19
+msgid "Resolving…"
+msgstr "Ermittle…"
+
+#: .\static\js\trackable-map.js:122
+msgid "In:"
+msgstr "In:"
+
+#: .\static\js\trackable-map.js:128
+msgid "Holder:"
+msgstr "Halter:"
+
+#: .\static\js\trackable-map.js:132
+#, javascript-format
+msgid "Travelled: %s km"
+msgstr "Zurückgelegt: %s km"
+
+#: .\static\js\trackable-map.js:134
+msgid "Open detail page &rarr;"
+msgstr "Detailseite öffnen &rarr;"
+
+#~ msgid "Show these caches"
+#~ msgstr "Diese Caches anzeigen"
+
+#~ msgid "No countries with finds configured for region maps."
+#~ msgstr "Keine Länder mit Funden für Regionskarten konfiguriert."
+
+#~ msgid "Enter both a name and a SQL clause."
+#~ msgstr "Gib einen Namen und eine SQL-Klausel ein."
+
+#~ msgid "Delete this where clause?"
+#~ msgstr "Diese Where-Klausel löschen?"

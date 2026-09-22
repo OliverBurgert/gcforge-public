@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% trans "Active tasks" %} — GCForge{% endblock %}
+
+{% block content %}
+<div class="px-3 py-3" style="max-width:32rem">
+  <h5 class="mb-3">{% trans "Active tasks are running" %}</h5>
+  <p class="small">
+    {% trans "Switching profiles now will abort the following task(s) in progress:" %}
+  </p>
+  <ul class="small">
+    {% for t in tasks %}
+    <li>{{ t.name }} &mdash; {{ t.phase|default:t.state }}</li>
+    {% endfor %}
+  </ul>
+  <div class="d-flex gap-2 mt-3">
+    <a href="{% url 'preferences:settings' %}?tab=database#database" class="btn btn-sm btn-primary">
+      {% trans "Wait" %}
+    </a>
+    <form method="post" action="{% url 'preferences:switch_profile' %}">
+      {% csrf_token %}
+      <input type="hidden" name="db_path" value="{{ db_path }}">
+      <input type="hidden" name="confirm" value="1">
+      <button type="submit" class="btn btn-sm btn-outline-danger">
+        {% blocktrans count counter=tasks|length %}Switch anyway — this aborts {{ counter }} running task{% plural %}Switch anyway — this aborts {{ counter }} running tasks{% endblocktrans %}
+      </button>
+    </form>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,42 @@
+{% load i18n %}
+<h6 class="mt-3 d-flex align-items-center gap-2 flex-wrap">
+  {% trans "Difficulty / Terrain chart" %}
+  <select id="dash-type-dt" name="stat_type" class="form-select form-select-sm fw-normal" style="width:auto"
+          hx-get="{% url 'geocaches:dashboard_stat_table' %}?table=dt"
+          hx-target="#dash-table-dt" hx-swap="innerHTML">
+    {% for value, label in type_options %}
+    <option value="{{ value }}" {% if value == tables.selected_type %}selected{% endif %}>{{ label }}</option>
+    {% endfor %}
+  </select>
+</h6>
+<table class="gcf-stat-table mb-4">
+  <tr>
+    <th></th>
+    <th colspan="{{ tables.dt_matrix.axis|length }}">{% trans "Terrain" %}</th>
+    <th></th>
+  </tr>
+  <tr>
+    <th>{% trans "Diff." %}</th>
+    {% for t in tables.dt_matrix.axis %}<th>{{ t }}</th>{% endfor %}
+    <th class="gcf-total">Σ</th>
+  </tr>
+  {% for row in tables.dt_matrix.rows %}
+  <tr>
+    <td class="gcf-rowhead">{{ row.rating }}</td>
+    {% for cell in row.cells %}
+      {% if cell.count %}
+      <td class="gcf-cell" data-count="{{ cell.count }}" data-color="{{ cell.color }}" style="background:{{ cell.color }}">{{ cell.count }}</td>
+      {% else %}
+      <td class="gcf-cell-empty">·</td>
+      {% endif %}
+    {% endfor %}
+    <td class="gcf-total">{{ row.total }}</td>
+  </tr>
+  {% endfor %}
+  <tr>
+    <td class="gcf-total">Σ</td>
+    {% for ct in tables.dt_matrix.col_totals %}<td class="gcf-total">{{ ct }}</td>{% endfor %}
+    <td class="gcf-total">{{ tables.dt_matrix.grand_total }}</td>
+  </tr>
+</table>
+{% include "geocaches/partials/_dashboard_missing_btn.html" with which="dt" min_id="min-dt" type_id="dash-type-dt" section_id="dash-table-dt" %}

@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% trans "Moving caches to Trash" %} — GCForge{% endblock %}
+
+{% block extra_head %}{% if auto_refresh %}<meta http-equiv="refresh" content="2">{% endif %}{% endblock %}
+
+{% block content %}
+<div class="px-3 py-4" style="max-width:500px">
+  <h5 class="mb-3">{% trans "Moving caches to Trash" %}</h5>
+
+  {% if status.phase == "done" %}
+  <div class="alert alert-success">
+    {% blocktrans count n=status.total %}Moved <strong>{{ n }}</strong> cache to Trash.{% plural %}Moved <strong>{{ n }}</strong> caches to Trash.{% endblocktrans %}
+  </div>
+  <div class="d-flex gap-2">
+    <a href="{% url 'geocaches:list' %}" class="btn btn-sm btn-primary">{% trans "Back to list" %}</a>
+    <a href="{% url 'geocaches:trash' %}" class="btn btn-sm btn-outline-secondary">{% trans "View Trash" %}</a>
+  </div>
+
+  {% elif status.phase == "error" %}
+  <div class="alert alert-danger">
+    {% blocktrans with deleted=status.deleted total=status.total error=status.error %}Move to Trash failed after {{ deleted }} of {{ total }}: {{ error }}{% endblocktrans %}
+  </div>
+  <a href="{% url 'geocaches:list' %}" class="btn btn-sm btn-secondary">{% trans "Back to list" %}</a>
+
+  {% elif status.running %}
+  <p class="text-muted small mb-2">
+    {% blocktrans count n=status.total %}Moving {{ n }} cache to Trash...{% plural %}Moving {{ n }} caches to Trash...{% endblocktrans %}
+  </p>
+  <div class="progress mb-2" style="height:20px">
+    <div class="progress-bar progress-bar-striped progress-bar-animated bg-warning"
+         role="progressbar"
+         style="width:{{ status.progress_pct }}%"
+         aria-valuenow="{{ status.progress_pct }}" aria-valuemin="0" aria-valuemax="100">
+      {{ status.progress_pct }}%
+    </div>
+  </div>
+  <p class="text-muted small">{% blocktrans with deleted=status.deleted total=status.total %}{{ deleted }} / {{ total }} moved{% endblocktrans %}</p>
+
+  {% else %}
+  <p class="text-muted">{% trans "No operation in progress." %}</p>
+  <a href="{% url 'geocaches:list' %}" class="btn btn-sm btn-secondary">{% trans "Back to list" %}</a>
+  {% endif %}
+</div>
+{% endblock %}

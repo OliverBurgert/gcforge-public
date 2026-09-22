@@ -1,0 +1,32 @@
+{% load i18n %}
+<span id="spinner" class="htmx-indicator spinner-border spinner-border-sm text-secondary"></span>
+
+<button type="button" class="btn btn-sm btn-outline-info position-relative"
+        data-bs-toggle="modal" data-bs-target="#tabbedFilterDialog"
+        title="{% trans 'Custom filter — tabbed widgets that emit ?fx=' %}">
+  {% trans "Filters" %}…
+  {% if fv.fx or fv.f_name %}
+  <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-info text-dark" style="font-size:0.65em">1</span>
+  {% endif %}
+</button>
+
+<button type="button" class="btn btn-sm btn-outline-warning position-relative"
+        data-bs-toggle="modal" data-bs-target="#whereClauseDialog"
+        title="{% trans 'Raw SQL filter — power-user escape hatch' %}">
+  SQL
+  {% if fv.where_sql or fv.where_name %}
+  <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-warning text-dark" style="font-size:0.65em">1</span>
+  {% endif %}
+</button>
+
+<button type="button" class="btn btn-sm btn-outline-secondary position-relative"
+        data-bs-toggle="modal" data-bs-target="#treeFilterDialog"
+        title="{% trans 'Power-user filter — edit a JSON expression tree (?fx=)' %}">
+  { }
+  {% if fv.fx or fv.f_name %}
+  <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-info text-dark" style="font-size:0.65em">1</span>
+  {% endif %}
+</button>
+
+<a href="{% url 'geocaches:list' %}" class="btn btn-sm btn-outline-secondary"
+   onclick="gcfApplyListChange(this.getAttribute('href')); return false;">{% trans "Reset" %}</a>

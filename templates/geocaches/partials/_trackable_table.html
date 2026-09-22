@@ -1,0 +1,148 @@
+{% load cache_tags i18n %}
+{# Trackable list — table partial. Swapped in by HTMX on filter change. #}
+<div class="text-muted small mb-2">{% blocktrans count n=total %}{{ n }} trackable{% plural %}{{ n }} trackables{% endblocktrans %}</div>
+
+{% if page_obj.paginator.count == 0 %}
+<div class="text-center py-5 text-muted">
+  <p class="mb-3">
+    {% if f_q or f_state or f_kind or f_series or f_mine %}
+      {% trans "No trackables match the current filters." %}
+    {% else %}
+      {% blocktrans %}No trackables yet. Click <strong>Sync from GC</strong> to fetch your inventory + collection.{% endblocktrans %}
+    {% endif %}
+  </p>
+  {% if not f_q and not f_state and not f_kind and not f_series and not f_mine %}
+  <button type="button" class="btn btn-success" onclick="gcfTbBulkSync()">{% trans "Sync from GC" %}</button>
+  {% endif %}
+</div>
+
+{% else %}
+<div class="table-responsive">
+  <table class="table table-sm table-hover align-middle small mb-1">
+    <thead class="table-light">
+      <tr>
+        <th style="width:2rem"></th>
+        {% for col_field, col_label, default_order in tb_columns %}
+        <th>
+          {% if col_field %}
+            {% if f_sort == col_field %}
+              {% if f_order == "asc" %}
+                <a href="?q={{ f_q|urlencode }}&state={{ f_state }}&kind={{ f_kind }}&series={{ f_series|urlencode }}&mine={{ f_mine }}&sort={{ col_field }}&order=desc" class="text-decoration-none text-reset">{{ col_label }} &#9650;</a>
+              {% else %}
+                <a href="?q={{ f_q|urlencode }}&state={{ f_state }}&kind={{ f_kind }}&series={{ f_series|urlencode }}&mine={{ f_mine }}&sort={{ col_field }}&order=asc" class="text-decoration-none text-reset">{{ col_label }} &#9660;</a>
+              {% endif %}
+            {% else %}
+              <a href="?q={{ f_q|urlencode }}&state={{ f_state }}&kind={{ f_kind }}&series={{ f_series|urlencode }}&mine={{ f_mine }}&sort={{ col_field }}&order={{ default_order }}" class="text-decoration-none text-reset text-muted">{{ col_label }}</a>
+            {% endif %}
+          {% else %}
+            {{ col_label }}
+          {% endif %}
+        </th>
+        {% endfor %}
+      </tr>
+    </thead>
+    <tbody>
+      {% for tb in page_obj %}
+      <tr>
+        <td class="text-center">
+          {% if tb.icon_url %}
+          <img src="{{ tb.icon_url|cached_image:'tb_icon' }}" alt="" style="height:24px;width:auto">
+          {% endif %}
+        </td>
+        <td class="font-monospace text-nowrap">
+          <a href="https://coord.info/{{ tb.reference_code }}" target="_blank" rel="noopener"
+             title="{% trans 'Open on geocaching.com' %}">{{ tb.reference_code }}</a>
+          {% if tb.tracking_code %}
+          <div class="text-muted small" title="{% trans 'Private tracking code (only visible to holder)' %}">{{ tb.tracking_code }}</div>
+          {% endif %}
+        </td>
+        <td class="desc-cell" title="{{ tb.name }}">
+          <a href="{% url 'geocaches:trackable_detail' tb.reference_code %}" class="cache-name-link">{{ tb.name }}</a>
+        </td>
+        <td><span class="badge bg-secondary">{{ tb.get_kind_display }}</span></td>
+        <td>{{ tb.series|default:"—" }}</td>
+        <td>
+          {% for tag in tb.tags.all %}
+          <span class="badge bg-light text-dark border me-1">{{ tag.name }}</span>
+          {% empty %}—{% endfor %}
+        </td>
+        <td>
+          {% if tb.holder_state == "held_by_user" %}
+            <span class="badge bg-success">{{ tb.get_holder_state_display }}</span>
+          {% elif tb.holder_state == "collection" %}
+            <span class="badge bg-info text-dark">{{ tb.get_holder_state_display }}</span>
+          {% elif tb.holder_state == "missing" %}
+            <span class="badge bg-danger">{{ tb.get_holder_state_display }}</span>
+          {% elif tb.holder_state == "in_cache" %}
+            <span class="badge bg-primary">{{ tb.get_holder_state_display }}</span>
+          {% else %}
+            <span class="badge bg-secondary">{{ tb.get_holder_state_display }}</span>
+          {% endif %}
+        </td>
+        <td>
+          {% if tb.owner_name %}
+          <a href="https://www.geocaching.com/p/?u={{ tb.owner_name|urlencode }}" target="_blank" rel="noopener">{{ tb.owner_name }}</a>
+          {% else %}—{% endif %}
+        </td>
+        <td>
+          {% if tb.holder_state == "in_cache" %}
+            {% if tb.current_geocache_id %}
+              <a href="{% url 'geocaches:detail' tb.current_geocache_code %}">{{ tb.current_geocache_name|default:tb.current_geocache_code }}</a>
+            {% elif tb.current_geocache_code %}
+              <a href="https://coord.info/{{ tb.current_geocache_code }}" target="_blank" rel="noopener">{{ tb.current_geocache_name|default:tb.current_geocache_code }}</a>
+            {% else %}
+              &mdash;
+            {% endif %}
+          {% elif tb.holder_state == "held_by_other" %}
+            {% if tb.current_holder_name %}
+              <a href="https://www.geocaching.com/p/?u={{ tb.current_holder_name|urlencode }}" target="_blank" rel="noopener">{{ tb.current_holder_name }}</a>
+            {% else %}—{% endif %}
+          {% else %}
+            &mdash;
+          {% endif %}
+        </td>
+        <td>{{ tb.last_log_date|default:"—" }}</td>
+        <td>{{ tb.total_visits|default:"—" }}</td>
+        <td class="text-end">{% if tb.total_distance_km %}{{ tb.total_distance_km|floatformat:0 }} km{% else %}—{% endif %}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% if page_obj.paginator.num_pages > 1 %}
+{% with last=page_obj.paginator.num_pages lo=page_obj.number|add:"-3" hi=page_obj.number|add:"3" %}
+<nav class="py-1">
+  <ul class="pagination pagination-sm justify-content-center mb-0">
+    {% if page_obj.has_previous %}
+    <li class="page-item"><a class="page-link" href="?q={{ f_q|urlencode }}&state={{ f_state }}&kind={{ f_kind }}&series={{ f_series|urlencode }}&mine={{ f_mine }}&sort={{ f_sort }}&order={{ f_order }}&page={{ page_obj.previous_page_number }}">&laquo;</a></li>
+    {% else %}
+    <li class="page-item disabled"><span class="page-link">&laquo;</span></li>
+    {% endif %}
+    {% if lo > 1 %}
+    <li class="page-item"><a class="page-link" href="?q={{ f_q|urlencode }}&state={{ f_state }}&kind={{ f_kind }}&series={{ f_series|urlencode }}&mine={{ f_mine }}&sort={{ f_sort }}&order={{ f_order }}&page=1">1</a></li>
+    {% if lo > 2 %}<li class="page-item disabled"><span class="page-link">&hellip;</span></li>{% endif %}
+    {% endif %}
+    {% for num in page_obj.paginator.page_range %}
+      {% if num >= lo and num <= hi %}
+        {% if page_obj.number == num %}
+        <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+        {% else %}
+        <li class="page-item"><a class="page-link" href="?q={{ f_q|urlencode }}&state={{ f_state }}&kind={{ f_kind }}&series={{ f_series|urlencode }}&mine={{ f_mine }}&sort={{ f_sort }}&order={{ f_order }}&page={{ num }}">{{ num }}</a></li>
+        {% endif %}
+      {% endif %}
+    {% endfor %}
+    {% if hi < last %}
+    {% if hi < last|add:"-1" %}<li class="page-item disabled"><span class="page-link">&hellip;</span></li>{% endif %}
+    <li class="page-item"><a class="page-link" href="?q={{ f_q|urlencode }}&state={{ f_state }}&kind={{ f_kind }}&series={{ f_series|urlencode }}&mine={{ f_mine }}&sort={{ f_sort }}&order={{ f_order }}&page={{ last }}">{{ last }}</a></li>
+    {% endif %}
+    {% if page_obj.has_next %}
+    <li class="page-item"><a class="page-link" href="?q={{ f_q|urlencode }}&state={{ f_state }}&kind={{ f_kind }}&series={{ f_series|urlencode }}&mine={{ f_mine }}&sort={{ f_sort }}&order={{ f_order }}&page={{ page_obj.next_page_number }}">&raquo;</a></li>
+    {% else %}
+    <li class="page-item disabled"><span class="page-link">&raquo;</span></li>
+    {% endif %}
+  </ul>
+</nav>
+{% endwith %}
+{% endif %}
+{% endif %}

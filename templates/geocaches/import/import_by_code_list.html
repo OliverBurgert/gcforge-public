@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% load i18n static %}
+{% block title %}{% trans "Fetch by Code List" %} — GCForge{% endblock %}
+
+{% block content %}
+<div id="code-list-config" data-tags-url="{% url 'geocaches:tags_json' %}" style="display:none"></div>
+<div class="px-3 py-3" style="max-width:700px">
+  <div class="d-flex align-items-baseline gap-3 mb-3">
+    <h5 class="mb-0">{% trans "Fetch by Code List" %}</h5>
+    <a href="{% url 'geocaches:import_by_code' %}" class="small text-muted">&larr; {% trans "Back to imports" %}</a>
+  </div>
+
+  <p class="text-muted small mb-3">
+    {% blocktrans %}Bulk-fetch caches by code. Paste a list and/or upload a text file — codes may be
+    separated by commas, semicolons, or newlines, and freely mix sources: the source is detected
+    per code from its prefix, same as the single-code import (<code>GC</code> → geocaching.com,
+    <code>OC</code> / <code>OP</code> / <code>OK</code> … → opencaching). Fetched in small batches
+    with a pause between each to stay within each source's daily API quota.{% endblocktrans %}
+  </p>
+
+  {% if error %}
+  <div class="alert alert-danger py-2 small">{{ error }}</div>
+  {% endif %}
+
+  <form method="post" enctype="multipart/form-data" action="{% url 'geocaches:import_by_code_list' %}">
+    {% csrf_token %}
+    <div class="mb-3">
+      <label class="form-label small fw-semibold">{% trans "Cache codes" %}</label>
+      <textarea name="codes" class="form-control form-control-sm font-monospace" rows="6"
+                placeholder="{% trans 'GC12345, OCDEA1B, GC67890 …' %}"></textarea>
+    </div>
+    <div class="mb-3">
+      <label class="form-label small fw-semibold">{% trans "…or upload a text file" %}</label>
+      <input type="file" name="codes_file" class="form-control form-control-sm" accept=".txt,.csv">
+    </div>
+    <div class="mb-3">
+      <label class="form-label small fw-semibold">
+        {% trans "Tags" %} <span class="text-muted fw-normal">{% trans "(comma-separated, optional)" %}</span>
+      </label>
+      <input type="text" name="tags" id="code-list-tags-input" class="form-control form-control-sm"
+             placeholder="{% trans 'e.g. project-gc, 2026' %}">
+      <div id="code-list-tag-suggestions" class="mt-1 d-flex flex-wrap gap-1"></div>
+    </div>
+    <button type="submit" class="btn btn-sm btn-primary">{% trans "Fetch caches" %}</button>
+  </form>
+
+  <div id="code-list-status" class="mt-3">
+    {% if task_id %}
+      <div class="small text-muted mb-2">
+        {% blocktrans count n=gc_count %}{{ n }} GC code{% plural %}{{ n }} GC codes{% endblocktrans %},
+        {% blocktrans count n=oc_count %}{{ n }} OC code{% plural %}{{ n }} OC codes{% endblocktrans %}
+      </div>
+      {% if invalid_count or ignored_count %}
+      <div class="alert alert-warning py-2 small mb-2">
+        {% if invalid_count %}{% blocktrans count n=invalid_count %}{{ n }} entry skipped (not a valid code).{% plural %}{{ n }} entries skipped (not valid codes).{% endblocktrans %}{% endif %}
+        {% if ignored_count %} {% blocktrans count n=ignored_count %}{{ n }} code skipped (on your ignore list).{% plural %}{{ n }} codes skipped (on your ignore list).{% endblocktrans %}{% endif %}
+      </div>
+      {% endif %}
+      {% include "geocaches/partials/_import_by_code_list_status.html" %}
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/import-by-code-list.js' %}"></script>
+{% endblock %}

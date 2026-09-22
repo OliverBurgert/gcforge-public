@@ -1,0 +1,94 @@
+{% load i18n l10n icon_tags %}
+{# Additional waypoints panel — included from detail.html #}
+<div class="card mb-2">
+  <div class="card-header py-1 d-flex justify-content-between align-items-center">
+    <span class="small fw-semibold">{% trans "Additional waypoints" %}</span>
+    <div class="d-flex gap-1 align-items-center">
+      {% if hidden_waypoint_count %}
+      <form method="post" action="{% url 'geocaches:waypoint_restore_all' cache.display_code %}" class="d-inline">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-sm btn-outline-warning py-0">{% blocktrans with n=hidden_waypoint_count %}Restore hidden ({{ n }}){% endblocktrans %}</button>
+      </form>
+      {% endif %}
+      <button type="button" class="btn btn-sm btn-outline-secondary py-0"
+              onclick="openWaypointModal()">{% trans "+ Add waypoint" %}</button>
+    </div>
+  </div>
+  <div class="card-body py-0">
+    {% with wpts=cache.waypoints.all %}
+    {% if wpts %}
+    <table class="table table-sm mb-0 align-middle">
+      <thead>
+        <tr>
+          <th class="text-center ps-2" style="width:2rem" title="{% trans 'Completed' %}"></th>
+          <th>{% trans "Type/Code" %}</th>
+          <th>{% trans "Name" %}</th>
+          <th>{% trans "Coords" %}</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for wpt in wpts %}
+        <tr{% if wpt.is_hidden %} class="text-muted"{% endif %}>
+          <td class="text-center ps-2">
+            <form method="post" action="{% url 'geocaches:waypoint_complete' cache.display_code wpt.pk %}" class="d-inline">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-link p-0 lh-1 text-decoration-none{% if wpt.is_completed %} text-success{% else %} text-secondary{% endif %}" title="{% trans 'Toggle completed' %}">{% if wpt.is_completed %}&#10003;{% else %}&#9675;{% endif %}</button>
+            </form>
+          </td>
+          <td class="small">
+            {% if wpt.is_user_created %}<span class="text-success" title="{% trans 'User-created' %}">+</span>{% elif wpt.is_user_modified %}<span class="text-info" title="{% trans 'Modified' %}">&#10000;</span>{% endif %}
+            {% waypoint_type_icon wpt.waypoint_type %} {{ wpt.get_waypoint_type_display }}
+            {% if wpt.prefix or wpt.lookup %}
+            <div class="text-muted font-monospace" style="font-size:.75em">{% if wpt.prefix %}<span class="fw-semibold">{{ wpt.prefix }}</span>{% endif %}{% if wpt.lookup %} {{ wpt.lookup }}{% endif %}</div>
+            {% endif %}
+          </td>
+          <td class="small">
+            {{ wpt.name|default:wpt.lookup }}
+            {% if wpt.note %}<div class="text-muted fst-italic">{{ wpt.note }}</div>{% endif %}
+          </td>
+          <td class="small">
+            {% if wpt.latitude is not None %}
+            <span class="gcf-coords font-monospace" role="button" title="{% trans 'Click to change format' %}"
+                  data-lat="{{ wpt.latitude|unlocalize }}" data-lon="{{ wpt.longitude|unlocalize }}"
+                  id="wpt-coords-{{ wpt.pk }}">{{ wpt.latitude|floatformat:4 }}, {{ wpt.longitude|floatformat:4 }}</span>
+            <button class="btn btn-link btn-sm p-0 ms-1" title="{% trans 'Copy coordinates' %}"
+                    onclick="gcfCopyCoords('wpt-coords-{{ wpt.pk }}')">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+              </svg>
+            </button>
+            {% else %}—{% endif %}
+          </td>
+          <td class="text-end text-nowrap">
+            <button type="button" class="btn btn-link btn-sm p-0 me-2"
+                    onclick="openWaypointModal({{ wpt.pk }}, '{{ wpt.waypoint_type|escapejs }}', '{{ wpt.name|escapejs }}', '{{ wpt.note|escapejs }}', {{ wpt.latitude|default:'null' }}, {{ wpt.longitude|default:'null' }}, '{{ wpt.prefix|escapejs }}')">{% trans "Edit" %}</button>
+            {% if wpt.is_hidden %}
+            <form method="post" action="{% url 'geocaches:waypoint_unhide' cache.display_code wpt.pk %}" class="d-inline">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-link btn-sm p-0 text-warning">{% trans "Show" %}</button>
+            </form>
+            {% else %}
+            <form method="post" action="{% url 'geocaches:waypoint_hide' cache.display_code wpt.pk %}" class="d-inline">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-link btn-sm p-0 text-muted">{% trans "Hide" %}</button>
+            </form>
+            {% endif %}
+            {% if wpt.is_user_created %}
+            <form method="post" action="{% url 'geocaches:waypoint_delete' cache.display_code wpt.pk %}" class="d-inline">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-link btn-sm p-0 text-danger ms-1"
+                      onclick="return confirm('{% trans "Delete this waypoint?" %}')">{% trans "Del" %}</button>
+            </form>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p class="small text-muted py-2 mb-0 px-2">{% trans 'No waypoints. Use "+ Add waypoint" to create one.' %}</p>
+    {% endif %}
+    {% endwith %}
+  </div>
+</div>

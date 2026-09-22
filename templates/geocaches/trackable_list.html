@@ -1,0 +1,237 @@
+{% extends "base.html" %}
+{% load i18n static %}
+{% block title %}{% trans "Trackables" %} — GCForge{% endblock %}
+
+{% block content %}
+<div class="px-3 py-2">
+
+  <div id="tb-list-config"
+       data-url-sync-plan="{% url 'geocaches:trackable_sync_plan' %}"
+       data-url-tracking-codes-plan="{% url 'geocaches:trackable_tracking_codes_plan' %}"
+       data-url-tracking-code-fetch="{% url 'geocaches:trackable_tracking_code_fetch' %}"
+       data-url-verify="{% url 'geocaches:trackable_verify' %}"
+       data-url-sync-one="{% url 'geocaches:trackable_sync_one' %}"
+       data-url-resolve-locations="{% url 'geocaches:trackable_resolve_locations' %}"
+       data-url-refresh-filtered-plan="{% url 'geocaches:trackable_refresh_filtered_plan' %}"
+       data-url-log-by-code="{% url 'geocaches:trackable_log_by_code' %}"
+       style="display:none"></div>
+
+  <div class="d-flex align-items-center gap-2 mb-2 flex-wrap">
+    <h5 class="mb-0">{% trans "Trackables" %}</h5>
+    <div class="btn-group btn-group-sm ms-1">
+      <button type="button" class="btn btn-outline-secondary active" disabled>{% trans "List" %}</button>
+      <a href="{% url 'geocaches:trackable_split' %}{% if f_q or f_state or f_kind or f_series or f_mine or f_held %}?{% if f_q %}q={{ f_q|urlencode }}&{% endif %}{% if f_state %}state={{ f_state }}&{% endif %}{% if f_kind %}kind={{ f_kind }}&{% endif %}{% if f_series %}series={{ f_series|urlencode }}&{% endif %}{% if f_mine %}mine={{ f_mine }}&{% endif %}{% if f_held %}held={{ f_held }}{% endif %}{% endif %}"
+         class="btn btn-outline-secondary">{% trans "Split" %}</a>
+      <a href="{% url 'geocaches:trackable_map' %}{% if f_q or f_state or f_kind or f_series or f_mine or f_held %}?{% if f_q %}q={{ f_q|urlencode }}&{% endif %}{% if f_state %}state={{ f_state }}&{% endif %}{% if f_kind %}kind={{ f_kind }}&{% endif %}{% if f_series %}series={{ f_series|urlencode }}&{% endif %}{% if f_mine %}mine={{ f_mine }}&{% endif %}{% if f_held %}held={{ f_held }}{% endif %}{% endif %}"
+         class="btn btn-outline-secondary">{% trans "Map" %}</a>
+    </div>
+  </div>
+
+  <div class="d-flex flex-wrap gap-2 align-items-end mb-2">
+    <form id="tb-filter-form"
+          hx-get="{% url 'geocaches:trackable_list' %}"
+          hx-target="#tb-table-container"
+          hx-trigger="change, keyup delay:400ms from:#tb-q"
+          hx-push-url="true"
+          class="d-flex flex-wrap gap-2 align-items-end flex-grow-1">
+      <input type="hidden" name="sort"  value="{{ f_sort }}">
+      <input type="hidden" name="order" value="{{ f_order }}">
+
+      <input type="text" name="q" id="tb-q" value="{{ f_q }}" placeholder="{% trans 'Search ref / name / owner' %}"
+             class="form-control form-control-sm" style="width:16rem" autofocus>
+
+      <select name="state" class="form-select form-select-sm" style="width:auto">
+        <option value="">{% trans "All states" %}</option>
+        {% for val, label in state_choices %}
+        <option value="{{ val }}"{% if f_state == val %} selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+
+      <select name="kind" class="form-select form-select-sm" style="width:auto">
+        <option value="">{% trans "All kinds" %}</option>
+        {% for val, label in kind_choices %}
+        <option value="{{ val }}"{% if f_kind == val %} selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+
+      <select name="series" class="form-select form-select-sm" style="width:auto;max-width:14rem">
+        <option value="">{% trans "All series" %}</option>
+        {% for val in series_choices %}
+        <option value="{{ val }}"{% if f_series == val %} selected{% endif %}>{{ val }}</option>
+        {% endfor %}
+      </select>
+
+      <select name="tag" class="form-select form-select-sm" style="width:auto;max-width:12rem">
+        <option value="">{% trans "All tags" %}</option>
+        <option value="{{ no_tag_value }}"{% if f_tag == no_tag_value %} selected{% endif %}>{% trans "No tag" %}</option>
+        {% for name in tag_choices %}
+        <option value="{{ name }}"{% if f_tag == name %} selected{% endif %}>{{ name }}</option>
+        {% endfor %}
+      </select>
+
+      <div class="form-check form-check-inline mb-0 align-self-center">
+        <input class="form-check-input" type="checkbox" name="mine" value="1" id="cb-mine"
+               {% if f_mine == "1" %}checked{% endif %}>
+        <label class="form-check-label small" for="cb-mine">{% trans "Owned by me" %}{% if gc_username %} ({{ gc_username }}){% endif %}</label>
+      </div>
+      <div class="form-check form-check-inline mb-0 align-self-center">
+        <input class="form-check-input" type="checkbox" name="held" value="1" id="cb-held"
+               {% if f_held == "1" %}checked{% endif %}>
+        <label class="form-check-label small" for="cb-held">{% trans "Held by me" %}</label>
+      </div>
+    </form>
+
+    {# Sync — separate action, not part of filter form #}
+    <div class="d-flex align-items-center gap-2">
+      {# Log TB by tracking code — standalone Discover/Retrieve/Fetch/Show, no cache context #}
+      <div class="btn-group btn-group-sm">
+        <button type="button" class="btn btn-outline-primary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+          {% trans "Log TB" %}
+        </button>
+        <ul class="dropdown-menu">
+          <li><a class="dropdown-item" href="#" onclick="gcfTbLogByCodeOpen('discover'); return false">{% trans "Discover…" %}</a></li>
+          <li><a class="dropdown-item" href="#" onclick="gcfTbLogByCodeOpen('retrieve'); return false">{% trans "Retrieve…" %}</a></li>
+          <li><a class="dropdown-item" href="#" onclick="gcfTbLogByCodeOpen('fetch'); return false">{% trans "Just Fetch…" %}</a></li>
+          <li><hr class="dropdown-divider"></li>
+          <li><a class="dropdown-item" href="#" onclick="gcfTbLogByCodeOpen('show'); return false">{% trans "Show on geocaching.com…" %}</a></li>
+        </ul>
+      </div>
+
+      {% comment %}
+      Log-by-code modal — shared by all four actions above.
+      Step 1 (codes textarea) is used by all four. Discover/Retrieve go on
+      to step 2 (verify results + log message) before actually submitting;
+      Fetch/Show act directly from step 1.
+      {% endcomment %}
+      <div class="modal fade" id="tbLogByCodeModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+          <div class="modal-content">
+            <div class="modal-header py-2">
+              <h6 class="modal-title mb-0" id="tb-logcode-title">{% trans "Log trackables by code" %}</h6>
+              <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body py-2">
+              <div id="tb-logcode-step1">
+                <div class="mb-2">
+                  <label class="form-label small mb-1">{% trans "Tracking codes" %}</label>
+                  <textarea id="tb-logcode-codes" rows="4"
+                            class="form-control form-control-sm font-monospace"
+                            placeholder="{% trans 'CVWPRJ, A1B2C3 (also accepts whitespace / semicolon / newlines)' %}"></textarea>
+                  <div class="form-text">{% trans "Private tracking codes, not TB reference codes." %}</div>
+                </div>
+              </div>
+              <div id="tb-logcode-step2" class="d-none">
+                <div class="table-responsive mb-2" style="max-height:16rem">
+                  <table class="table table-sm mb-0">
+                    <thead>
+                      <tr>
+                        <th>{% trans "Code" %}</th>
+                        <th>{% trans "Trackable" %}</th>
+                        <th>{% trans "Current location" %}</th>
+                        <th></th>
+                      </tr>
+                    </thead>
+                    <tbody id="tb-logcode-review-rows"></tbody>
+                  </table>
+                </div>
+                <div class="form-check mb-2">
+                  <input class="form-check-input" type="checkbox" id="tb-logcode-same-text" checked
+                         onchange="gcfTbLogByCodeToggleSameText()">
+                  <label class="form-check-label small" for="tb-logcode-same-text">
+                    {% trans "Use the same log message for all" %}
+                  </label>
+                </div>
+                <div id="tb-logcode-shared-text-wrap">
+                  <textarea id="tb-logcode-shared-text" rows="3" class="form-control form-control-sm"
+                            placeholder="{% trans 'Log message' %}"></textarea>
+                </div>
+              </div>
+              <div id="tb-logcode-error" class="text-danger small d-none mt-2"></div>
+              <div id="tb-logcode-status" class="small text-muted mt-1"></div>
+              <div id="tb-logcode-progress" class="progress d-none mt-1" style="height:8px">
+                <div id="tb-logcode-progress-bar" class="progress-bar" role="progressbar" style="width:0%"></div>
+              </div>
+            </div>
+            <div class="modal-footer py-2">
+              <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">{% trans "Cancel" %}</button>
+              <button type="button" class="btn btn-outline-secondary btn-sm d-none" id="tb-logcode-back"
+                      onclick="gcfTbLogByCodeBack()">{% trans "Back" %}</button>
+              <button type="button" class="btn btn-primary btn-sm" id="tb-logcode-run" onclick="gcfTbLogByCodeRun()">{% trans "Go" %}</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="btn-group btn-group-sm">
+        <button type="button" class="btn btn-outline-success" id="sync-btn"
+                onclick="gcfTbBulkSync('mine')">{% trans "Sync" %}</button>
+        <button type="button" class="btn btn-outline-success dropdown-toggle dropdown-toggle-split"
+                data-bs-toggle="dropdown" aria-expanded="false">
+          <span class="visually-hidden">{% trans "Toggle Sync menu" %}</span>
+        </button>
+        <ul class="dropdown-menu">
+          <li><a class="dropdown-item" href="#" onclick="gcfTbBulkSync('mine'); return false">{% trans "Sync mine (inventory + collection + owned)" %}</a></li>
+          <li><a class="dropdown-item" href="#" onclick="gcfTbBulkSync('discovered'); return false">{% trans "Sync discovered" %}</a></li>
+          <li><a class="dropdown-item" href="#" onclick="gcfTbBulkSync('moved'); return false">{% trans "Sync moved" %}</a></li>
+          <li><hr class="dropdown-divider"></li>
+          <li><a class="dropdown-item" href="#" onclick="gcfTbRefreshFiltered(); return false">{% trans "Refresh filtered" %}</a></li>
+          <li><hr class="dropdown-divider"></li>
+          <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#tbSyncByCodeModal">{% trans "Sync by code…" %}</a></li>
+          <li><hr class="dropdown-divider"></li>
+          <li><a class="dropdown-item" href="#" onclick="gcfTbSyncTrackingCodes(); return false">{% trans "Sync missing tracking codes for my TBs" %}</a></li>
+          <li><hr class="dropdown-divider"></li>
+          <li><a class="dropdown-item" href="#" onclick="gcfTbResolveLocations(); return false">{% trans "Resolve missing locations from GC API" %}</a></li>
+        </ul>
+      </div>
+
+      {# Sync-by-code modal — paste one or more TB codes, optional tag. #}
+      <div class="modal fade" id="tbSyncByCodeModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+          <div class="modal-content">
+            <div class="modal-header py-2">
+              <h6 class="modal-title mb-0">{% trans "Sync trackables by code" %}</h6>
+              <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body py-2">
+              <div class="mb-2">
+                <label class="form-label small mb-1">{% trans "Codes" %}</label>
+                <textarea id="tb-sync-codes" rows="4"
+                          class="form-control form-control-sm font-monospace"
+                          placeholder="{% trans 'TB2J2DQ, TB7WZ44 (also accepts whitespace / newlines)' %}"></textarea>
+                <div class="form-text">{% blocktrans %}Each code starts with <code>TB</code>; comma, space, or newline separated.{% endblocktrans %}</div>
+              </div>
+              <div class="mb-2">
+                <label class="form-label small mb-1">{% trans "Tag (optional)" %}</label>
+                <input type="text" id="tb-sync-tag" class="form-control form-control-sm" placeholder="{% trans 'e.g. lookup' %}">
+                <div class="form-text">{% trans "Auto-creates the tag and attaches it to every synced row." %}</div>
+              </div>
+              <div id="tb-sync-codes-error" class="text-danger small d-none"></div>
+            </div>
+            <div class="modal-footer py-2">
+              <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">{% trans "Cancel" %}</button>
+              <button type="button" class="btn btn-primary btn-sm" onclick="gcfTbSyncByCode()">{% trans "Sync" %}</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <span id="sync-status" class="small text-muted"></span>
+      <div id="sync-progress" class="progress d-none" style="width:14rem;height:8px">
+        <div id="sync-progress-bar" class="progress-bar" role="progressbar" style="width:0%"></div>
+      </div>
+      <a class="btn btn-sm btn-outline-secondary"
+         href="{% url 'geocaches:download_missing_trackable_images' %}?{% if f_q %}q={{ f_q|urlencode }}&{% endif %}{% if f_state %}state={{ f_state }}&{% endif %}{% if f_kind %}kind={{ f_kind }}&{% endif %}{% if f_series %}series={{ f_series|urlencode }}&{% endif %}{% if f_mine %}mine={{ f_mine }}&{% endif %}{% if f_held %}held={{ f_held }}{% endif %}"
+         title="{% trans 'Download missing offline images for the filtered trackables' %}">{% trans "Fill missing images" %}</a>
+    </div>
+  </div>
+
+  <div id="tb-table-container">
+    {% include "geocaches/partials/_trackable_table.html" %}
+  </div>
+
+</div>
+{% endblock %}
+
+
+{% block extra_js %}
+<script src="{% static 'js/trackable-list.js' %}"></script>
+{% endblock %}

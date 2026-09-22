@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% trans "Delete caches" %} — GCForge{% endblock %}
+
+{% block content %}
+<div class="px-3 py-4" style="max-width:500px">
+  <h5 class="mb-3">{% trans "Delete filtered caches" %}</h5>
+
+  {% if count == 0 %}
+  <div class="alert alert-info">{% trans "No caches match the current filter — nothing to delete." %}</div>
+  <a href="{% url 'geocaches:list' %}?{{ query_string }}" class="btn btn-sm btn-secondary">{% trans "Back" %}</a>
+
+  {% else %}
+  <div class="alert alert-warning">
+    {% blocktrans count n=count %}<strong>{{ n }} cache</strong> will be moved to Trash.{% plural %}<strong>{{ n }} caches</strong> will be moved to Trash.{% endblocktrans %}
+    {% trans "You can restore or permanently delete them from the" %} <a href="{% url 'geocaches:trash' %}">{% trans "Trash" %}</a> {% trans "page." %}
+  </div>
+
+  <form method="post" action="{% url 'geocaches:delete_filtered' %}?{{ query_string }}">
+    {% csrf_token %}
+    <div class="d-flex gap-2">
+      <button type="submit" class="btn btn-sm btn-warning">{% blocktrans count n=count %}Move {{ n }} cache to Trash{% plural %}Move {{ n }} caches to Trash{% endblocktrans %}</button>
+      <a href="{% url 'geocaches:list' %}?{{ query_string }}" class="btn btn-sm btn-secondary">{% trans "Cancel" %}</a>
+    </div>
+  </form>
+  {% endif %}
+</div>
+{% endblock %}

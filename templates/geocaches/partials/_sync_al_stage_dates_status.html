@@ -1,0 +1,37 @@
+{% load i18n %}
+{% if error %}
+<div class="alert alert-danger py-1 small">{{ error }}</div>
+
+{% elif done %}
+<div class="alert alert-{% if updated %}success{% else %}secondary{% endif %} py-1 small">
+  {% if updated %}
+    {% blocktrans count n=updated %}Updated found date on {{ n }} AL stage.{% plural %}Updated found date on {{ n }} AL stages.{% endblocktrans %}
+  {% else %}
+    {% trans "Nothing to update — all found stages already have a date." %}
+  {% endif %}
+</div>
+
+{% elif task.state == "completed" %}
+<div class="alert alert-success py-1 small">
+  {% blocktrans count n=task.result %}Done. Updated found date on {{ n }} stage.{% plural %}Done. Updated found date on {{ n }} stages.{% endblocktrans %}
+  {% url 'geocaches:list' as list_url %}
+  <a href="{{ list_url }}?cache_type=Adventure+Lab">{% trans "View Adventure Lab caches →" %}</a>
+</div>
+
+{% elif task.state == "failed" %}
+<div class="alert alert-danger py-1 small">
+  {% blocktrans with err=task.error|default:"unknown error" %}Failed: {{ err }}{% endblocktrans %}
+</div>
+
+{% else %}
+<div id="sync-stage-dates-status"
+     hx-get="{% url 'geocaches:sync_al_stage_dates_status' task_id %}"
+     hx-trigger="every 2s"
+     hx-swap="outerHTML"
+     class="d-flex align-items-center gap-2">
+  <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
+  <small class="text-primary">
+    {% trans "Fetching dates from labs.geocaching.com" %}{% if task.phase %} — {{ task.phase }}{% endif %}…
+  </small>
+</div>
+{% endif %}

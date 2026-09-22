@@ -1,0 +1,202 @@
+{% load i18n %}
+    <div class="tab-pane{% if active_tab == 'dashboard' %} active show{% endif %}" id="dashboard">
+
+      {% if dashboard_msg %}
+      <div class="alert alert-{% if dashboard_msg.ok %}success{% else %}danger{% endif %} small py-2 mb-3 d-flex align-items-center justify-content-between">
+        <span>{{ dashboard_msg.text }}</span>
+        <button type="button" class="btn-close ms-2 flex-shrink-0" data-bs-dismiss="alert"></button>
+      </div>
+      {% endif %}
+
+      {% if dashboard_stats_msg %}
+      <div class="alert alert-{% if dashboard_stats_msg.ok %}success{% else %}danger{% endif %} small py-2 mb-3 d-flex align-items-center justify-content-between">
+        <span>{{ dashboard_stats_msg.text }}</span>
+        <button type="button" class="btn-close ms-2 flex-shrink-0" data-bs-dismiss="alert"></button>
+      </div>
+      {% endif %}
+
+      <div class="card mb-3">
+        <div class="card-body">
+          <h6>{% trans "Statistics tab" %}</h6>
+          <p class="text-muted small mb-3">
+            {% trans "Choose which platforms count towards the Statistics tab's find totals (finds-by-day, finds-by-year, D/T matrix, etc.). The 'By platform' summary panel always shows all three counts regardless." %}
+          </p>
+          <form method="post" action="{% url 'preferences:save_dashboard_stats' %}">
+            {% csrf_token %}
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" name="stats_include_oc" value="1"
+                     id="pref_stats_include_oc" {% if stats_include_oc %}checked{% endif %}>
+              <label class="form-check-label" for="pref_stats_include_oc">
+                {% trans "Include OC.xx caches in statistics" %}
+              </label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" name="stats_include_al" value="1"
+                     id="pref_stats_include_al" {% if stats_include_al %}checked{% endif %}>
+              <label class="form-check-label" for="pref_stats_include_al">
+                {% trans "Include Adventure Lab caches in statistics" %}
+              </label>
+            </div>
+            <button type="submit" class="btn btn-primary btn-sm mt-2">{% trans "Save" %}</button>
+          </form>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-body">
+          <h6>{% trans "Maps tab" %}</h6>
+          <p class="text-muted small mb-3">
+            {% trans "Choose which statistics maps appear on the Dashboard's Maps tab, and in what order (lower numbers first)." %}
+          </p>
+
+          {# Single form so visibility/order AND country selection are saved #}
+          {# together; per-row Download + global Update-all override via #}
+          {# formaction so we never nest <form> tags. #}
+          <form method="post" action="{% url 'preferences:save_dashboard_maps' %}">
+            {% csrf_token %}
+            <table class="table table-sm align-middle" style="max-width:520px">
+              <thead>
+                <tr>
+                  <th style="width:5.5rem">{% trans "Order" %}</th>
+                  <th>{% trans "Map" %}</th>
+                  <th style="width:5rem" class="text-center">{% trans "Show" %}</th>
+                </tr>
+              </thead>
+              <tbody>
+              {% for m in dashboard_maps %}
+                {% if m.type in dashboard_map_bundled %}
+                <tr>
+                  <td>
+                    <input type="number" min="0" max="99" name="order_{{ m.type }}" value="{{ m.order }}"
+                           class="form-control form-control-sm" style="width:4.5rem">
+                  </td>
+                  <td>
+                    {% if m.type == 'world' %}{% trans "World — countries" %}{% endif %}
+                    {% if m.type == 'continent' %}{% trans "Continents" %}{% endif %}
+                  </td>
+                  <td class="text-center">
+                    <input class="form-check-input" type="checkbox" name="vis_{{ m.type }}" value="1"
+                           {% if m.visible %}checked{% endif %}>
+                  </td>
+                </tr>
+                {% endif %}
+                {% if m.type == 'country' %}
+                <tr>
+                  <td>
+                    <input type="number" min="0" max="99" name="order_country" value="{{ m.order }}"
+                           class="form-control form-control-sm" style="width:4.5rem">
+                  </td>
+                  <td>{% trans "Countries — regions" %}</td>
+                  <td class="text-center">
+                    <input class="form-check-input" type="checkbox" name="vis_country" value="1"
+                           {% if m.visible %}checked{% endif %}>
+                  </td>
+                </tr>
+                {% endif %}
+                {% if m.type == 'county' %}
+                <tr>
+                  <td>
+                    <input type="number" min="0" max="99" name="order_county" value="{{ m.order }}"
+                           class="form-control form-control-sm" style="width:4.5rem">
+                  </td>
+                  <td>{% trans "Countries — counties" %}</td>
+                  <td class="text-center">
+                    <input class="form-check-input" type="checkbox" name="vis_county" value="1"
+                           {% if m.visible %}checked{% endif %}>
+                  </td>
+                </tr>
+                {% endif %}
+              {% endfor %}
+              </tbody>
+            </table>
+
+            {% if dashboard_country_finds %}
+            <hr class="my-3">
+            <h6>{% trans "Country region boundaries" %}</h6>
+            <p class="text-muted small mb-1">
+              {% trans "Tick the countries to show region maps for. Each one's boundary data must be downloaded first." %}
+            </p>
+            <p class="text-muted small">
+              {% trans "Data" %}: <a href="https://www.geoboundaries.org/" target="_blank" rel="noopener">geoBoundaries</a> (CC-BY 4.0). {% trans "Downloads need internet (~1–3 s per country)." %}
+            </p>
+
+            <table class="table table-sm" style="max-width:820px">
+              <thead>
+                <tr>
+                  <th class="text-center" style="width:3rem" title="{% trans 'Show region map' %}">{% trans "Reg." %}</th>
+                  <th class="text-center" style="width:3rem" title="{% trans 'Show county map' %}">{% trans "Cnty." %}</th>
+                  <th>{% trans "Country" %}</th>
+                  <th class="text-end" style="width:5rem">{% trans "Finds" %}</th>
+                  <th>{% trans "Status" %}</th>
+                  <th style="width:7rem"></th>
+                </tr>
+              </thead>
+              <tbody>
+              {% for row in dashboard_country_finds %}
+                <tr>
+                  <td class="text-center">
+                    <input class="form-check-input" type="checkbox" name="country_iso" value="{{ row.iso }}"
+                           {% if row.selected %}checked{% endif %}>
+                  </td>
+                  <td class="text-center">
+                    <input class="form-check-input" type="checkbox" name="county_iso" value="{{ row.iso }}"
+                           {% if row.county_selected %}checked{% endif %}>
+                  </td>
+                  <td>
+                    <span class="fi fi-{{ row.iso|lower }}"></span>
+                    {{ row.name }}
+                  </td>
+                  <td class="text-end">{{ row.count }}</td>
+                  <td class="small text-muted">
+                    {% if row.downloaded %}
+                      {% blocktrans with cnt=row.download_info.count date=row.download_info.downloaded_at|slice:":10" %}{{ cnt }} regions ({{ date }}){% endblocktrans %}
+                    {% else %}
+                      {% trans "Regions: not downloaded" %}
+                    {% endif %}
+                    <br>
+                    {% if row.county_downloaded %}
+                      {% blocktrans with cnt=row.county_download_info.count date=row.county_download_info.downloaded_at|slice:":10" %}{{ cnt }} counties ({{ date }}){% endblocktrans %}
+                    {% else %}
+                      {% trans "Counties: not downloaded" %}
+                    {% endif %}
+                  </td>
+                  <td>
+                    <button type="submit"
+                            formaction="{% url 'preferences:download_boundary' %}"
+                            name="iso2" value="{{ row.iso }}"
+                            class="btn btn-outline-secondary btn-sm">{% trans "Download" %}</button>
+                  </td>
+                </tr>
+              {% endfor %}
+              </tbody>
+            </table>
+            {% endif %}
+
+            {% if dashboard_other_countries %}
+            <p class="text-muted small mb-1 mt-3">
+              {% trans "Planning a trip somewhere new? Download a country's boundaries before you have any finds there." %}
+            </p>
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+              <select class="form-select form-select-sm" style="max-width:260px" name="other_iso2">
+                {% for c in dashboard_other_countries %}
+                <option value="{{ c.iso }}">{{ c.name }}</option>
+                {% endfor %}
+              </select>
+              <button type="submit"
+                      formaction="{% url 'preferences:download_boundary' %}"
+                      class="btn btn-outline-secondary btn-sm">{% trans "Download" %}</button>
+            </div>
+            {% endif %}
+
+            <div class="d-flex gap-2 align-items-center flex-wrap mt-3">
+              <button type="submit" class="btn btn-primary btn-sm">{% trans "Save" %}</button>
+              {% if dashboard_country_finds %}
+              <button type="submit"
+                      formaction="{% url 'preferences:update_all_boundaries' %}"
+                      class="btn btn-outline-secondary btn-sm">{% trans "Update all downloaded boundaries" %}</button>
+              {% endif %}
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>

@@ -1,0 +1,81 @@
+{% load i18n %}
+<tr id="ignore-row-{{ entry.pk }}">
+  <td class="font-monospace small text-nowrap">
+    {% with prefix=entry.code|slice:":2" %}
+    {% if prefix == "GC" %}
+      <a href="https://coord.info/{{ entry.code }}" target="_blank" rel="noopener">{{ entry.code }}</a>
+    {% elif prefix == "OC" or prefix == "OP" or prefix == "OK" or prefix == "OB" or prefix == "ON" or prefix == "OR" %}
+      <a href="https://www.opencaching.de/viewcache.php?wp={{ entry.code }}" target="_blank" rel="noopener">{{ entry.code }}</a>
+    {% else %}
+      {{ entry.code }}
+    {% endif %}
+    {% endwith %}
+  </td>
+  <td class="small">{{ entry.get_source_display }}</td>
+  <td class="small text-muted">{{ entry.oc_platform|default:"—" }}</td>
+  <td class="small">
+    {% if local_cache %}
+      <a href="{% url 'geocaches:detail' entry.code %}">{{ entry.name|default:"—" }}</a>
+    {% else %}
+      {{ entry.name|default:"—" }}
+    {% endif %}
+  </td>
+  <td class="small">
+    {% if entry.status == "Archived" %}
+      <span class="badge bg-danger">{% trans "Archived" %}</span>
+    {% elif entry.status == "Disabled" %}
+      <span class="badge bg-warning text-dark">{% trans "Disabled" %}</span>
+    {% elif entry.status == "Active" %}
+      <span class="badge bg-success">{% trans "Active" %}</span>
+    {% elif entry.status %}
+      <span class="badge bg-secondary">{{ entry.status }}</span>
+    {% else %}
+      <span class="text-muted">—</span>
+    {% endif %}
+  </td>
+  <td class="small text-nowrap">
+    {% if local_cache %}
+      ✓{% if local_cache.found %} <span class="badge bg-success">{% trans "Found" %}</span>{% endif %}
+    {% else %}
+      <span class="text-muted">—</span>
+    {% endif %}
+  </td>
+  <td class="small" style="max-width:220px">
+    {% if editing %}
+      <form hx-post="{% url 'geocaches:ignore_lists_edit_notes' entry.pk %}"
+            hx-target="#ignore-row-{{ entry.pk }}"
+            hx-swap="outerHTML"
+            class="d-flex gap-1 align-items-start">
+        {% csrf_token %}
+        <textarea name="notes" class="form-control form-control-sm" rows="2" style="min-width:140px">{{ entry.notes }}</textarea>
+        <div class="d-flex flex-column gap-1">
+          <button type="submit" class="btn btn-primary btn-sm py-0 px-2" style="font-size:0.75rem">{% trans "Save" %}</button>
+          <button type="button" class="btn btn-secondary btn-sm py-0 px-2" style="font-size:0.75rem"
+                  hx-get="{% url 'geocaches:ignore_lists_edit_notes' entry.pk %}?mode=view"
+                  hx-target="#ignore-row-{{ entry.pk }}"
+                  hx-swap="outerHTML">{% trans "Cancel" %}</button>
+        </div>
+      </form>
+    {% else %}
+      <span class="text-muted" style="white-space:pre-wrap">{{ entry.notes|default:"—" }}</span>
+    {% endif %}
+  </td>
+  <td class="small text-muted text-nowrap">
+    {% if entry.last_status_refresh %}{{ entry.last_status_refresh|date:"Y-m-d" }}{% else %}—{% endif %}
+  </td>
+  <td class="small text-muted text-nowrap">{{ entry.added|date:"Y-m-d" }}</td>
+  <td class="text-nowrap">
+    {% if entry.source == "internal" or entry.source == "gsak" %}{% if not editing %}
+    <button class="btn btn-outline-secondary btn-sm py-0 px-2" style="font-size:0.75rem"
+            hx-get="{% url 'geocaches:ignore_lists_edit_notes' entry.pk %}"
+            hx-target="#ignore-row-{{ entry.pk }}"
+            hx-swap="outerHTML">{% trans "Edit notes" %}</button>
+    {% endif %}{% endif %}
+    <form method="post" action="{% url 'geocaches:ignore_lists_remove' %}" class="d-inline ms-1">
+      {% csrf_token %}
+      <input type="hidden" name="pk" value="{{ entry.pk }}">
+      <button type="submit" class="btn btn-outline-danger btn-sm py-0 px-2" style="font-size:0.75rem"
+              onclick="return confirm('{% blocktrans with c=entry.code %}Remove {{ c }} from the ignore list?{% endblocktrans %}')">{% trans "Remove" %}</button>
+    </form>
+  </td>
+</tr>

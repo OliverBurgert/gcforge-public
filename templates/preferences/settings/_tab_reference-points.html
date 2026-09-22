@@ -1,0 +1,192 @@
+{% load i18n %}
+    <div class="tab-pane{% if active_tab == 'reference-points' %} active show{% endif %}" id="reference-points">
+      <div class="d-flex gap-3 align-items-start">
+
+        {# Left: table + add form — fixed at 900px, matching other tabs #}
+        <div style="flex: 0 0 900px; overflow-x: auto;">
+          <div class="card">
+            <div class="card-body">
+              <p class="text-muted small mb-3">
+                {% blocktrans %}Named locations used for distance and bearing calculations. Multiple entries with the same name
+                (e.g. several <em>Home</em> records with different <em>Valid from</em> dates)
+                enable temporal distance statistics — useful when your home location has changed over time.
+                You can also save a cache's coordinates as a location from its detail page.{% endblocktrans %}
+              </p>
+
+              {% if reference_points %}
+              <table class="table table-sm mb-4">
+                <thead>
+                  <tr>
+                    <th style="width:2rem">
+                      <input type="checkbox" id="rp-check-all" class="form-check-input" checked>
+                    </th>
+                    <th>{% trans "Name" %}</th><th>{% trans "Latitude" %}</th><th>{% trans "Longitude" %}</th><th>{% trans "Valid from" %}</th><th>{% trans "Note" %}</th><th>{% trans "Home" %}</th><th>{% trans "Default" %}</th><th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for rp in reference_points %}
+                  <tr>
+                    <td>
+                      <input type="checkbox" id="rp-cb-{{ rp.id }}" class="form-check-input rp-check"
+                             data-rp-id="{{ rp.id }}" {% if rp.is_home %}checked{% endif %}>
+                    </td>
+                    <td class="small fw-semibold">{{ rp.name }}</td>
+                    <td class="small font-monospace">{{ rp.latitude|floatformat:5 }}</td>
+                    <td class="small font-monospace">{{ rp.longitude|floatformat:5 }}</td>
+                    <td class="small">{{ rp.valid_from|date:"Y-m-d"|default:"—" }}</td>
+                    <td class="small text-muted">{{ rp.note }}</td>
+                    <td class="text-center">{% if rp.is_home %}<span class="badge bg-success">{% trans "home" %}</span>{% endif %}</td>
+                    <td class="text-center">
+                      {% if rp.is_default %}
+                        <span class="badge bg-primary">{% trans "default" %}</span>
+                      {% else %}
+                        <form method="post" action="{% url 'preferences:set_default_refpoint' %}" class="d-inline">
+                          {% csrf_token %}
+                          <input type="hidden" name="rp_id" value="{{ rp.id }}">
+                          <button type="submit" class="btn btn-sm btn-outline-secondary py-0">{% trans "Set default" %}</button>
+                        </form>
+                      {% endif %}
+                    </td>
+                    <td class="text-nowrap">
+                      <button type="button" class="btn btn-sm btn-outline-primary py-0"
+                              data-bs-toggle="collapse" data-bs-target="#edit-rp-{{ rp.id }}">{% trans "Edit" %}</button>
+                      <form method="post" action="{% url 'preferences:delete_refpoint' %}" class="d-inline">
+                        {% csrf_token %}
+                        <input type="hidden" name="rp_id" value="{{ rp.id }}">
+                        <button type="submit" class="btn btn-sm btn-outline-danger py-0"
+                                onclick="return confirm('{% blocktrans with name=rp.name %}Delete \'{{ name }}\'?{% endblocktrans %}')">{% trans "Delete" %}</button>
+                      </form>
+                    </td>
+                  </tr>
+                  <tr class="collapse" id="edit-rp-{{ rp.id }}">
+                    <td colspan="9" class="bg-light py-2 px-3">
+                      <div id="finetune-hint-{{ rp.id }}"
+                           class="d-none alert alert-info py-1 px-2 small mb-2">
+                        {% trans "Map active: drag the marker or click on the map to set position." %}
+                      </div>
+                      <form method="post" action="{% url 'preferences:edit_refpoint' %}" class="row g-2 align-items-end flex-wrap">
+                        {% csrf_token %}
+                        <input type="hidden" name="rp_id" value="{{ rp.id }}">
+                        <div class="col-auto">
+                          <label class="form-label small mb-0">{% trans "Name" %}</label>
+                          <input type="text" name="rp_name" class="form-control form-control-sm"
+                                 value="{{ rp.name }}" style="width:140px" required>
+                        </div>
+                        <div class="col-auto">
+                          <label class="form-label small mb-0">{% trans "Latitude" %}</label>
+                          <input type="text" name="rp_lat" id="rp-lat-{{ rp.id }}"
+                                 class="form-control form-control-sm font-monospace"
+                                 data-lon-target="rp-lon-{{ rp.id }}"
+                                 value="{{ rp.latitude|floatformat:6 }}" style="width:120px" required>
+                        </div>
+                        <div class="col-auto">
+                          <label class="form-label small mb-0">{% trans "Longitude" %}</label>
+                          <input type="text" name="rp_lon" id="rp-lon-{{ rp.id }}"
+                                 class="form-control form-control-sm font-monospace"
+                                 value="{{ rp.longitude|floatformat:6 }}" style="width:120px" required>
+                        </div>
+                        <div class="col-auto">
+                          <label class="form-label small mb-0">{% trans "Valid from" %} <span class="text-muted">{% trans "(optional)" %}</span></label>
+                          <input type="date" name="rp_valid_from" class="form-control form-control-sm"
+                                 value="{{ rp.valid_from|date:'Y-m-d'|default:'' }}" style="width:140px">
+                        </div>
+                        <div class="col-auto">
+                          <label class="form-label small mb-0">{% trans "Note" %} <span class="text-muted">{% trans "(optional)" %}</span></label>
+                          <input type="text" name="rp_note" class="form-control form-control-sm"
+                                 value="{{ rp.note }}" style="width:140px">
+                        </div>
+                        <div class="col-auto">
+                          <div class="form-check mt-3">
+                            <input class="form-check-input" type="checkbox" name="rp_home" value="1"
+                                   id="rp_home_{{ rp.id }}" {% if rp.is_home %}checked{% endif %}>
+                            <label class="form-check-label small" for="rp_home_{{ rp.id }}">{% trans "Home" %}</label>
+                          </div>
+                        </div>
+                        <div class="col-auto">
+                          <button type="submit" class="btn btn-sm btn-primary">{% trans "Save" %}</button>
+                          <button type="button" class="btn btn-sm btn-outline-secondary ms-1"
+                                  data-bs-toggle="collapse" data-bs-target="#edit-rp-{{ rp.id }}">{% trans "Cancel" %}</button>
+                        </div>
+                      </form>
+                    </td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+              {% else %}
+              <p class="text-muted small">{% trans "No locations defined yet." %}</p>
+              {% endif %}
+
+              <details class="border rounded p-3 bg-light" id="add-location-details">
+                <summary class="fw-semibold small">{% trans "Add location" %}</summary>
+                <div class="alert alert-info py-1 px-2 small mt-2 mb-2">
+                  {% trans "Click on the map to set position, or type coordinates directly." %}
+                </div>
+                <form method="post" action="{% url 'preferences:add_refpoint' %}" class="mt-2">
+                  {% csrf_token %}
+                  <div class="row g-2 align-items-end flex-wrap">
+                    <div class="col-auto">
+                      <label class="form-label small mb-0">{% trans "Name" %}</label>
+                      <input type="text" name="rp_name" class="form-control form-control-sm"
+                             placeholder="{% trans 'e.g. Home' %}" style="width:140px" required>
+                    </div>
+                    <div class="col-auto">
+                      <label class="form-label small mb-0">{% trans "Latitude" %}</label>
+                      <input type="text" name="rp_lat" id="rp-lat-new"
+                             class="form-control form-control-sm font-monospace"
+                             data-lon-target="rp-lon-new"
+                             placeholder="N 48° 18.189'" style="width:160px" required>
+                    </div>
+                    <div class="col-auto">
+                      <label class="form-label small mb-0">{% trans "Longitude" %}</label>
+                      <input type="text" name="rp_lon" id="rp-lon-new"
+                             class="form-control form-control-sm font-monospace"
+                             placeholder="E 8° 58.876'" style="width:160px" required>
+                    </div>
+                    <div class="col-auto">
+                      <label class="form-label small mb-0">{% trans "Valid from" %} <span class="text-muted">{% trans "(optional)" %}</span></label>
+                      <input type="date" name="rp_valid_from" class="form-control form-control-sm" style="width:140px">
+                    </div>
+                    <div class="col-auto">
+                      <label class="form-label small mb-0">{% trans "Note" %} <span class="text-muted">{% trans "(optional)" %}</span></label>
+                      <input type="text" name="rp_note" class="form-control form-control-sm"
+                             placeholder="{% trans 'e.g. moved house' %}" style="width:160px">
+                    </div>
+                    <div class="col-auto">
+                      <div class="form-check mt-3">
+                        <input class="form-check-input" type="checkbox" name="rp_home" value="1" id="rp_home_new">
+                        <label class="form-check-label small" for="rp_home_new">{% trans "Home" %}</label>
+                      </div>
+                    </div>
+                    <div class="col-auto">
+                      <div class="form-check mt-3">
+                        <input class="form-check-input" type="checkbox" name="rp_default" value="1" id="rp_default_new">
+                        <label class="form-check-label small" for="rp_default_new">{% trans "Set as default" %}</label>
+                      </div>
+                    </div>
+                    <div class="col-auto">
+                      <button type="submit" class="btn btn-sm btn-success">{% trans "Add" %}</button>
+                    </div>
+                  </div>
+                </form>
+              </details>
+            </div>
+          </div>
+        </div>{# end left column #}
+
+        {# Right: map #}
+        <div style="flex: 0 0 360px; position: sticky; top: 1rem;">
+          <div class="btn-group btn-group-sm mb-1" role="group" id="rp-layer-switcher" aria-label="{% trans 'Layer switcher' %}">
+            <button type="button" class="btn btn-outline-secondary" data-layer="street"
+                    onclick="gcfRpSetLayer('street', this)">{% trans "Street" %}</button>
+            <button type="button" class="btn btn-outline-secondary" data-layer="outdoor"
+                    onclick="gcfRpSetLayer('outdoor', this)">{% trans "Outdoor" %}</button>
+            <button type="button" class="btn btn-outline-secondary" data-layer="aerial"
+                    onclick="gcfRpSetLayer('aerial', this)">{% trans "Aerial" %}</button>
+          </div>
+          <div id="rp-map" style="height: 420px; border-radius: .375rem; border: 1px solid #dee2e6;"></div>
+          <p class="text-muted small mt-1 mb-0" id="rp-map-status"></p>
+        </div>
+
+      </div>{# end d-flex #}
+    </div>

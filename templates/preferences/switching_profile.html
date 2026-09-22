@@ -1,0 +1,41 @@
+{% load i18n %}{% comment %}
+  Self-contained "Switching to <name>… reconnecting" page (P3). Deliberately
+  does NOT extend base.html: the server is down for a few seconds mid-restart,
+  so any {% static %} fetch (Bootstrap CSS, etc.) issued after that point
+  would fail. Inline CSS/JS only — see docs/multi-profile-plan.md §6, R8.
+
+  profile_switch_js is the raw text of static/js/profile-switch.js, read and
+  passed in by the view rather than {% include %}d — Django's template loader
+  only searches TEMPLATES DIRS (which doesn't cover static/), and dumping the
+  file as a plain (|safe) context variable keeps the tested copy as the one
+  source of truth without risking the JS being re-parsed as template syntax.
+{% endcomment %}<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>{% blocktrans %}GCForge — Switching…{% endblocktrans %}</title>
+<style>
+  body { font-family: -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+         background: #f4f5f7; color: #212529; display: flex; align-items: center;
+         justify-content: center; height: 100vh; margin: 0; text-align: center; }
+  .spinner { width: 2rem; height: 2rem; border: 3px solid #dee2e6; border-top-color: #0d6efd;
+             border-radius: 50%; margin: 0 auto 1rem; animation: spin 0.8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  #gcf-manual-link { font-size: .85rem; color: #6c757d; margin-top: 1rem; }
+  #gcf-manual-link a { color: #0d6efd; }
+</style>
+</head>
+<body>
+  <div>
+    <div class="spinner"></div>
+    <p>{% blocktrans with name=profile_name %}Switching to {{ name }}&hellip;{% endblocktrans %}</p>
+    <p id="gcf-manual-link" style="display:none">
+      {% blocktrans %}Taking longer than expected &mdash; <a href="/">click here to reconnect</a>.{% endblocktrans %}
+    </p>
+  </div>
+  <script>
+    {{ profile_switch_js|safe }}
+    gcfProfileSwitchPoll();
+  </script>
+</body>
+</html>

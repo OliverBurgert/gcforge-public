@@ -1,0 +1,77 @@
+{% load i18n %}
+{# Corrected coordinates card — included from detail.html #}
+<div class="card mb-2">
+  <div class="card-header py-1 small fw-semibold d-flex justify-content-between align-items-center">
+    <span>
+      {% trans "Corrected coordinates" %}
+      {% if cache.corrected_coordinates %}<span class="badge bg-success ms-1">{% trans "set" %}</span>{% endif %}
+    </span>
+    <button class="btn btn-link btn-sm p-0 small" type="button"
+            onclick="toggleCorrectedForm()">
+      {% if cache.corrected_coordinates %}{% trans "Edit / Clear" %}{% else %}{% trans "Set corrected coords" %}{% endif %}
+    </button>
+  </div>
+
+  {# Edit form — collapsed by default, toggled via Edit/Set button #}
+  <div id="corrected-form" style="display:none">
+    <div class="card-body py-2">
+      <form method="post" action="{% url 'geocaches:corrected_save' cache.display_code %}">
+        {% csrf_token %}
+        <div class="mb-2 small text-muted">
+          {% blocktrans %}Accepted formats: <code>48.30315</code> &nbsp;|&nbsp;
+          <code>N 48° 18.189'</code> &nbsp;|&nbsp;
+          <code>N 48° 18' 11.3"</code>{% endblocktrans %}
+        </div>
+        <div class="row g-2 align-items-end">
+          <div class="col">
+            <label class="form-label small mb-0">{% trans "Latitude" %}</label>
+            <input type="text" name="latitude" id="corr-lat"
+                   class="form-control form-control-sm font-monospace"
+                   data-lon-target="corr-lon"
+                   value="{% if cache.corrected_coordinates %}{{ corr_lat_str }}{% endif %}"
+                   placeholder="{{ lat_str }}"
+                   autocomplete="off">
+          </div>
+          <div class="col">
+            <label class="form-label small mb-0">{% trans "Longitude" %}</label>
+            <input type="text" name="longitude" id="corr-lon"
+                   class="form-control form-control-sm font-monospace"
+                   value="{% if cache.corrected_coordinates %}{{ corr_lon_str }}{% endif %}"
+                   placeholder="{{ lon_str }}"
+                   autocomplete="off">
+          </div>
+          <div class="col-12 col-md">
+            <label class="form-label small mb-0">{% trans "Note (optional)" %}</label>
+            <input type="text" name="note" class="form-control form-control-sm"
+                   value="{% if cache.corrected_coordinates %}{{ cache.corrected_coordinates.note }}{% endif %}"
+                   placeholder="{% trans 'e.g. solved 2024-01-15' %}">
+          </div>
+        </div>
+        <div class="mt-2 d-flex gap-2">
+          <button type="submit" class="btn btn-sm btn-success">{% trans "Save" %}</button>
+          {% if cache.corrected_coordinates %}
+          <button type="submit" name="clear" value="1"
+                  class="btn btn-sm btn-outline-danger">{% trans "Clear" %}</button>
+          {% endif %}
+          <button type="button" class="btn btn-sm btn-outline-secondary"
+                  onclick="toggleCorrectedForm()">{% trans "Cancel" %}</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  {# Display — shown when corrected coords exist and form is hidden #}
+  {% if cache.corrected_coordinates %}
+  <div id="corrected-display">
+    <div class="card-body py-2 small">
+      <span class="text-muted">{% trans "Lat:" %}</span>
+      <span class="font-monospace text-success">{{ corr_lat_str }}</span>
+      <span class="ms-3 text-muted">{% trans "Lon:" %}</span>
+      <span class="font-monospace text-success">{{ corr_lon_str }}</span>
+      {% if cache.corrected_coordinates.note %}
+      <div class="text-muted mt-1">{{ cache.corrected_coordinates.note }}</div>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+</div>

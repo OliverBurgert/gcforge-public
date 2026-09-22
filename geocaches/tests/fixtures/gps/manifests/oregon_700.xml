@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Device xmlns="http://www.garmin.com/xmlschemas/GarminDevice/v2">
+  <Model>
+    <PartNumber>006-B1853-00</PartNumber>
+    <SoftwareVersion>510</SoftwareVersion>
+    <Description>Oregon 700</Description>
+  </Model>
+  <Id>3979634841</Id>
+  <DisplayName>Oregon 700</DisplayName>
+  <MassStorageMode>
+    <DataType>
+      <Name>GPSData</Name>
+      <File>
+        <Specification>
+          <Identifier>http://www.topografix.com/GPX/1/1</Identifier>
+        </Specification>
+        <Location>
+          <Path>Garmin/GPX</Path>
+          <FileExtension>gpx</FileExtension>
+        </Location>
+        <TransferDirection>InputToUnit</TransferDirection>
+      </File>
+    </DataType>
+    <DataType>
+      <Name>Geocaches</Name>
+      <File>
+        <Specification>
+          <Identifier>http://www.groundspeak.com/cache/1/0/1</Identifier>
+        </Specification>
+        <Location>
+          <Path>Garmin/GPX</Path>
+        </Location>
+        <TransferDirection>InputToUnit</TransferDirection>
+      </File>
+    </DataType>
+    <DataType>
+      <Name>GGZ</Name>
+      <File>
+        <Location>
+          <Path>Garmin/GGZ</Path>
+        </Location>
+      </File>
+    </DataType>
+    <DataType>
+      <Name>FieldNotes</Name>
+      <File>
+        <Specification>
+          <Identifier>http://www.groundspeak.com/cache/log</Identifier>
+        </Specification>
+        <Location>
+          <Path>Garmin/geocache_visits.txt</Path>
+        </Location>
+        <TransferDirection>OutputFromUnit</TransferDirection>
+      </File>
+    </DataType>
+  </MassStorageMode>
+</Device>

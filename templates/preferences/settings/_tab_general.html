@@ -1,0 +1,122 @@
+{% load i18n %}
+    <div class="tab-pane{% if active_tab == 'general' %} active show{% endif %}" id="general">
+      <div class="card">
+        <div class="card-body">
+          <form method="post" action="{% url 'preferences:save_prefs' %}">
+            {% csrf_token %}
+
+            <div class="row g-4">
+
+              <div class="col-md-6">
+                <h6>{% trans "Coordinate format" %}</h6>
+                <div class="d-flex flex-column gap-2">
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" name="coord_format" id="coord_dd"
+                           value="dd" {% if coord_format == "dd" %}checked{% endif %}>
+                    <label class="form-check-label font-monospace" for="coord_dd">DD &nbsp;&nbsp;48.303150 &nbsp; 8.981267</label>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" name="coord_format" id="coord_dmm"
+                           value="dmm" {% if coord_format == "dmm" %}checked{% endif %}>
+                    <label class="form-check-label font-monospace" for="coord_dmm">DMM &nbsp;N 48° 18.189' &nbsp; E 8° 58.876'</label>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" name="coord_format" id="coord_dms"
+                           value="dms" {% if coord_format == "dms" %}checked{% endif %}>
+                    <label class="form-check-label font-monospace" for="coord_dms">DMS &nbsp;N 48° 18' 11.3" &nbsp; E 8° 58' 52.6"</label>
+                  </div>
+                </div>
+                <p class="text-muted small mt-2 mb-0">
+                  {% trans "Coordinate input always accepts DD, DMM, and DMS regardless of this setting." %}
+                </p>
+              </div>
+
+              <div class="col-md-6">
+                <h6>{% trans "Distance unit" %}</h6>
+                <div class="d-flex flex-column gap-2">
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" name="distance_unit" id="unit_km"
+                           value="km" {% if distance_unit == "km" %}checked{% endif %}>
+                    <label class="form-check-label" for="unit_km">{% trans "Kilometres (km)" %}</label>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" name="distance_unit" id="unit_mi"
+                           value="mi" {% if distance_unit == "mi" %}checked{% endif %}>
+                    <label class="form-check-label" for="unit_mi">{% trans "Miles (mi)" %}</label>
+                  </div>
+                </div>
+              </div>
+
+
+              <div class="col-md-6">
+                <h6>{% trans "Default map layout" %}</h6>
+                <select name="map_layout" class="form-select form-select-sm" style="max-width:160px">
+                  <option value="list" {% if map_layout == "list" %}selected{% endif %}>{% trans "List only" %}</option>
+                  <option value="split" {% if map_layout == "split" %}selected{% endif %}>{% trans "List/Map" %}</option>
+                  <option value="split-detail" {% if map_layout == "split-detail" %}selected{% endif %}>{% trans "List/Detail" %}</option>
+                  <option value="map" {% if map_layout == "map" %}selected{% endif %}>{% trans "Map only" %}</option>
+                </select>
+                <p class="text-muted small mt-1 mb-0">{% trans "Layout shown when opening the cache list." %}</p>
+              </div>
+
+              <div class="col-md-6">
+                <h6>{% trans "Split view divider position" %}</h6>
+                <div class="d-flex align-items-center gap-2">
+                  <input type="range" name="map_split_pct" class="form-range"
+                         style="max-width:200px" min="20" max="80" step="5"
+                         value="{{ map_split_pct }}"
+                         oninput="document.getElementById('split-pct-label').textContent = this.value + '%'">
+                  <span id="split-pct-label" class="small text-muted">{{ map_split_pct }}%</span>
+                </div>
+                <p class="text-muted small mt-1 mb-0">{% trans "Width of the list panel in split view (20–80%)." %}</p>
+              </div>
+
+              <div class="col-md-6">
+                <h6>{% trans "Icon set" %}</h6>
+                <select name="icon_set" class="form-select form-select-sm" style="max-width:200px">
+                  <option value="text" {% if icon_set == "text" %}selected{% endif %}>{% trans "Text (no icons)" %}</option>
+                  <option value="cgeo" {% if icon_set == "cgeo" %}selected{% endif %}>{% trans "c:geo icons" %}</option>
+                </select>
+                {% url 'preferences:about' as about_url %}
+                <p class="text-muted small mt-1 mb-0">
+                  {% blocktrans %}Icon set for cache types, waypoints, and attributes.
+                  See <a href="{{ about_url }}">About</a> for license info.{% endblocktrans %}
+                </p>
+              </div>
+
+            </div>
+
+            <hr class="my-3">
+            <h6 class="small fw-semibold text-muted">{% trans "Import" %}</h6>
+            <div class="form-check mb-2">
+              <input type="checkbox" class="form-check-input" name="delete_after_import"
+                     id="pref-delete-after-import" {% if delete_after_import %}checked{% endif %}>
+              <label class="form-check-label small" for="pref-delete-after-import">
+                {% trans "Delete GPX files after successful import" %}
+              </label>
+            </div>
+
+            {% if gc_api_available %}
+            <hr class="my-3">
+            <h6 class="small fw-semibold text-muted">{% trans "GC log submission" %}</h6>
+            <select name="gc_access_mode" class="form-select form-select-sm" style="max-width:320px">
+              <option value="api_preferred" {% if gc_access_mode == "api_preferred" %}selected{% endif %}>
+                {% trans "Partner API (default), fall back to website automatically" %}
+              </option>
+              <option value="web_preferred" {% if gc_access_mode == "web_preferred" %}selected{% endif %}>
+                {% trans "Website only (for testing the no-API-key path)" %}
+              </option>
+            </select>
+            <p class="text-muted small mt-1 mb-0">
+              {% blocktrans %}"Partner API" uses your GC API token and only falls back to the
+              website if the token is missing or a submission fails. "Website only" always uses
+              the website, even with a working token — logs submitted this way still succeed,
+              but won't retry via the API on failure.{% endblocktrans %}
+            </p>
+            {% endif %}
+
+            <button type="submit" class="btn btn-sm btn-primary mt-3">{% trans "Save" %}</button>
+          </form>
+        </div>
+      </div>
+    </div>

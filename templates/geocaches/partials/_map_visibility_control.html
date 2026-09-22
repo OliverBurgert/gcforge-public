@@ -1,0 +1,68 @@
+{% comment %}
+Map-visibility eye-icon dropdown for the cache detail action bar.
+
+Context:
+  cache                          — the Geocache being viewed
+  map_visibility_state           — "visible" | "session" | "always"
+  map_visibility_stages_count    — int; >0 when cache is an AL parent
+{% endcomment %}
+{% load i18n %}
+<div id="map-visibility-control" class="btn-group btn-group-sm">
+  {% if map_visibility_state == "always" %}
+    <button type="button" class="btn btn-sm btn-danger dropdown-toggle"
+            data-bs-toggle="dropdown" aria-expanded="false"
+            title="{% trans 'Hidden on map (always)' %}">
+      👁 {% trans "Hidden" %}
+    </button>
+  {% elif map_visibility_state == "session" %}
+    <button type="button" class="btn btn-sm btn-warning dropdown-toggle"
+            data-bs-toggle="dropdown" aria-expanded="false"
+            title="{% trans 'Hidden on map (this session)' %}">
+      👁 {% trans "Hidden" %}
+    </button>
+  {% else %}
+    <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle"
+            data-bs-toggle="dropdown" aria-expanded="false"
+            title="{% trans 'Visible on map' %}">
+      👁 {% trans "Map" %}
+    </button>
+  {% endif %}
+  <ul class="dropdown-menu dropdown-menu-end">
+    {% if map_visibility_stages_count %}
+    <li><span class="dropdown-item-text small text-muted">
+      {% blocktrans count n=map_visibility_stages_count %}Applies to all {{ n }} stage{% plural %}Applies to all {{ n }} stages{% endblocktrans %}
+    </span></li>
+    <li><hr class="dropdown-divider"></li>
+    {% endif %}
+    <li>
+      <button type="button" class="dropdown-item {% if map_visibility_state == 'visible' %}active{% endif %}"
+              hx-post="{% url 'geocaches:cache_map_visibility' cache.display_code %}"
+              hx-vals='{"state": "visible"}'
+              hx-target="#map-visibility-control"
+              hx-swap="outerHTML"
+              hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
+        {% trans "Visible on map" %}
+      </button>
+    </li>
+    <li>
+      <button type="button" class="dropdown-item {% if map_visibility_state == 'session' %}active{% endif %}"
+              hx-post="{% url 'geocaches:cache_map_visibility' cache.display_code %}"
+              hx-vals='{"state": "session"}'
+              hx-target="#map-visibility-control"
+              hx-swap="outerHTML"
+              hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
+        {% trans "Hide for this session" %}
+      </button>
+    </li>
+    <li>
+      <button type="button" class="dropdown-item {% if map_visibility_state == 'always' %}active{% endif %}"
+              hx-post="{% url 'geocaches:cache_map_visibility' cache.display_code %}"
+              hx-vals='{"state": "always"}'
+              hx-target="#map-visibility-control"
+              hx-swap="outerHTML"
+              hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
+        {% trans "Hide always" %}
+      </button>
+    </li>
+  </ul>
+</div>

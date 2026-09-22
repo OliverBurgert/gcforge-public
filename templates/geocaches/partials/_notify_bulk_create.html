@@ -1,0 +1,103 @@
+{% load i18n %}
+{% load l10n %}
+
+<div class="modal fade" id="bulkCreateModal" tabindex="-1" aria-labelledby="bulkCreateLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <form method="post" action="{% url 'geocaches:notifications_bulk_create' %}" class="modal-content">
+      {% csrf_token %}
+      <div class="modal-header">
+        <h5 class="modal-title" id="bulkCreateLabel">{% trans "Bulk-create notifications" %}</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p class="text-muted small mb-3">
+          {% blocktrans %}One notification per selected cache type will be created at the same location with the same radius and log-event subscriptions.{% endblocktrans %}
+        </p>
+
+        <div class="row g-2 mb-3">
+          <div class="col-md-6">
+            <label class="form-label small">{% trans "Use a saved location" %}</label>
+            <select name="location_id" class="form-select form-select-sm">
+              <option value="">{% trans "— none, enter coordinates below —" %}</option>
+              {% for loc in locations %}
+                <option value="{{ loc.id }}"
+                        data-lat="{{ loc.latitude|unlocalize }}"
+                        data-lon="{{ loc.longitude|unlocalize }}">
+                  {{ loc.name }}
+                </option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label small">{% trans "Latitude" %}</label>
+            <input type="text" name="latitude" class="form-control form-control-sm" placeholder="48.4304">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label small">{% trans "Longitude" %}</label>
+            <input type="text" name="longitude" class="form-control form-control-sm" placeholder="9.1553">
+          </div>
+        </div>
+
+        <div class="row g-2 mb-3">
+          <div class="col-md-3">
+            <label class="form-label small">{% trans "Radius (km)" %}</label>
+            <input type="number" name="radius_km" class="form-control form-control-sm" value="20" min="1" max="500">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label small">{% trans "Recipient email" %}</label>
+            <input type="email" name="recipient_email" class="form-control form-control-sm" placeholder="{% trans 'primary' %}">
+          </div>
+          <div class="col-md-3 d-flex align-items-end">
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" name="enabled" id="bulkEnabled" checked>
+              <label class="form-check-label" for="bulkEnabled">{% trans "Enabled" %}</label>
+            </div>
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label small">{% trans "Name template" %}</label>
+          <input type="text" name="name_template" class="form-control form-control-sm"
+                 value="{{ '{location}'|safe }} – {{ '{type}'|safe }}"
+                 placeholder="{location} – {type}">
+          <div class="form-text small">{% blocktrans %}<code>{location}</code> and <code>{type}</code> are substituted per notification.{% endblocktrans %}</div>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label small">{% trans "Cache types to subscribe" %} <span class="text-danger">*</span></label>
+          <div class="row row-cols-2 row-cols-md-3 g-1">
+            {% for type_id, type_name in notify_cache_types.items %}
+              <div class="col">
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox"
+                         name="type_ids" value="{{ type_id }}" id="bulkType{{ type_id }}">
+                  <label class="form-check-label small" for="bulkType{{ type_id }}">{{ type_name }}</label>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label small">{% trans "Log events to be notified about" %}</label>
+          <div class="row row-cols-2 row-cols-md-3 g-1">
+            {% for evt_id, evt_name in log_events %}
+              <div class="col">
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox"
+                         name="log_event_ids" value="{{ evt_id }}" id="bulkEvt{{ evt_id }}"
+                         {% if evt_id in default_log_event_ids %}checked{% endif %}>
+                  <label class="form-check-label small" for="bulkEvt{{ evt_id }}">{{ evt_name }}</label>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">{% trans "Cancel" %}</button>
+        <button type="submit" class="btn btn-sm btn-primary">{% trans "Create notifications" %}</button>
+      </div>
+    </form>
+  </div>
+</div>

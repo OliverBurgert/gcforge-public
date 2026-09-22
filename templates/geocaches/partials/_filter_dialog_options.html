@@ -1,0 +1,24 @@
+{% comment %}
+WP-04: response for filter_dialog_options() — populates all three filter
+dialogs' modal-content divs at once via hx-swap-oob, regardless of which
+one's show.bs.modal event triggered the (single, once-per-page-load) fetch.
+See _filter_dialogs_shell.html and static/js/cache-list.js.
+
+The default hx-swap-oob mode is outerHTML, so each of these divs REPLACES
+the matching placeholder in the shell wholesale — it must keep the
+"modal-content" class the shell gave that placeholder (Bootstrap's modal
+CSS/JS depends on it for layout and for telling a genuine backdrop click
+apart from a click inside the dialog); dropping it left the tab bar
+visually in place but outside any hit-testable box, so a click that looked
+like it landed on a tab actually landed on the modal backdrop and closed
+the dialog.
+{% endcomment %}
+<div id="tabbedFilterDialogContent" class="modal-content" hx-swap-oob="true">
+  {% include "geocaches/partials/_tabbed_filter_dialog.html" %}
+</div>
+<div id="treeFilterDialogContent" class="modal-content" hx-swap-oob="true">
+  {% include "geocaches/partials/_tree_filter_dialog.html" %}
+</div>
+<div id="whereClauseDialogContent" class="modal-content" hx-swap-oob="true">
+  {% include "geocaches/partials/_where_clause_dialog.html" %}
+</div>

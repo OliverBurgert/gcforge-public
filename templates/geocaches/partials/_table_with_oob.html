@@ -1,0 +1,10 @@
+<div id="action-bar-container" hx-swap-oob="true" class="px-3 pt-1">
+  {% include "geocaches/partials/_action_bar.html" %}
+</div>
+<div id="filter-toggle-buttons" hx-swap-oob="true" class="col-auto ms-auto d-flex align-items-end gap-2">
+  {% include "geocaches/partials/_filter_toggle_buttons.html" %}
+</div>
+<div hx-swap-oob="outerHTML:#hidden-filters-row">
+  {% include "geocaches/partials/_chip_row.html" %}
+</div>
+{% include "geocaches/partials/_table.html" %}

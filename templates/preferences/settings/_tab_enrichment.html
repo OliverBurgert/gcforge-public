@@ -1,0 +1,94 @@
+{% load i18n %}
+    <div class="tab-pane{% if active_tab == 'enrichment' %} active show{% endif %}" id="enrichment">
+      <div class="card">
+        <div class="card-body">
+          <p class="text-muted small mb-3">
+            {% blocktrans %}Fills fields not provided by import sources.
+            <strong>Elevation</strong> uses offline SRTM tiles (downloaded once, then no internet required).
+            <strong>Location</strong> (country, state, county) uses
+            <a href="https://nominatim.openstreetmap.org/" target="_blank" rel="noopener">OpenStreetMap Nominatim</a>
+            (requires internet; 1 request/s rate limit).
+            Only blank fields are ever filled — existing values are never overwritten.{% endblocktrans %}
+          </p>
+          <form method="post" action="{% url 'preferences:save_enrich' %}">
+            {% csrf_token %}
+            <div class="d-flex flex-column gap-2 mb-3">
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="enrich_auto" value="1"
+                       id="enrich_auto" {% if enrich_auto %}checked{% endif %}>
+                <label class="form-check-label" for="enrich_auto">
+                  {% blocktrans %}<strong>Auto-enrich after import</strong>
+                  <span class="text-muted small ms-1">— run enrichment automatically when new caches are imported</span>{% endblocktrans %}
+                </label>
+              </div>
+              <div class="ms-4 d-flex flex-column gap-1">
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" name="enrich_elevation" value="1"
+                         id="enrich_elevation" {% if enrich_elevation %}checked{% endif %}>
+                  <label class="form-check-label small" for="enrich_elevation">{% trans "Fill elevation from SRTM" %}</label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" name="enrich_location" value="1"
+                         id="enrich_location" {% if enrich_location %}checked{% endif %}>
+                  <label class="form-check-label small" for="enrich_location">{% trans "Fill country / state / county from OpenStreetMap" %}</label>
+                </div>
+              </div>
+            </div>
+            <hr class="my-3">
+            <h6 class="mb-2">{% trans "Import behaviour" %}</h6>
+            <div class="form-check mb-2">
+              <input class="form-check-input" type="checkbox" name="drop_zero_waypoints" value="1"
+                     id="drop_zero_waypoints" {% if drop_zero_waypoints %}checked{% endif %}>
+              <label class="form-check-label small" for="drop_zero_waypoints">
+                {% blocktrans %}<strong>Drop lat/lon 0°/0° waypoints during import</strong>
+                <span class="text-muted ms-1">— some CO use 0,0 as a placeholder; these break the map</span>{% endblocktrans %}
+              </label>
+            </div>
+            <button type="submit" class="btn btn-sm btn-primary">{% trans "Save" %}</button>
+          </form>
+        </div>
+      </div>
+
+      <div class="card mt-3">
+        <div class="card-body">
+          <h6 class="mb-2">{% trans "Fill location gaps from downloaded boundaries" %}</h6>
+          <p class="text-muted small mb-2">
+            {% trans "Walks every cache with coordinates and assigns country (always), state and county (where you've downloaded the matching boundary). Pure point-in-polygon — no internet needed." %}
+          </p>
+
+          <p class="small mb-1"><strong>{% trans "Downloaded boundaries" %}</strong></p>
+          {% if boundary_status %}
+          <ul class="small text-muted mb-2">
+            {% for row in boundary_status %}
+            <li>
+              {{ row.name }} —
+              {% if row.region_count %}{% blocktrans with cnt=row.region_count %}{{ cnt }} regions{% endblocktrans %}{% else %}{% trans "no regions" %}{% endif %},
+              {% if row.county_count %}{% blocktrans with cnt=row.county_count %}{{ cnt }} counties{% endblocktrans %}{% else %}{% trans "no counties" %}{% endif %}
+            </li>
+            {% endfor %}
+          </ul>
+          {% else %}
+          <p class="small text-muted mb-2">{% trans "None yet." %}</p>
+          {% endif %}
+          <p class="small mb-3">
+            <a href="{% url 'preferences:settings' %}?tab=dashboard#dashboard">{% trans "Download or update boundaries in the Dashboard tab →" %}</a>
+          </p>
+
+          {% if enrich_offline_msg %}
+          <div class="alert alert-{% if enrich_offline_msg.ok %}success{% else %}danger{% endif %} small py-2 mb-3">
+            {{ enrich_offline_msg.text }}
+          </div>
+          {% endif %}
+          <form method="post" action="{% url 'preferences:enrich_locations_offline' %}">
+            {% csrf_token %}
+            <div class="form-check mb-2">
+              <input class="form-check-input" type="checkbox" name="override" value="1" id="enrich_offline_override">
+              <label class="form-check-label small" for="enrich_offline_override">
+                {% trans "Also overwrite existing values (default is fill-only)" %}
+              </label>
+            </div>
+            <button type="submit" class="btn btn-sm btn-primary">{% trans "Run now" %}</button>
+          </form>
+        </div>
+      </div>
+    </div>

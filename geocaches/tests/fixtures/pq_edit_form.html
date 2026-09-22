@@ -1,0 +1,148 @@
+<!--
+Trimmed, synthetic reconstruction of the geocaching.com Pocket Query edit
+form (pocket/gcquery.aspx?guid=...), used to unit-test
+geocaches.pq.criteria.get_pq_criteria() offline. Field names/value tokens
+match real scraped data (see docs/reference/geocaching-com.md, "Pocket Query
+edit form (gcquery.aspx)"); coordinates/dates/name are placeholders, not a
+real account's data.
+
+Criteria encoded here: Selected Types = Traditional + Mystery, Selected
+Containers = Small + Regular, Options = "I haven't found" + "I don't own" +
+"Are not on my ignore list", Origin = By Coordinates (48°31.467'N
+009°07.209'E), radius 30km, Placed = Between 2000-01-01 and 2011-05-01.
+-->
+<html>
+<body>
+<form id="aspnetForm" method="post" action="./gcquery.aspx">
+<input type="hidden" name="__VIEWSTATEFIELDCOUNT" value="1">
+<input type="hidden" name="__VIEWSTATE1" value="placeholder">
+<input type="hidden" name="__VIEWSTATEGENERATOR" value="placeholder">
+<input type="hidden" name="__EVENTVALIDATION" value="placeholder">
+
+<input type="text" name="ctl00$ContentBody$tbName" id="ctl00_ContentBody_tbName" value="_Testarea 30km 2000-01-01 bis 2011-05-01">
+<input type="text" name="ctl00$ContentBody$tbResults" id="ctl00_ContentBody_tbResults" value="1000">
+
+<input type="radio" name="ctl00$ContentBody$Type" value="rbTypeAny">
+<input type="radio" name="ctl00$ContentBody$Type" value="rbTypeSelect" checked="checked">
+<input type="checkbox" name="ctl00$ContentBody$cbTaxonomy$0" id="ctl00_ContentBody_cbTaxonomy_0" value="2" checked="checked">
+<input type="checkbox" name="ctl00$ContentBody$cbTaxonomy$1" id="ctl00_ContentBody_cbTaxonomy_1" value="3">
+<input type="checkbox" name="ctl00$ContentBody$cbTaxonomy$2" id="ctl00_ContentBody_cbTaxonomy_2" value="4">
+<input type="checkbox" name="ctl00$ContentBody$cbTaxonomy$3" id="ctl00_ContentBody_cbTaxonomy_3" value="5">
+<input type="checkbox" name="ctl00$ContentBody$cbTaxonomy$4" id="ctl00_ContentBody_cbTaxonomy_4" value="6">
+<input type="checkbox" name="ctl00$ContentBody$cbTaxonomy$5" id="ctl00_ContentBody_cbTaxonomy_5" value="8" checked="checked">
+<input type="checkbox" name="ctl00$ContentBody$cbTaxonomy$6" id="ctl00_ContentBody_cbTaxonomy_6" value="9">
+<input type="checkbox" name="ctl00$ContentBody$cbTaxonomy$7" id="ctl00_ContentBody_cbTaxonomy_7" value="11">
+<input type="checkbox" name="ctl00$ContentBody$cbTaxonomy$8" id="ctl00_ContentBody_cbTaxonomy_8" value="137">
+<input type="checkbox" name="ctl00$ContentBody$cbTaxonomy$9" id="ctl00_ContentBody_cbTaxonomy_9" value="1304">
+<input type="checkbox" name="ctl00$ContentBody$cbTaxonomy$10" id="ctl00_ContentBody_cbTaxonomy_10" value="1858">
+
+<input type="radio" name="ctl00$ContentBody$Container" value="rbContainerAny">
+<input type="radio" name="ctl00$ContentBody$Container" value="rbContainerSelect" checked="checked">
+<input type="checkbox" name="ctl00$ContentBody$cbContainers$0" id="ctl00_ContentBody_cbContainers_0" value="8" checked="checked">
+<input type="checkbox" name="ctl00$ContentBody$cbContainers$1" id="ctl00_ContentBody_cbContainers_1" value="6">
+<input type="checkbox" name="ctl00$ContentBody$cbContainers$2" id="ctl00_ContentBody_cbContainers_2" value="5">
+<input type="checkbox" name="ctl00$ContentBody$cbContainers$3" id="ctl00_ContentBody_cbContainers_3" value="4">
+<input type="checkbox" name="ctl00$ContentBody$cbContainers$4" id="ctl00_ContentBody_cbContainers_4" value="3" checked="checked">
+<input type="checkbox" name="ctl00$ContentBody$cbContainers$5" id="ctl00_ContentBody_cbContainers_5" value="2">
+<input type="checkbox" name="ctl00$ContentBody$cbContainers$6" id="ctl00_ContentBody_cbContainers_6" value="1">
+
+<input type="checkbox" name="ctl00$ContentBody$cbOptions$0" id="ctl00_ContentBody_cbOptions_0" value="2" checked="checked">
+<input type="checkbox" name="ctl00$ContentBody$cbOptions$1" id="ctl00_ContentBody_cbOptions_1" value="1">
+<input type="checkbox" name="ctl00$ContentBody$cbOptions$2" id="ctl00_ContentBody_cbOptions_2" value="6" checked="checked">
+<input type="checkbox" name="ctl00$ContentBody$cbOptions$3" id="ctl00_ContentBody_cbOptions_3" value="8">
+<input type="checkbox" name="ctl00$ContentBody$cbOptions$4" id="ctl00_ContentBody_cbOptions_4" value="17">
+<input type="checkbox" name="ctl00$ContentBody$cbOptions$5" id="ctl00_ContentBody_cbOptions_5" value="4">
+<input type="checkbox" name="ctl00$ContentBody$cbOptions$6" id="ctl00_ContentBody_cbOptions_6" value="16" checked="checked">
+<input type="checkbox" name="ctl00$ContentBody$cbOptions$7" id="ctl00_ContentBody_cbOptions_7" value="9">
+<input type="checkbox" name="ctl00$ContentBody$cbOptions$8" id="ctl00_ContentBody_cbOptions_8" value="7">
+<input type="checkbox" name="ctl00$ContentBody$cbOptions$9" id="ctl00_ContentBody_cbOptions_9" value="5">
+<input type="checkbox" name="ctl00$ContentBody$cbOptions$10" id="ctl00_ContentBody_cbOptions_10" value="3">
+<input type="checkbox" name="ctl00$ContentBody$cbOptions$11" id="ctl00_ContentBody_cbOptions_11" value="10">
+<input type="checkbox" name="ctl00$ContentBody$cbOptions$12" id="ctl00_ContentBody_cbOptions_12" value="12">
+<input type="checkbox" name="ctl00$ContentBody$cbOptions$13" id="ctl00_ContentBody_cbOptions_13" value="11">
+
+<input type="checkbox" name="ctl00$ContentBody$cbDifficulty" id="ctl00_ContentBody_cbDifficulty">
+<select name="ctl00$ContentBody$ddDifficulty" id="ctl00_ContentBody_ddDifficulty">
+  <option value=">=" selected="selected">&gt;=</option>
+  <option value="&lt;=">&lt;=</option>
+</select>
+<select name="ctl00$ContentBody$ddDifficultyScore" id="ctl00_ContentBody_ddDifficultyScore">
+  <option value="1" selected="selected">1</option>
+  <option value="5">5</option>
+</select>
+
+<input type="checkbox" name="ctl00$ContentBody$cbTerrain" id="ctl00_ContentBody_cbTerrain">
+<select name="ctl00$ContentBody$ddTerrain" id="ctl00_ContentBody_ddTerrain">
+  <option value=">=" selected="selected">&gt;=</option>
+  <option value="&lt;=">&lt;=</option>
+</select>
+<select name="ctl00$ContentBody$ddTerrainScore" id="ctl00_ContentBody_ddTerrainScore">
+  <option value="1" selected="selected">1</option>
+  <option value="5">5</option>
+</select>
+
+<input type="radio" name="ctl00$ContentBody$CountryState" value="rbNone" checked="checked">
+<input type="radio" name="ctl00$ContentBody$CountryState" value="rbCountries">
+<input type="radio" name="ctl00$ContentBody$CountryState" value="rbStates">
+<select name="ctl00$ContentBody$lbCountries" id="ctl00_ContentBody_lbCountries" multiple="multiple"></select>
+<select name="ctl00$ContentBody$lbStates" id="ctl00_ContentBody_lbStates" multiple="multiple"></select>
+
+<input type="radio" name="ctl00$ContentBody$Origin" value="rbOriginNone">
+<input type="radio" name="ctl00$ContentBody$Origin" value="rbOriginHome">
+<input type="radio" name="ctl00$ContentBody$Origin" value="rbOriginGC">
+<input type="radio" name="ctl00$ContentBody$Origin" value="rbPostalCode">
+<input type="radio" name="ctl00$ContentBody$Origin" value="rbOriginWpt" checked="checked">
+<select name="ctl00$ContentBody$LatLong:_selectNorthSouth" id="ctl00_ContentBody_LatLong__selectNorthSouth">
+  <option value="1" selected="selected">N</option>
+  <option value="2">S</option>
+</select>
+<input type="text" name="ctl00$ContentBody$LatLong$_inputLatDegs" id="ctl00_ContentBody_LatLong__inputLatDegs" value="48">
+<input type="text" name="ctl00$ContentBody$LatLong$_inputLatMins" id="ctl00_ContentBody_LatLong__inputLatMins" value="31.467">
+<select name="ctl00$ContentBody$LatLong:_selectEastWest" id="ctl00_ContentBody_LatLong__selectEastWest">
+  <option value="1" selected="selected">E</option>
+  <option value="2">W</option>
+</select>
+<input type="text" name="ctl00$ContentBody$LatLong$_inputLongDegs" id="ctl00_ContentBody_LatLong__inputLongDegs" value="009">
+<input type="text" name="ctl00$ContentBody$LatLong$_inputLongMins" id="ctl00_ContentBody_LatLong__inputLongMins" value="07.209">
+<input type="text" name="ctl00$ContentBody$tbRadius" id="ctl00_ContentBody_tbRadius" value="30">
+<input type="radio" name="ctl00$ContentBody$rbUnitType" value="mi">
+<input type="radio" name="ctl00$ContentBody$rbUnitType" value="km" checked="checked">
+
+<input type="radio" name="ctl00$ContentBody$Placed" value="rbPlacedNone">
+<input type="radio" name="ctl00$ContentBody$Placed" value="rbPlacedLast">
+<input type="radio" name="ctl00$ContentBody$Placed" value="rbPlacedBetween" checked="checked">
+<select name="ctl00$ContentBody$ddLastPlaced" id="ctl00_ContentBody_ddLastPlaced">
+  <option value="WEEK" selected="selected">Week</option>
+</select>
+<select name="ctl00$ContentBody$DateTimeBegin$Month" id="ctl00_ContentBody_DateTimeBegin_Month">
+  <option value="1" selected="selected">1</option>
+</select>
+<select name="ctl00$ContentBody$DateTimeBegin$Day" id="ctl00_ContentBody_DateTimeBegin_Day">
+  <option value="1" selected="selected">1</option>
+</select>
+<select name="ctl00$ContentBody$DateTimeBegin$Year" id="ctl00_ContentBody_DateTimeBegin_Year">
+  <option value="2000" selected="selected">2000</option>
+</select>
+<select name="ctl00$ContentBody$DateTimeEnd$Month" id="ctl00_ContentBody_DateTimeEnd_Month">
+  <option value="5" selected="selected">5</option>
+</select>
+<select name="ctl00$ContentBody$DateTimeEnd$Day" id="ctl00_ContentBody_DateTimeEnd_Day">
+  <option value="1" selected="selected">1</option>
+</select>
+<select name="ctl00$ContentBody$DateTimeEnd$Year" id="ctl00_ContentBody_DateTimeEnd_Year">
+  <option value="2011" selected="selected">2011</option>
+</select>
+
+<select name="ctl00$ContentBody$ddlAltEmails" id="ctl00_ContentBody_ddlAltEmails">
+  <option value="test@example.com" selected="selected">test@example.com</option>
+</select>
+<select name="ctl00$ContentBody$ddFormats" id="ctl00_ContentBody_ddFormats">
+  <option value="GPX" selected="selected">GPX</option>
+</select>
+<input type="checkbox" name="ctl00$ContentBody$cbIncludePQNameInFileName" id="ctl00_ContentBody_cbIncludePQNameInFileName">
+
+<input type="submit" name="ctl00$ContentBody$btnSubmit" value="Submit Information">
+<input type="submit" name="ctl00$ContentBody$btnDelete" value="Delete This Query">
+</form>
+</body>
+</html>

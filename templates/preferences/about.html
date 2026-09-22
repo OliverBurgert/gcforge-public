@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% trans "About" %} — GCForge{% endblock %}
+
+{% block content %}
+<div class="px-3 py-3" style="max-width:800px">
+  <h5 class="mb-3">{% trans "About GCForge" %}</h5>
+
+  <p class="small">
+    {% blocktrans %}GCForge is an open-source geocache management tool &mdash; a spiritual successor to
+    <abbr title="Geocaching Swiss Army Knife">GSAK</abbr>.{% endblocktrans %}
+  </p>
+
+  <hr>
+
+  <h6>{% trans "Third-Party Icon Attributions" %}</h6>
+
+  <div class="card mb-3">
+    <div class="card-header py-1 small fw-semibold">{% trans "c:geo Icons &mdash; Apache License 2.0" %}</div>
+    <div class="card-body small">
+      <p class="mb-2">
+        {% blocktrans %}Cache type and attribute icons are derived from the
+        <a href="https://github.com/cgeo/cgeo" target="_blank" rel="noopener">c:geo</a>
+        open-source Android geocaching app, licensed under the
+        <a href="https://www.apache.org/licenses/LICENSE-2.0" target="_blank" rel="noopener">Apache License 2.0</a>.{% endblocktrans %}
+      </p>
+
+      <p class="mb-2 fw-semibold">{% trans "Cache type icons" %}</p>
+      <p class="mb-2">
+        {% blocktrans %}Converted from Android Vector Drawable format. All cache type icons are original
+        geometric artwork created by the c:geo team &mdash; not copies of Groundspeak designs.{% endblocktrans %}
+      </p>
+
+      <p class="mb-2 fw-semibold">{% trans "Attribute icons" %}</p>
+      <p class="mb-1">
+        {% blocktrans %}Attribute icons originate from multiple sources with individual licenses.
+        The c:geo project maintains a comprehensive attribution list in
+        <code>main/project/attributes/iconlist.txt</code>.{% endblocktrans %}
+      </p>
+
+      <table class="table table-sm table-bordered mb-2">
+        <thead>
+          <tr><th>{% trans "License" %}</th><th>{% trans "Sources" %}</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>{% trans "Public Domain" %}</td>
+            <td>{% trans "USA National Park Service, The Noun Project, OpenClipart.org, and c:geo contributors (koem, rsudev, bekuno)" %}</td>
+          </tr>
+          <tr>
+            <td>{% trans "CC0" %}</td>
+            <td>{% trans "The Noun Project contributors (riyazali, United Nations OCHA, Jacob Hardbower, Ryan Oksenhorn, James Keuning, and others)" %}</td>
+          </tr>
+          <tr>
+            <td>{% trans "CC BY" %}</td>
+            <td>{% trans "Susannanova, Martina Krasnayová, Adrien Coquet, Kenneth van Alt" %}</td>
+          </tr>
+          <tr>
+            <td>{% trans "CC BY-NC-SA" %}</td>
+            <td>{% trans "rsudev, Marcela Machaca, geokrety.org" %}</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <p class="mb-2 fw-semibold">{% trans "c:geo contributors (self-made icons)" %}</p>
+      <p class="mb-0">
+        {% blocktrans %}Several attribute icons were created or substantially reworked by c:geo developers:
+        <strong>koem</strong> (available, fee, flashlight, frontyard, hike variants, hunting,
+        poisonoak, ticks, UV, and others),
+        <strong>rsudev</strong> (survey marker, offset cache, safari cache),
+        <strong>bekuno</strong> (munzee, trackables).{% endblocktrans %}
+      </p>
+    </div>
+  </div>
+
+  <div class="card mb-3">
+    <div class="card-header py-1 small fw-semibold">{% trans "Custom placeholder icons" %}</div>
+    <div class="card-body small">
+      <p class="mb-0">
+        {% blocktrans %}Placeholder icons for cache types not covered by c:geo (Benchmark, Drive-In,
+        Math/Physics, Moving, Own, Podcast) were created for GCForge as simple geometric
+        outlines.{% endblocktrans %}
+      </p>
+    </div>
+  </div>
+
+  <hr>
+
+  <h6>{% trans "Apache License 2.0 &mdash; Summary" %}</h6>
+  <div class="small text-muted">
+    <p>
+      {% blocktrans %}Licensed under the Apache License, Version 2.0. You may obtain a copy of the License at
+      <a href="https://www.apache.org/licenses/LICENSE-2.0" target="_blank" rel="noopener">
+        https://www.apache.org/licenses/LICENSE-2.0</a>.{% endblocktrans %}
+    </p>
+    <p class="mb-0">
+      {% blocktrans %}Unless required by applicable law or agreed to in writing, software distributed under
+      the License is distributed on an &ldquo;AS IS&rdquo; BASIS, WITHOUT WARRANTIES OR
+      CONDITIONS OF ANY KIND, either express or implied.{% endblocktrans %}
+    </p>
+  </div>
+</div>
+{% endblock %}

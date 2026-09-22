@@ -1,0 +1,23 @@
+{% load i18n %}
+{% comment %}
+Per-heatmap controls. Params:
+  which      — "dt" | "placed_month" | "placed_date" (used in Find Missing button)
+  min_id     — unique id for this table's minimum <select>
+  type_id    — id of this table's type <select> (used in Find Missing button)
+  section_id — id of the wrapping section div (drives client-side cell whitening)
+  hide_btn   — if set, suppress the "Find missing in DB" button
+{% endcomment %}
+<div class="d-flex align-items-center gap-2 mb-4">
+  <label class="small mb-0 text-muted">{% trans "Treat cells below" %}</label>
+  <select id="{{ min_id }}" class="form-select form-select-sm" style="width:auto"
+          onchange="gcfDashMinChange('{{ section_id }}', this.value)">
+    {% for n in minimum_choices %}<option value="{{ n }}">{{ n }}</option>{% endfor %}
+  </select>
+  <label class="small mb-0 text-muted">{% trans "as missing" %}</label>
+  {% if not hide_btn %}
+  <button type="button" class="btn btn-sm btn-outline-primary"
+          onclick="gcfDashMissing('{{ which }}', '{{ min_id }}', '{{ type_id }}')">
+    {% trans "Find missing in DB" %}
+  </button>
+  {% endif %}
+</div>

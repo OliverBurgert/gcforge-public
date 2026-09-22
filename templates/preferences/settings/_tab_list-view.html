@@ -1,0 +1,132 @@
+{% load i18n %}
+    <div class="tab-pane{% if active_tab == 'list-view' %} active show{% endif %}" id="list-view">
+
+      {# --- Sub-card: Type column display + Default sort order (one form) --- #}
+      <div class="card mb-3">
+        <div class="card-body">
+          <form method="post" action="{% url 'preferences:save_list_view' %}">
+            {% csrf_token %}
+
+            <div class="row g-4">
+
+              <div class="col-md-6">
+                <h6>{% trans "Type column display" %}</h6>
+                <div class="d-flex flex-column gap-2">
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" name="cache_type_display" id="ctd_icon"
+                           value="icon" {% if cache_type_display == "icon" %}checked{% endif %}>
+                    <label class="form-check-label" for="ctd_icon">{% trans "Icon only" %}</label>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" name="cache_type_display" id="ctd_icon_text"
+                           value="icon_text" {% if cache_type_display == "icon_text" %}checked{% endif %}>
+                    <label class="form-check-label" for="ctd_icon_text">{% trans "Icon and text" %}</label>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" name="cache_type_display" id="ctd_text"
+                           value="text" {% if cache_type_display == "text" %}checked{% endif %}>
+                    <label class="form-check-label" for="ctd_text">{% trans "Text only" %}</label>
+                  </div>
+                </div>
+                <p class="text-muted small mt-2 mb-0">
+                  {% blocktrans %}Controls how the <strong>Type</strong> column is rendered in the cache list.{% endblocktrans %}
+                </p>
+              </div>
+
+              <div class="col-md-6">
+                <h6>{% trans "Default sort order" %}</h6>
+                <div class="d-flex gap-2 align-items-center">
+                  <select name="default_sort" class="form-select form-select-sm" style="max-width:180px">
+                    <option value="gc_code" {% if default_sort == "gc_code" %}selected{% endif %}>{% trans "Code" %}</option>
+                    <option value="name" {% if default_sort == "name" %}selected{% endif %}>{% trans "Name" %}</option>
+                    <option value="cache_type" {% if default_sort == "cache_type" %}selected{% endif %}>{% trans "Type" %}</option>
+                    <option value="size" {% if default_sort == "size" %}selected{% endif %}>{% trans "Size" %}</option>
+                    <option value="difficulty" {% if default_sort == "difficulty" %}selected{% endif %}>{% trans "Difficulty" %}</option>
+                    <option value="terrain" {% if default_sort == "terrain" %}selected{% endif %}>{% trans "Terrain" %}</option>
+                    <option value="status" {% if default_sort == "status" %}selected{% endif %}>{% trans "Status" %}</option>
+                    <option value="hidden_date" {% if default_sort == "hidden_date" %}selected{% endif %}>{% trans "Hidden date" %}</option>
+                    <option value="last_found_date" {% if default_sort == "last_found_date" %}selected{% endif %}>{% trans "Last found" %}</option>
+                    <option value="found_date" {% if default_sort == "found_date" %}selected{% endif %}>{% trans "Found date" %}</option>
+                    <option value="fav_points" {% if default_sort == "fav_points" %}selected{% endif %}>{% trans "Favourites" %}</option>
+                    <option value="distance_km" {% if default_sort == "distance_km" %}selected{% endif %}>{% trans "Distance" %}</option>
+                    <option value="bearing_deg" {% if default_sort == "bearing_deg" %}selected{% endif %}>{% trans "Bearing" %}</option>
+                  </select>
+                  <select name="default_order" class="form-select form-select-sm" style="max-width:120px">
+                    <option value="asc" {% if default_order == "asc" %}selected{% endif %}>{% trans "Ascending" %}</option>
+                    <option value="desc" {% if default_order == "desc" %}selected{% endif %}>{% trans "Descending" %}</option>
+                  </select>
+                </div>
+                <p class="text-muted small mt-1 mb-0">{% trans "Sort order used when opening the cache list without explicit sort params." %}</p>
+              </div>
+
+              <div class="col-md-6">
+                <h6>{% trans "Page size" %}</h6>
+                <input type="number" name="page_size" class="form-control form-control-sm"
+                       style="max-width:120px" min="10" max="500" value="{{ page_size }}">
+                <p class="text-muted small mt-1 mb-0">{% trans "Caches per page in the list view (10–500)." %}</p>
+              </div>
+
+            </div>
+
+            <button type="submit" class="btn btn-sm btn-primary mt-3">{% trans "Save" %}</button>
+          </form>
+        </div>
+      </div>
+
+      {# --- Sub-card: Columns --- #}
+      <div class="card">
+        <div class="card-body">
+          <h6 class="mb-2">{% trans "Columns" %}</h6>
+          <p class="text-muted small mb-3">
+            {% blocktrans %}Active preset is selected per-session via the <strong>Columns</strong> dropdown in the list view.
+            Built-in presets cannot be deleted.{% endblocktrans %}
+          </p>
+
+          <table class="table table-sm mb-4">
+            <thead><tr><th>{% trans "Name" %}</th><th>{% trans "Columns" %}</th><th></th></tr></thead>
+            <tbody>
+              {% for preset in presets %}
+              <tr {% if preset.name == active_preset_name %}class="table-primary"{% endif %}>
+                <td class="small fw-semibold">
+                  {{ preset.name }}
+                  {% if preset.name == active_preset_name %}<span class="badge bg-primary ms-1">{% trans "active" %}</span>{% endif %}
+                </td>
+                <td class="small text-muted">{{ preset.columns|join:", " }}</td>
+                <td class="text-end">
+                  {% if not preset.is_builtin %}
+                  <form method="post" action="{% url 'preferences:delete_preset' %}" class="d-inline">
+                    {% csrf_token %}
+                    <input type="hidden" name="preset_id" value="{{ preset.id }}">
+                    <button type="submit" class="btn btn-sm btn-outline-danger py-0"
+                            onclick="return confirm('{% blocktrans with name=preset.name %}Delete preset \'{{ name }}\'?{% endblocktrans %}')">{% trans "Delete" %}</button>
+                  </form>
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+
+          <details class="border rounded p-3 bg-light">
+            <summary class="fw-semibold small">{% trans "Create custom preset" %}</summary>
+            <form method="post" action="{% url 'preferences:add_preset' %}" class="mt-3">
+              {% csrf_token %}
+              <div class="mb-2">
+                <input type="text" name="preset_name" class="form-control form-control-sm"
+                       placeholder="{% trans 'Preset name' %}" style="max-width:200px" required>
+              </div>
+              <div class="d-flex flex-wrap gap-3 mb-3">
+                {% for col in available_columns %}
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" name="columns"
+                         value="{{ col.key }}" id="col_{{ col.key }}">
+                  <label class="form-check-label small" for="col_{{ col.key }}">{{ col.label }}</label>
+                </div>
+                {% endfor %}
+              </div>
+              <button type="submit" class="btn btn-sm btn-success">{% trans "Create preset" %}</button>
+            </form>
+          </details>
+        </div>
+      </div>
+    </div>

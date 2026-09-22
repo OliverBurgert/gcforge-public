@@ -1,0 +1,98 @@
+{% load i18n %}
+{% comment %}
+  Profiles card — Settings → Database. One row per person sharing this install.
+  Switch posts to switch_profile(), which auto-restarts when the current
+  process supports it (can_auto_restart()) and falls back to the P1 manual
+  "please restart" message otherwise. See docs/multi-profile-plan.md §6.
+{% endcomment %}
+<div class="card mb-3">
+  <div class="card-header py-1 small fw-semibold">{% trans "Profiles" %}</div>
+  <div class="card-body py-2">
+    <p class="text-muted small mt-0 mb-2">
+      {% trans "Each profile is a completely separate database — its own found caches, tags, notes, and accounts." %}
+    </p>
+
+    <table class="table table-sm table-bordered mb-3">
+      <thead class="table-light">
+        <tr>
+          <th>{% trans "Name" %}</th>
+          <th>{% trans "Size" %}</th>
+          <th style="width:14rem"></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in profiles %}
+        <tr>
+          <td class="small font-monospace">
+            {% if p.active %}<strong>{{ p.name }}</strong>{% else %}{{ p.name }}{% endif %}
+          </td>
+          <td class="small text-muted text-end text-nowrap">{{ p.size|filesizeformat }}</td>
+          <td class="text-nowrap">
+            {% if p.active %}
+              <span class="badge bg-success">{% trans "Active" %}</span>
+            {% else %}
+              <form method="post" action="{% url 'preferences:switch_profile' %}" class="d-inline">
+                {% csrf_token %}
+                <input type="hidden" name="db_path" value="{{ p.path }}">
+                {% if can_auto_restart %}
+                <button type="submit" class="btn btn-sm btn-outline-primary py-0"
+                        onclick="return confirm('{% blocktrans with name=p.name %}Switch to {{ name }}? The app will restart automatically.{% endblocktrans %}')">
+                  {% trans "Switch" %}
+                </button>
+                {% else %}
+                <button type="submit" class="btn btn-sm btn-outline-primary py-0"
+                        onclick="return confirm('{% blocktrans with name=p.name %}Switch to {{ name }}?\n\nYou will need to restart the server after switching.{% endblocktrans %}')">
+                  {% trans "Switch" %}
+                </button>
+                {% endif %}
+              </form>
+              <button type="button" class="btn btn-sm btn-outline-secondary py-0"
+                      onclick="this.closest('tr').nextElementSibling.classList.toggle('d-none')">
+                {% trans "Rename" %}
+              </button>
+            {% endif %}
+          </td>
+        </tr>
+        {% if not p.active %}
+        <tr class="d-none">
+          <td colspan="3">
+            <form method="post" action="{% url 'preferences:rename_profile' %}" class="d-flex gap-2 align-items-center">
+              {% csrf_token %}
+              <input type="hidden" name="path" value="{{ p.path }}">
+              <input type="text" name="new_name" class="form-control form-control-sm" style="max-width:12rem"
+                     placeholder="{% trans 'New name' %}" pattern="[a-zA-Z0-9_-]+"
+                     title="{% trans 'Letters, numbers, dashes, and underscores only' %}" required>
+              <button type="submit" class="btn btn-sm btn-outline-primary py-0">{% trans "Save" %}</button>
+            </form>
+          </td>
+        </tr>
+        {% endif %}
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <hr class="my-3">
+
+    <h6 class="small fw-semibold text-muted text-uppercase mb-2" style="font-size:.7rem;letter-spacing:.05em">{% trans "Add another user" %}</h6>
+    <form method="post" action="{% url 'preferences:create_database' %}">
+      {% csrf_token %}
+      <div class="row g-2 align-items-end">
+        <div class="col-md-4">
+          <label class="form-label small mb-0">{% trans "Name" %}</label>
+          <div class="input-group input-group-sm">
+            <input type="text" name="db_name" class="form-control form-control-sm"
+                   placeholder="{% trans 'e.g. sarah' %}" pattern="[a-zA-Z0-9_-]+"
+                   title="{% trans 'Letters, numbers, dashes, and underscores only' %}" required>
+            <span class="input-group-text">.sqlite3</span>
+          </div>
+        </div>
+        <div class="col-auto">
+          <button type="submit" class="btn btn-sm btn-success">{% trans "Create profile" %}</button>
+        </div>
+      </div>
+      <p class="text-muted small mt-1 mb-0">
+        {% trans "Creates a new, empty profile for another family member. Doesn't switch you out of your own session." %}
+      </p>
+    </form>
+  </div>
+</div>

@@ -1,0 +1,140 @@
+{% load i18n %}
+    <div class="tab-pane fade{% if active_tab == 'offline' %} active show{% endif %}" id="offline" role="tabpanel" aria-labelledby="offline-tab">
+      <div class="d-flex gap-3 align-items-start">
+
+        {# Left: settings cards + areas table + add form #}
+        <div style="flex: 0 0 900px; overflow-x: auto;">
+
+          <div class="card mb-3">
+            <div class="card-header small fw-bold">{% trans "Source & Storage" %}</div>
+            <div class="card-body">
+              <form method="post" action="{% url 'preferences:save_offline_prefs' %}">
+                {% csrf_token %}
+                <div class="mb-2 row align-items-center">
+                  <label class="col-sm-3 col-form-label col-form-label-sm">{% trans "Source URL" %}</label>
+                  <div class="col-sm-9">
+                    <input type="url" name="offline_source_url" class="form-control form-control-sm"
+                           value="{{ offline_source_url }}">
+                    <div class="form-text">{% trans "PMTiles source for tile extraction (default: Protomaps planet)" %}</div>
+                  </div>
+                </div>
+                <div class="mb-2 row align-items-center">
+                  <label class="col-sm-3 col-form-label col-form-label-sm">{% trans "Storage directory" %}</label>
+                  <div class="col-sm-9">
+                    <input type="text" name="offline_maps_dir" class="form-control form-control-sm"
+                           value="{{ offline_maps_dir }}" placeholder="{% trans 'Leave blank for default' %}">
+                    <div class="form-text">{% blocktrans with p=offline_maps_disk_path %}Default: <code>{{ p }}</code>{% endblocktrans %}</div>
+                  </div>
+                </div>
+                <button type="submit" class="btn btn-sm btn-primary">{% trans "Save" %}</button>
+              </form>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header small fw-bold d-flex justify-content-between align-items-center">
+              <span>{% trans "Offline Areas" %}</span>
+              <div class="d-flex gap-2">
+                <button type="button" class="btn btn-sm btn-outline-secondary py-0"
+                        onclick="gcfOfflineResetView()">{% trans "Reset view" %}</button>
+                <button id="offline-add-btn" type="button" class="btn btn-sm btn-outline-primary py-0"
+                        onclick="gcfOfflineToggleForm()">{% trans "+ Add Area" %}</button>
+              </div>
+            </div>
+            <div class="card-body p-0">
+              {% include 'preferences/_offline_areas_table.html' %}
+            </div>
+            <div id="offline-add-section" class="card-footer bg-light" style="display:none">
+              <form method="post" action="{% url 'preferences:offline_create_area' %}"
+                    onsubmit="if(!document.getElementById('offline-min-lon').value){alert('{% trans "Draw an area on the map first." %}');return false;}">
+                {% csrf_token %}
+
+                <div class="mb-2 row">
+                  <label class="col-sm-3 col-form-label col-form-label-sm">{% trans "Name" %}</label>
+                  <div class="col-sm-9">
+                    <input type="text" name="name" class="form-control form-control-sm"
+                           placeholder="{% trans 'e.g. Munich area' %}" required>
+                  </div>
+                </div>
+
+                <div class="mb-2 row">
+                  <label class="col-sm-3 col-form-label col-form-label-sm">{% trans "Area" %}</label>
+                  <div class="col-sm-9">
+                    <button type="button" id="offline-draw-btn"
+                            class="btn btn-sm btn-outline-primary py-0"
+                            onclick="gcfOfflineStartDraw()">{% trans "Draw area" %}</button>
+                    <div class="form-text mt-1">{% blocktrans %}Click <em>Draw area</em>, then drag a rectangle on the map →{% endblocktrans %}</div>
+                  </div>
+                </div>
+
+                <input type="hidden" id="offline-min-lon" name="bbox_min_lon">
+                <input type="hidden" id="offline-min-lat" name="bbox_min_lat">
+                <input type="hidden" id="offline-max-lon" name="bbox_max_lon">
+                <input type="hidden" id="offline-max-lat" name="bbox_max_lat">
+
+                <div class="mb-2 row">
+                  <label class="col-sm-3 col-form-label col-form-label-sm">{% trans "Zoom range" %}</label>
+                  <div class="col-sm-9">
+                    <div class="d-flex align-items-center gap-2 mb-1">
+                      <button type="button" class="btn btn-outline-secondary btn-sm py-0"
+                              onclick="gcfOfflineSetZoomPreset(8,12)">{% trans "Overview (z8–12)" %}</button>
+                      <button type="button" class="btn btn-outline-secondary btn-sm py-0"
+                              onclick="gcfOfflineSetZoomPreset(8,15)">{% trans "Navigation (z8–15)" %}</button>
+                      <button type="button" class="btn btn-outline-secondary btn-sm py-0"
+                              onclick="gcfOfflineSetZoomPreset(8,16)">{% trans "Detailed (z8–16)" %}</button>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                      <label class="small mb-0">{% trans "Min z" %}</label>
+                      <input type="number" id="offline-min-zoom" name="min_zoom" value="8" min="0" max="22"
+                             class="form-control form-control-sm" style="width:70px" oninput="gcfOfflineUpdateEstimate()">
+                      <label class="small mb-0">{% trans "Max z" %}</label>
+                      <input type="number" id="offline-max-zoom" name="max_zoom" value="15" min="0" max="22"
+                             class="form-control form-control-sm" style="width:70px" oninput="gcfOfflineUpdateEstimate()">
+                    </div>
+                  </div>
+                </div>
+
+                <div class="mb-2 row">
+                  <label class="col-sm-3 col-form-label col-form-label-sm">{% trans "Estimate" %}</label>
+                  <div class="col-sm-9">
+                    <div class="form-control-plaintext form-control-sm">
+                      <span id="offline-estimate" class="fw-bold">—</span>
+                      <span id="offline-estimate-warn" class="text-danger ms-2 small" style="display:none"></span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="mb-3 row">
+                  <label class="col-sm-3 col-form-label col-form-label-sm">{% trans "Source URL" %}</label>
+                  <div class="col-sm-9">
+                    <input type="url" name="source_url" class="form-control form-control-sm"
+                           value="{{ offline_source_url }}"
+                           placeholder="https://build.protomaps.com/YYYYMMDD.pmtiles">
+                  </div>
+                </div>
+
+                <button type="submit" class="btn btn-sm btn-primary">{% trans "Start Download" %}</button>
+              </form>
+            </div>
+          </div>
+
+        </div>{# end left #}
+
+        {# Right: always-visible map — sticky so it stays in view while scrolling the left panel #}
+        <div style="flex: 1; min-width: 0; position: sticky; top: 12px;">
+          <div class="d-flex justify-content-end mb-1">
+            <div id="offline-layer-switcher" class="btn-group btn-group-sm">
+              <button onclick="gcfOfflineSetLayer('street', this)" data-layer="street"
+                      class="btn btn-outline-secondary">{% trans "Street" %}</button>
+              <button onclick="gcfOfflineSetLayer('outdoor', this)" data-layer="outdoor"
+                      class="btn btn-outline-secondary">{% trans "Outdoor" %}</button>
+              <button onclick="gcfOfflineSetLayer('aerial', this)" data-layer="aerial"
+                      class="btn btn-outline-secondary">{% trans "Aerial" %}</button>
+            </div>
+          </div>
+          <div id="offline-main-map" style="height:calc(100vh - 220px);min-height:300px;border-radius:.375rem;border:1px solid #dee2e6;"></div>
+          <p class="text-muted small mt-1 mb-0" id="offline-map-status"></p>
+        </div>
+
+      </div>
+    </div>{# end offline #}

@@ -1,0 +1,206 @@
+{% load i18n %}
+    <div class="tab-pane{% if active_tab == 'images' %} active show{% endif %}" id="images">
+      <div class="card mb-3">
+        <div class="card-header small fw-bold d-flex justify-content-between align-items-center">
+          <span>{% trans "Image Cache" %}</span>
+          <span class="text-muted small">
+            {% blocktrans with n=image_cache.total_count s=image_cache.total_bytes|filesizeformat %}Total: {{ n }} files, {{ s }}{% endblocktrans %}
+          </span>
+        </div>
+        <div class="card-body">
+          <p class="small text-muted mb-3">
+            {% blocktrans %}When a category is enabled, images encountered during sync are downloaded once
+            and served from the local cache thereafter — both during normal page renders
+            and via on-demand fallback for any image that wasn't pre-cached. Disabling a
+            category falls through to the original URL with no local copy.{% endblocktrans %}
+          </p>
+
+          <form method="post" action="{% url 'preferences:save_image_cache_prefs' %}">
+            {% csrf_token %}
+
+            <table class="table table-sm small align-middle mb-3">
+              <thead class="table-light">
+                <tr>
+                  <th>{% trans "Category" %}</th>
+                  <th class="text-center" style="width:80px">{% trans "All" %}</th>
+                  <th class="text-center" style="width:80px">{% trans "Found" %}</th>
+                  <th class="text-center" style="width:80px">{% trans "Unfound" %}</th>
+                  <th class="text-center" style="width:80px">{% trans "Mine" %}</th>
+                  <th class="text-end"   style="width:110px">{% trans "Files" %}</th>
+                  <th class="text-end"   style="width:110px">{% trans "On disk" %}</th>
+                  <th style="width:120px"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for cat in image_cache.categories %}
+                <tr>
+                  <td>{{ cat.label }}</td>
+                  {% if cat.splits %}
+                  <td></td>
+                  {% for sub, val in cat.sub_toggles %}
+                  <td class="text-center">
+                    <input class="form-check-input" type="checkbox"
+                           name="{{ cat.key }}.{{ sub }}"
+                           {% if val %}checked{% endif %}>
+                  </td>
+                  {% endfor %}
+                  {% else %}
+                  <td class="text-center">
+                    <input class="form-check-input" type="checkbox"
+                           name="{{ cat.key }}"
+                           {% if cat.value %}checked{% endif %}>
+                  </td>
+                  <td></td><td></td><td></td>
+                  {% endif %}
+                  <td class="text-end">{{ cat.count }}</td>
+                  <td class="text-end">{{ cat.bytes|filesizeformat }}</td>
+                  <td>
+                    <button type="submit" form="form-clear-{{ cat.key }}"
+                            class="btn btn-sm btn-outline-danger py-0"
+                            {% if not cat.count %}disabled{% endif %}>{% trans "Clear" %}</button>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+
+            <div class="mb-3">
+              <label class="form-label small fw-semibold">{% trans "Exclude URLs containing:" %}</label>
+              <textarea name="image_cache.exclusions" rows="4"
+                        class="form-control form-control-sm font-monospace"
+                        placeholder="{% trans 'One substring per line' %}">{{ image_cache.exclusions }}</textarea>
+              <div class="form-text">
+                {% blocktrans %}Substring match — any image URL containing one of these tokens is never cached,
+                and falls through directly to the source. Useful for blocking counter / stats /
+                tracker badges (project-gc, gsak, etc.).{% endblocktrans %}
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label small fw-semibold">{% trans "Refresh stored images after" %}</label>
+              <div class="input-group input-group-sm" style="width:14rem">
+                <input type="number" name="image_cache.refresh_days"
+                       value="{{ image_cache.refresh_days }}" min="0"
+                       class="form-control form-control-sm">
+                <span class="input-group-text">{% trans "days" %}</span>
+              </div>
+              <div class="form-text">
+                {% blocktrans %}After this many days, the next time we prefetch a stored image
+                we make a conditional <code>If-Modified-Since</code> request to
+                the source: a <code>304 Not Modified</code> keeps the file, a
+                <code>200 OK</code> overwrites it with the newer version. Set
+                to <code>0</code> to disable refresh entirely.{% endblocktrans %}
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label small fw-semibold">{% trans "Auto-delete images last seen more than" %}</label>
+              <div class="input-group input-group-sm" style="width:14rem">
+                <input type="number" name="image_cache.auto_delete_days"
+                       value="{{ image_cache.auto_delete_days }}" min="0"
+                       class="form-control form-control-sm">
+                <span class="input-group-text">{% trans "days ago" %}</span>
+              </div>
+              <div class="form-text">
+                {% blocktrans %}Runs at the start of every <em>Download missing offline images</em>
+                task — cleans up before filling. <code>last_seen_at</code> is
+                bumped every time the proxy serves an image, so values like
+                <code>90</code> drop images you haven't viewed in three months.
+                Set to <code>0</code> to disable auto-delete entirely (manual
+                'Delete old' button below still works).{% endblocktrans %}
+              </div>
+            </div>
+
+            <button type="submit" class="btn btn-sm btn-primary">{% trans "Save" %}</button>
+          </form>
+
+          {# Per-category clear forms — submitted from buttons inside the table above #}
+          {% for cat in image_cache.categories %}
+          <form method="post" action="{% url 'preferences:clear_image_cache' %}"
+                id="form-clear-{{ cat.key }}" class="d-none"
+                onsubmit="return confirm('{% blocktrans with label=cat.label|escapejs n=cat.count %}Clear all cached {{ label }} images? ({{ n }} files){% endblocktrans %}');">
+            {% csrf_token %}
+            <input type="hidden" name="category" value="{{ cat.key }}">
+          </form>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div class="card mb-3">
+        <div class="card-header small fw-bold">{% trans "Maintenance" %}</div>
+        <div class="card-body">
+          <form method="post" action="{% url 'preferences:clear_image_cache' %}"
+                class="mb-2"
+                onsubmit="return confirm('{% trans "Delete cached images not accessed in the given number of days?" %}');">
+            {% csrf_token %}
+            <div class="d-flex gap-2 align-items-end flex-wrap">
+              <div>
+                <label class="form-label small mb-1">{% trans "Manual one-shot — delete images older than" %}</label>
+                <div class="input-group input-group-sm" style="width:14rem">
+                  <input type="number" name="clear_old_days"
+                         value="{% if image_cache.auto_delete_days %}{{ image_cache.auto_delete_days }}{% else %}90{% endif %}"
+                         min="1"
+                         class="form-control form-control-sm">
+                  <span class="input-group-text">{% trans "days" %}</span>
+                </div>
+              </div>
+              <button type="submit" class="btn btn-sm btn-outline-warning">{% trans "Delete old now" %}</button>
+            </div>
+            <div class="form-text">
+              {% blocktrans %}Runs exactly once when you click. Pre-filled with your auto-delete
+              threshold above when set, otherwise <code>90</code>. Values must be
+              ≥ 1; use the setting above (with <code>0</code>) to disable
+              automatic pruning.{% endblocktrans %}
+            </div>
+          </form>
+          <hr>
+          <form method="post" action="{% url 'preferences:clear_image_cache' %}"
+                class="mb-2"
+                onsubmit="return confirm('{% trans "Delete any cached image whose source URL matches a token in the exclusion list?" %}');">
+            {% csrf_token %}
+            <input type="hidden" name="purge_excluded" value="1">
+            <button type="submit" class="btn btn-sm btn-outline-warning">{% trans "Purge URLs matching exclusion list" %}</button>
+            <span class="text-muted small ms-2">{% trans "Drops files that were cached before a pattern was added." %}</span>
+          </form>
+          <form method="post" action="{% url 'preferences:clear_image_cache' %}"
+                class="mb-2"
+                onsubmit="return confirm('{% trans "Conditional GET every image older than the configured refresh interval?" %}');">
+            {% csrf_token %}
+            <input type="hidden" name="refresh_stale" value="1">
+            <button type="submit" class="btn btn-sm btn-outline-secondary"
+                    {% if image_cache.refresh_days == 0 %}disabled{% endif %}>
+              {% trans "Refresh stale images now" %}
+            </button>
+            <span class="text-muted small ms-2">
+              {% if image_cache.refresh_days %}{% blocktrans count n=image_cache.refresh_days %}Re-checks images older than {{ n }} day.{% plural %}Re-checks images older than {{ n }} days.{% endblocktrans %}{% else %}{% trans "(Set a refresh interval above first.)" %}{% endif %}
+            </span>
+          </form>
+          <form method="post" action="{% url 'preferences:clear_image_cache' %}"
+                class="mb-2"
+                onsubmit="return confirm('{% trans "Delete any files in the image-cache directory that have no matching DB row?" %}');">
+            {% csrf_token %}
+            <input type="hidden" name="sweep_orphans" value="1">
+            <button type="submit" class="btn btn-sm btn-outline-secondary">{% trans "Sweep orphan files on disk" %}</button>
+            <span class="text-muted small ms-2">{% trans "Removes leftover files that aren't tracked in the registry." %}</span>
+          </form>
+          <form method="post" action="{% url 'preferences:clear_image_cache' %}"
+                class="mb-2"
+                onsubmit="return confirm('{% trans "Sniff every cached file and drop any whose bytes are not actually an image?" %}');">
+            {% csrf_token %}
+            <input type="hidden" name="sweep_non_images" value="1">
+            <button type="submit" class="btn btn-sm btn-outline-secondary">{% trans "Sweep non-image files" %}</button>
+            <span class="text-muted small ms-2">{% trans "Drops files whose magic bytes / Content-Type don't match an image format (e.g. parked-domain HTML served instead of a picture)." %}</span>
+          </form>
+          <hr>
+          <form method="post" action="{% url 'preferences:clear_image_cache' %}"
+                onsubmit="return confirm('{% blocktrans with n=image_cache.total_count s=image_cache.total_bytes|filesizeformat %}Permanently delete the entire image cache ({{ n }} files, {{ s }})?{% endblocktrans %}');">
+            {% csrf_token %}
+            <input type="hidden" name="category" value="__all__">
+            <button type="submit" class="btn btn-sm btn-outline-danger"
+                    {% if not image_cache.total_count %}disabled{% endif %}>
+              {% trans "Clear entire image cache" %}
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>{# end images #}

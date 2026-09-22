@@ -1,0 +1,308 @@
+{% load cache_tags icon_tags i18n l10n %}
+{% trans "Code" as col_code %}
+{% trans "Name" as col_name %}
+{% trans "Type" as col_type %}
+{% trans "Size" as col_size %}
+{% trans "D" as col_d %}
+{% trans "T" as col_t %}
+{% trans "Status" as col_status %}
+{% trans "♥" as col_fav %}
+{% trans "Owner" as col_owner %}
+{% trans "Placed by" as col_placed_by %}
+{% trans "Country" as col_country %}
+{% trans "State" as col_state %}
+{% trans "County" as col_county %}
+{% trans "Elev (ft)" as col_elev_ft %}
+{% trans "Elev (m)" as col_elev_m %}
+{% trans "Hidden" as col_hidden %}
+{% trans "Last found" as col_last_found %}
+{% trans "Found" as col_found %}
+{% trans "Updated" as col_updated %}
+{% trans "Dist (mi)" as col_dist_mi %}
+{% trans "Dist (km)" as col_dist_km %}
+{% trans "Dist" as col_dist %}
+{% trans "Bearing" as col_bearing %}
+{% trans "Adv. Type" as col_adv_type %}
+{% trans "Challenge" as col_challenge %}
+{% trans "Ans." as col_ans %}
+{% trans "Rating" as col_rating %}
+{% trans "Tags" as col_tags %}
+{% trans "Flags" as col_flags %}
+<div class="d-flex justify-content-end align-items-center mb-1"
+     data-sort="{{ f_sort }}" data-order="{{ f_order }}" data-params="{{ request.GET.urlencode }}">
+  <div class="d-flex align-items-center gap-3">
+    <small class="text-muted">{% blocktrans count n=page_obj.paginator.count %}{{ n }} cache{% plural %}{{ n }} caches{% endblocktrans %}</small>
+    {% if page_obj.paginator.num_pages > 1 %}
+    <small class="text-muted">{% blocktrans with p=page_obj.number total=page_obj.paginator.num_pages %}· Page {{ p }} of {{ total }}{% endblocktrans %}</small>
+    {% endif %}
+    <form hx-get="{% url 'geocaches:list' %}"
+          hx-target="#cache-table-container"
+          hx-trigger="change"
+          hx-push-url="true"
+          class="d-flex align-items-center gap-1">
+      <small class="text-muted">{% trans "Columns:" %}</small>
+      <input type="hidden" name="q"            value="{{ f_q }}">
+      <input type="hidden" name="type"         value="{{ f_type }}">
+      <input type="hidden" name="status"       value="{{ f_status }}">
+      <input type="hidden" name="size"         value="{{ f_size }}">
+      <input type="hidden" name="found"        value="{{ f_found }}">
+      <input type="hidden" name="tag"          value="{{ f_tag }}">
+      <input type="hidden" name="country"      value="{{ f_country }}">
+      <input type="hidden" name="state"        value="{{ fv.state }}">
+      <input type="hidden" name="county"       value="{{ fv.county }}">
+      <input type="hidden" name="ref"          value="{{ f_ref }}">
+      <input type="hidden" name="radius"       value="{{ f_radius }}">
+      <input type="hidden" name="flag"         value="{{ f_flag }}">
+      <input type="hidden" name="elevation"    value="{{ f_elevation }}">
+      <input type="hidden" name="sort"         value="{{ f_sort }}">
+      <input type="hidden" name="order"        value="{{ f_order }}">
+      <input type="hidden" name="fname"        value="{{ fv.fname }}">
+      <input type="hidden" name="fname_op"     value="{{ fv.fname_op }}">
+      <input type="hidden" name="fcode"        value="{{ fv.fcode }}">
+      <input type="hidden" name="fcode_op"     value="{{ fv.fcode_op }}">
+      <input type="hidden" name="fowner"       value="{{ fv.fowner }}">
+      <input type="hidden" name="fowner_op"    value="{{ fv.fowner_op }}">
+      <input type="hidden" name="fplacedby"    value="{{ fv.fplacedby }}">
+      <input type="hidden" name="fplacedby_op" value="{{ fv.fplacedby_op }}">
+      <input type="hidden" name="ftext"        value="{{ fv.ftext }}">
+      <input type="hidden" name="types"        value="{{ fv.types }}">
+      <input type="hidden" name="sizes"        value="{{ fv.sizes }}">
+      <input type="hidden" name="statuses"     value="{{ fv.statuses }}">
+      <input type="hidden" name="diff_min"     value="{{ fv.diff_min }}">
+      <input type="hidden" name="diff_max"     value="{{ fv.diff_max }}">
+      <input type="hidden" name="terr_min"     value="{{ fv.terr_min }}">
+      <input type="hidden" name="terr_max"     value="{{ fv.terr_max }}">
+      <input type="hidden" name="fav_min"      value="{{ fv.fav_min }}">
+      <input type="hidden" name="fav_max"      value="{{ fv.fav_max }}">
+      <input type="hidden" name="hidden_from"  value="{{ fv.hidden_from }}">
+      <input type="hidden" name="hidden_to"    value="{{ fv.hidden_to }}">
+      <input type="hidden" name="lf_from"      value="{{ fv.lf_from }}">
+      <input type="hidden" name="lf_to"        value="{{ fv.lf_to }}">
+      <input type="hidden" name="fd_from"      value="{{ fv.fd_from }}">
+      <input type="hidden" name="fd_to"        value="{{ fv.fd_to }}">
+      <input type="hidden" name="flags"        value="{{ fv.flags }}">
+      <input type="hidden" name="flags_not"   value="{{ fv.flags_not }}">
+      <input type="hidden" name="attrs_yes"    value="{{ fv.attrs_yes }}">
+      <input type="hidden" name="attrs_no"     value="{{ fv.attrs_no }}">
+      <input type="hidden" name="bearing"      value="{{ fv.bearing }}">
+      <input type="hidden" name="where_name"   value="{{ fv.where_name }}">
+      <input type="hidden" name="where_sql"    value="{{ fv.where_sql }}">
+      {# fx (canonical filter tree), f (saved filter) and geo (drawn areas) are #}
+      {# the only *applied* filters not represented by the legacy fields above; #}
+      {# without them a column-preset change drops the active filter entirely. #}
+      <input type="hidden" name="fx"           value="{{ fv.fx }}">
+      <input type="hidden" name="f"            value="{{ fv.f_name }}">
+      <input type="hidden" name="geo"          value="{{ fv.geo }}">
+      <select name="preset" class="form-select form-select-sm" style="width:110px">
+        {% for preset in column_presets %}
+          <option value="{{ preset.name }}" {% if active_preset_name == preset.name %}selected{% endif %}>
+            {{ preset.name }}{% if not preset.is_builtin %} *{% endif %}
+          </option>
+        {% endfor %}
+      </select>
+    </form>
+  </div>
+</div>
+
+<div class="table-responsive">
+<table class="table table-sm table-hover table-bordered align-middle mb-1">
+  <thead class="table-dark">
+    <tr>
+      {% if "gc_code"         in active_columns %}{% sort_header "gc_code"         col_code       f_sort f_order %}{% endif %}
+      {% if "name"            in active_columns %}{% sort_header "name"            col_name       f_sort f_order %}{% endif %}
+      {% if "cache_type"      in active_columns %}{% sort_header "cache_type"      col_type       f_sort f_order %}{% endif %}
+      {% if "size"            in active_columns %}{% sort_header "size"            col_size       f_sort f_order %}{% endif %}
+      {% if "difficulty"      in active_columns %}{% sort_header "difficulty"      col_d          f_sort f_order %}{% endif %}
+      {% if "terrain"         in active_columns %}{% sort_header "terrain"         col_t          f_sort f_order %}{% endif %}
+      {% if "status"          in active_columns %}{% sort_header "status"          col_status     f_sort f_order %}{% endif %}
+      {% if "fav_points"      in active_columns %}{% sort_header "fav_points"      col_fav        f_sort f_order %}{% endif %}
+      {% if "owner"           in active_columns %}{% sort_header "owner"           col_owner      f_sort f_order %}{% endif %}
+      {% if "placed_by"       in active_columns %}{% sort_header "placed_by"       col_placed_by  f_sort f_order %}{% endif %}
+      {% if "country"         in active_columns %}{% sort_header "country"         col_country    f_sort f_order %}{% endif %}
+      {% if "state"           in active_columns %}{% sort_header "state"           col_state      f_sort f_order %}{% endif %}
+      {% if "county"          in active_columns %}{% sort_header "county"          col_county     f_sort f_order %}{% endif %}
+      {% if "elevation"       in active_columns %}{% if distance_unit == "mi" %}{% sort_header "elevation" col_elev_ft  f_sort f_order %}{% else %}{% sort_header "elevation" col_elev_m   f_sort f_order %}{% endif %}{% endif %}
+      {% if "hidden_date"     in active_columns %}{% sort_header "hidden_date"     col_hidden     f_sort f_order %}{% endif %}
+      {% if "last_found_date" in active_columns %}{% sort_header "last_found_date" col_last_found f_sort f_order %}{% endif %}
+      {% if "found_date"      in active_columns %}{% sort_header "found_date"      col_found      f_sort f_order %}{% endif %}
+      {% if "updated_at"      in active_columns %}{% sort_header "updated_at"      col_updated    f_sort f_order %}{% endif %}
+      {% if "distance"        in active_columns %}{% if ref_point %}{% if distance_unit == "mi" %}{% sort_header "distance_km" col_dist_mi f_sort f_order %}{% else %}{% sort_header "distance_km" col_dist_km f_sort f_order %}{% endif %}{% else %}<th>{{ col_dist }}</th>{% endif %}{% endif %}
+      {% if "bearing"         in active_columns %}{% if ref_point %}{% sort_header "bearing_deg" col_bearing   f_sort f_order %}{% else %}<th>{{ col_bearing }}</th>{% endif %}{% endif %}
+      {% if "adventure_type"        in active_columns %}{% sort_header "adventure__adventure_type" col_adv_type f_sort f_order %}{% endif %}
+      {% if "challenge_type"        in active_columns %}<th>{{ col_challenge }}</th>{% endif %}
+      {% if "answer_is_correct"     in active_columns %}<th title="{% trans 'Answer verified' %}">{{ col_ans }}</th>{% endif %}
+      {% if "alc_rating"            in active_columns %}{% sort_header "adventure__ratings_average" col_rating f_sort f_order %}{% endif %}
+      {% if "alc_highly_recommended" in active_columns %}{% sort_header "adventure__is_highly_recommended" "⭐" f_sort f_order %}{% endif %}
+      {% if "tags"            in active_columns %}<th>{{ col_tags }}</th>{% endif %}
+      {% if "flags"           in active_columns %}<th>{{ col_flags }}</th>{% endif %}
+    </tr>
+  </thead>
+  <tbody>
+    {% for cache in page_obj %}
+    <tr data-code="{{ cache.display_code }}" data-lat="{{ cache.latitude|unlocalize }}" data-lon="{{ cache.longitude|unlocalize }}"
+        class="{% if cache.found or cache.completed %}table-success{% elif has_accounts and cache.is_mine %}table-mine{% elif cache.status == 'Archived' %}table-secondary{% elif cache.status == 'Disabled' %}table-warning{% endif %}">
+      {% if "gc_code" in active_columns %}
+      <td class="font-monospace text-nowrap">
+        {% if cache.external_url %}<a href="{{ cache.external_url }}" target="_blank" rel="noopener" title="{% blocktrans with src=cache.external_urls.0.0 %}Open on {{ src }}{% endblocktrans %}">{{ cache.display_code }}</a>{% else %}{{ cache.display_code }}{% endif %}
+        {% if cache.gc_code and cache.oc_code %}<span class="text-muted ms-1 small" title="{% blocktrans with c=cache.oc_code %}Also: {{ c }}{% endblocktrans %}">+</span>{% endif %}
+      </td>
+      {% endif %}
+      {% if "name" in active_columns %}<td class="desc-cell" title="{{ cache.name }}"><a href="{% url 'geocaches:detail' cache.display_code %}" class="cache-name-link">{{ cache.name }}</a></td>{% endif %}
+      {% if "cache_type" in active_columns %}
+      <td>
+        {% if cache_type_display == "text" %}
+          {{ cache.cache_type }}
+        {% elif cache_type_display == "icon" %}
+          {% cache_type_icon cache.cache_type "16" cache=cache %}{% if icon_set == "text" %}{{ cache.cache_type }}{% endif %}
+        {% else %}
+          {% cache_type_icon cache.cache_type "16" cache=cache %} {{ cache.cache_type }}
+        {% endif %}
+      </td>
+      {% endif %}
+      {% if "size"            in active_columns %}<td>{{ cache.size_override|default:cache.size }}</td>{% endif %}
+      {% if "difficulty"      in active_columns %}<td class="text-center">{{ cache.difficulty|default:"—" }}</td>{% endif %}
+      {% if "terrain"         in active_columns %}<td class="text-center">{{ cache.terrain|default:"—" }}</td>{% endif %}
+      {% if "status" in active_columns %}
+      <td>
+        {% if cache.status == "Active" %}
+          <span class="badge bg-success">{% trans "Active" %}</span>
+        {% elif cache.status == "Disabled" %}
+          <span class="badge bg-warning text-dark">{% trans "Disabled" %}</span>
+        {% elif cache.status == "Archived" %}
+          <span class="badge bg-secondary">{% trans "Archived" %}</span>
+        {% else %}
+          <span class="badge bg-light text-dark">{{ cache.status }}</span>
+        {% endif %}
+      </td>
+      {% endif %}
+      {% if "fav_points" in active_columns %}<td class="text-center">{% if cache.fav_points is not None %}{{ cache.fav_points }}{% endif %}</td>{% endif %}
+      {% if "owner"           in active_columns %}<td class="desc-cell" title="{{ cache.owner }}">{{ cache.owner }}</td>{% endif %}
+      {% if "placed_by"       in active_columns %}<td class="desc-cell-sm" title="{{ cache.placed_by }}">{{ cache.placed_by }}</td>{% endif %}
+      {% if "country"         in active_columns %}<td>{% if cache.iso_country_code %}{{ cache.iso_country_code|country_name }}{% else %}{{ cache.country }}{% endif %}</td>{% endif %}
+      {% if "state"           in active_columns %}<td class="desc-cell-sm" title="{{ cache.state }}">{{ cache.state }}</td>{% endif %}
+      {% if "county"          in active_columns %}<td class="desc-cell-sm" title="{{ cache.county }}">{{ cache.county }}</td>{% endif %}
+      {% if "elevation" in active_columns %}
+      <td class="text-end font-monospace text-nowrap">
+        {% with ele=cache.elevation_user|default:cache.elevation %}
+          {% if ele is not None %}
+            {% if distance_unit == "mi" %}{{ ele|multiply:3.28084|floatformat:0 }}{% else %}{{ ele|floatformat:0 }}{% endif %}
+          {% else %}—{% endif %}
+        {% endwith %}
+      </td>
+      {% endif %}
+      {% if "hidden_date"     in active_columns %}<td class="text-nowrap">{{ cache.hidden_date|date:"Y-m-d"|default:"—" }}</td>{% endif %}
+      {% if "last_found_date" in active_columns %}<td class="text-nowrap">{{ cache.last_found_date|date:"Y-m-d"|default:"—" }}</td>{% endif %}
+      {% if "found_date"      in active_columns %}<td class="text-nowrap">{{ cache.found_date|date:"Y-m-d"|default:"—" }}</td>{% endif %}
+      {% if "updated_at"      in active_columns %}<td class="text-nowrap">{{ cache.updated_at|date:"Y-m-d H:i"|default:"—" }}</td>{% endif %}
+      {% if "distance" in active_columns %}
+      <td class="text-end font-monospace text-nowrap">
+        {% if ref_point %}{% if cache.distance_km is not None %}{% if distance_unit == "mi" %}{{ cache.distance_km|multiply:0.621371|floatformat:1 }}{% else %}{{ cache.distance_km|floatformat:1 }}{% endif %}{% else %}—{% endif %}{% else %}—{% endif %}
+      </td>
+      {% endif %}
+      {% if "bearing" in active_columns %}
+      <td class="text-nowrap">
+        {% if ref_point %}{{ cache.bearing_deg|bearing_label }}{% else %}—{% endif %}
+      </td>
+      {% endif %}
+      {% if "adventure_type" in active_columns %}<td>{% if cache.adventure %}{{ cache.adventure.adventure_type }}{% endif %}</td>{% endif %}
+      {% if "challenge_type" in active_columns %}<td>{% if cache.al_detail %}{{ cache.al_detail.challenge_type }}{% endif %}</td>{% endif %}
+      {% if "answer_is_correct" in active_columns %}<td class="text-center">{% if cache.al_detail and cache.al_detail.answer_is_correct == True %}✓{% endif %}</td>{% endif %}
+      {% if "alc_rating" in active_columns %}<td class="text-nowrap">{% if cache.adventure and cache.adventure.ratings_average is not None %}{{ cache.adventure.ratings_average|floatformat:1 }}{% if cache.adventure.ratings_total_count %} <span class="text-muted small">({{ cache.adventure.ratings_total_count }})</span>{% endif %}{% endif %}</td>{% endif %}
+      {% if "alc_highly_recommended" in active_columns %}<td class="text-center">{% if cache.adventure %}{% if cache.adventure.is_highly_recommended %}⭐{% else %}<span style="opacity:.35">☆</span>{% endif %}{% endif %}</td>{% endif %}
+      {% if "tags" in active_columns %}
+      <td>{% for t in cache.tags.all %}<a href="#"
+            onclick="filterByTag('{{ t.name|escapejs }}'); return false;"
+            class="badge text-decoration-none me-1 {% if f_tag == t.name %}bg-primary{% else %}bg-secondary{% endif %}">{{ t.name }}</a>{% endfor %}</td>
+      {% endif %}
+      {% if "flags" in active_columns %}
+      <td class="text-nowrap">
+        {% if cache.found %}<span class="badge badge-found bg-success" title="{% trans 'Found' %}">✓</span>{% endif %}
+        {% if has_accounts and cache.is_mine %}<span class="badge bg-warning text-dark" title="{% trans 'Cache owner' %}">CO</span>{% endif %}
+        {% if cache.ftf %}<span class="badge bg-warning text-dark" title="FTF">FTF</span>{% endif %}
+        {% if cache.dnf %}<span class="badge badge-dnf bg-danger" title="DNF">DNF</span>{% endif %}
+        {% if cache.user_flag %}<span class="badge badge-flag bg-warning text-dark" title="{% trans 'Flagged' %}">🚩</span>{% endif %}
+        {% if cache.is_premium %}<span class="badge bg-info text-dark" title="{% trans 'Premium' %}">PM</span>{% endif %}
+        {% if cache.has_trackable %}<span class="badge bg-secondary" title="{% trans 'Has trackable' %}">TB</span>{% endif %}
+        {% if cache.import_locked %}<span class="badge bg-dark" title="{% trans 'Import locked' %}">🔒</span>{% endif %}
+        {% if cache.corrected_coordinates %}<span class="badge bg-success" title="{% trans 'Has corrected coordinates' %}">⊙</span>{% endif %}
+        {% if cache.map_visibility_state == "session" %}<span class="badge bg-warning text-dark" title="{% trans 'Hidden on map (this session)' %}">👁</span>{% endif %}
+        {% if cache.map_visibility_state == "always" %}<span class="badge bg-danger" title="{% trans 'Hidden on map (always)' %}">👁</span>{% endif %}
+      </td>
+      {% endif %}
+    </tr>
+    {% empty %}
+    <tr><td colspan="{{ active_columns|length }}" class="text-center text-muted py-4">{% trans "No caches match the current filters." %}</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+</div>
+
+{% if page_obj.paginator.num_pages > 1 %}
+{% with last=page_obj.paginator.num_pages lo=page_obj.number|add:"-3" hi=page_obj.number|add:"3" %}
+<nav>
+  <ul class="pagination pagination-sm">
+
+    {% if page_obj.has_previous %}
+      <li class="page-item">
+        <a class="page-link"
+           hx-get="{% url 'geocaches:list' %}{% querystring page=page_obj.previous_page_number %}"
+           hx-target="#cache-table-container"
+           href="{% querystring page=page_obj.previous_page_number %}">«</a>
+      </li>
+    {% endif %}
+
+    {# Always show page 1 when it falls outside the window #}
+    {% if lo > 1 %}
+      <li class="page-item">
+        <a class="page-link"
+           hx-get="{% url 'geocaches:list' %}{% querystring page=1 %}"
+           hx-target="#cache-table-container"
+           href="{% querystring page=1 %}">1</a>
+      </li>
+      {% if lo > 2 %}
+        <li class="page-item disabled"><span class="page-link">…</span></li>
+      {% endif %}
+    {% endif %}
+
+    {# Window: current page ±3 #}
+    {% for num in page_obj.paginator.page_range %}
+      {% if num >= lo and num <= hi %}
+        {% if page_obj.number == num %}
+          <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+        {% else %}
+          <li class="page-item">
+            <a class="page-link"
+               hx-get="{% url 'geocaches:list' %}{% querystring page=num %}"
+               hx-target="#cache-table-container"
+               href="{% querystring page=num %}">{{ num }}</a>
+          </li>
+        {% endif %}
+      {% endif %}
+    {% endfor %}
+
+    {# Always show last page when it falls outside the window #}
+    {% if hi < last %}
+      {% if hi < last|add:"-1" %}
+        <li class="page-item disabled"><span class="page-link">…</span></li>
+      {% endif %}
+      <li class="page-item">
+        <a class="page-link"
+           hx-get="{% url 'geocaches:list' %}{% querystring page=last %}"
+           hx-target="#cache-table-container"
+           href="{% querystring page=last %}">{{ last }}</a>
+      </li>
+    {% endif %}
+
+    {% if page_obj.has_next %}
+      <li class="page-item">
+        <a class="page-link"
+           hx-get="{% url 'geocaches:list' %}{% querystring page=page_obj.next_page_number %}"
+           hx-target="#cache-table-container"
+           href="{% querystring page=page_obj.next_page_number %}">»</a>
+      </li>
+    {% endif %}
+
+  </ul>
+</nav>
+{% endwith %}
+{% endif %}

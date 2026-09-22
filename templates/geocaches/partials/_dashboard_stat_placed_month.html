@@ -1,0 +1,36 @@
+{% load i18n %}
+<h6 class="mt-4 d-flex align-items-center gap-2 flex-wrap">
+  {% trans "Finds by placed month" %}
+  <select id="dash-type-pm" name="stat_type" class="form-select form-select-sm fw-normal" style="width:auto"
+          hx-get="{% url 'geocaches:dashboard_stat_table' %}?table=placed_month"
+          hx-target="#dash-table-pm" hx-swap="innerHTML">
+    {% for value, label in type_options %}
+    <option value="{{ value }}" {% if value == tables.selected_type %}selected{% endif %}>{{ label }}</option>
+    {% endfor %}
+  </select>
+</h6>
+{% if tables.placed_month.rows %}
+<table class="gcf-stat-table mb-4">
+  <tr>
+    <th></th>
+    {% for m in tables.placed_month.months %}<th>{{ m }}</th>{% endfor %}
+    <th class="gcf-total">Σ</th>
+  </tr>
+  {% for row in tables.placed_month.rows %}
+  <tr>
+    <td class="gcf-rowhead">{{ row.year }}</td>
+    {% for cell in row.cells %}
+      {% if cell.count %}
+      <td class="gcf-cell" data-count="{{ cell.count }}" data-color="{{ cell.color }}" style="background:{{ cell.color }}">{{ cell.count }}</td>
+      {% else %}
+      <td class="gcf-cell-empty">·</td>
+      {% endif %}
+    {% endfor %}
+    <td class="gcf-total">{{ row.total }}</td>
+  </tr>
+  {% endfor %}
+</table>
+{% else %}
+<p class="text-muted small">{% trans "No data." %}</p>
+{% endif %}
+{% include "geocaches/partials/_dashboard_missing_btn.html" with which="placed_month" min_id="min-pm" type_id="dash-type-pm" section_id="dash-table-pm" %}

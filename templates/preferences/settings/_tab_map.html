@@ -1,0 +1,135 @@
+{% load i18n %}
+    <div class="tab-pane{% if active_tab == 'map' %} active show{% endif %}" id="map">
+
+      {% if map_display_msg %}
+      <div class="alert alert-{% if map_display_msg.ok %}success{% else %}danger{% endif %} small py-2 mb-3 d-flex align-items-center justify-content-between">
+        <span>{{ map_display_msg.text }}</span>
+        <button type="button" class="btn-close ms-2 flex-shrink-0" data-bs-dismiss="alert"></button>
+      </div>
+      {% endif %}
+
+      <div class="card">
+        <div class="card-body">
+          <form method="post" action="{% url 'preferences:save_map_display' %}">
+            {% csrf_token %}
+
+            <div class="row g-4">
+
+              <div class="col-md-6">
+                <h6>{% trans "Default map style" %}</h6>
+                <select name="map_style" class="form-select form-select-sm" style="max-width:200px">
+                  <option value="street"  {% if map_style == "street" %}selected{% endif %}>OpenFreeMap (Street)</option>
+                  <option value="outdoor" {% if map_style == "outdoor" %}selected{% endif %}>OpenTopoMap (Topo)</option>
+                  <option value="aerial"  {% if map_style == "aerial" %}selected{% endif %}>Esri Aerial</option>
+                </select>
+                <p class="text-muted small mt-1 mb-0">
+                  {% trans "Map style used when opening the map for the first time. Switching styles during a session is remembered until the browser is closed." %}
+                </p>
+              </div>
+
+              <div class="col-md-6">
+                <h6>{% trans "Default boundary overlays" %}</h6>
+                <div class="d-flex flex-column gap-1">
+                  <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="map_boundary_country" value="1"
+                           id="pref_boundary_country" {% if map_boundary_country %}checked{% endif %}>
+                    <label class="form-check-label" for="pref_boundary_country">{% trans "Countries" %}</label>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="map_boundary_state" value="1"
+                           id="pref_boundary_state" {% if map_boundary_state %}checked{% endif %}>
+                    <label class="form-check-label" for="pref_boundary_state">{% trans "States" %}</label>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="map_boundary_county" value="1"
+                           id="pref_boundary_county" {% if map_boundary_county %}checked{% endif %}>
+                    <label class="form-check-label" for="pref_boundary_county">{% trans "Counties" %}</label>
+                  </div>
+                </div>
+                <p class="text-muted small mt-1 mb-0">
+                  {% trans "Boundary layers shown when the map loads. Only available with the Street style." %}
+                </p>
+              </div>
+
+              <div class="col-md-6">
+                <h6>{% trans "Radius filter circle" %}</h6>
+                <div class="d-flex flex-column gap-1">
+                  <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="map_radius_circle" value="1"
+                           id="pref_radius_circle" {% if map_radius_circle %}checked{% endif %}>
+                    <label class="form-check-label" for="pref_radius_circle">{% trans "Show radius circle on map" %}</label>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="map_radius_shade" value="1"
+                           id="pref_radius_shade" {% if map_radius_shade %}checked{% endif %}>
+                    <label class="form-check-label" for="pref_radius_shade">{% trans "Shade circle interior" %}</label>
+                  </div>
+                </div>
+                <p class="text-muted small mt-1 mb-0">
+                  {% trans "When a radius filter is active, show a dashed circle on the map indicating the filter area." %}
+                </p>
+              </div>
+
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label fw-bold">{% trans "Display layers" %}</label>
+              <div class="ms-2">
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" name="map_layer_sep_circles" value="1"
+                         id="pref_layer_sep_circles" {% if map_layer_sep_circles %}checked{% endif %}>
+                  <label class="form-check-label" for="pref_layer_sep_circles">{% if distance_unit == "mi" %}{% trans "0.1 mi separation circles" %}{% else %}{% trans "161m separation circles" %}{% endif %}</label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" name="map_layer_alc_circles" value="1"
+                         id="pref_layer_alc_circles" {% if map_layer_alc_circles %}checked{% endif %}>
+                  <label class="form-check-label" for="pref_layer_alc_circles">{% trans "ALC geofencing circles" %}</label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" name="map_layer_corrected" value="1"
+                         id="pref_layer_corrected" {% if map_layer_corrected %}checked{% endif %}>
+                  <label class="form-check-label" for="pref_layer_corrected">{% trans "Show original WP if corrected coords exist" %}</label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" name="map_layer_waypoints" value="1"
+                         id="pref_layer_waypoints" {% if map_layer_waypoints %}checked{% endif %}>
+                  <label class="form-check-label" for="pref_layer_waypoints">{% trans "Child waypoints" %}</label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" name="map_layer_lod" value="1"
+                         id="pref_layer_lod" {% if map_layer_lod %}checked{% endif %}>
+                  <label class="form-check-label" for="pref_layer_lod">{% trans "LOD sliders" %}</label>
+                </div>
+              </div>
+              <p class="text-muted small mt-1 mb-0">
+                {% trans "Default on/off state for display layers when the map is first opened." %}
+              </p>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label fw-bold">{% trans "Text labels" %}</label>
+              <div class="ms-2">
+                <div class="form-check">
+                  <input class="form-check-input" type="radio" name="map_layer_labels" value=""
+                         id="pref_labels_off" {% if not map_layer_labels %}checked{% endif %}>
+                  <label class="form-check-label" for="pref_labels_off">{% trans "Off" %}</label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input" type="radio" name="map_layer_labels" value="name"
+                         id="pref_labels_name" {% if map_layer_labels == "name" %}checked{% endif %}>
+                  <label class="form-check-label" for="pref_labels_name">{% trans "Cache name" %}</label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input" type="radio" name="map_layer_labels" value="code"
+                         id="pref_labels_code" {% if map_layer_labels == "code" %}checked{% endif %}>
+                  <label class="form-check-label" for="pref_labels_code">{% trans "Cache code" %}</label>
+                </div>
+              </div>
+            </div>
+
+            <hr>
+            <button type="submit" class="btn btn-sm btn-primary">{% trans "Save" %}</button>
+          </form>
+        </div>
+      </div>
+    </div>

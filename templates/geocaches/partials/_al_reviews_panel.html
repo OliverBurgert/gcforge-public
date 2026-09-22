@@ -1,0 +1,69 @@
+{% load i18n %}
+{% if cache.al_code and cache.adventure and cache.adventure.adventure_guid and not cache.al_detail %}
+<div class="card mb-2" id="al-reviews">
+  <div class="card-header py-1 d-flex justify-content-between align-items-center flex-wrap gap-1">
+    <span class="small fw-semibold">
+      {% trans "Reviews" %}
+      <span class="text-muted fw-normal">{% blocktrans with shown=al_reviews|length total=al_review_api_total %}({{ shown }} of {{ total }} stored){% endblocktrans %}</span>
+    </span>
+    <div class="d-flex gap-1">
+      {% if al_review_has_more %}
+      <form method="post" action="{% url 'geocaches:al_fetch_logs' cache.display_code %}" class="d-inline">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="fetch_more">
+        <input type="hidden" name="skip" value="{{ al_review_skip }}">
+        <button type="submit" class="btn btn-outline-primary py-0 px-1" style="font-size:.75rem">{% trans "Fetch 20 more" %}</button>
+      </form>
+      {% else %}
+      <form method="post" action="{% url 'geocaches:al_fetch_logs' cache.display_code %}" class="d-inline">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="fetch_recent">
+        <button type="submit" class="btn btn-outline-primary py-0 px-1" style="font-size:.75rem">{% if al_reviews %}{% trans "Refresh" %}{% else %}{% trans "Fetch reviews" %}{% endif %}</button>
+      </form>
+      {% endif %}
+    </div>
+  </div>
+  {% if al_reviews %}
+  <div class="card-body py-0">
+    <div class="list-group list-group-flush">
+      {% for r in al_reviews %}
+      <div class="list-group-item px-0 py-2">
+        <div class="d-flex justify-content-between align-items-baseline">
+          <div class="d-flex align-items-center gap-2">
+            {% if r.player_avatar_url %}
+            <img src="{{ r.player_avatar_url }}" alt="" width="24" height="24" class="rounded-circle flex-shrink-0" style="object-fit:cover">
+            {% endif %}
+            <span class="fw-semibold small">{{ r.player_username }}</span>
+            {% if r.player_public_guid and r.player_public_guid == cache.adventure.owner_public_guid %}<span class="badge bg-secondary" style="font-size:.65em">{% trans "owner" %}</span>{% endif %}
+            {% if r.recommended %}<span class="badge bg-warning text-dark" style="font-size:.65em">{% trans "recommended" %}</span>{% endif %}
+          </div>
+          <span class="text-muted small">
+            {% if r.adventure_completed_utc %}{{ r.adventure_completed_utc|date:"Y-m-d" }}{% else %}{{ r.created_utc|date:"Y-m-d" }}{% endif %}
+          </span>
+        </div>
+        {% if r.rating %}
+        <div class="mt-1">
+          {% for i in "12345" %}{% if forloop.counter <= r.rating %}&#9733;{% else %}&#9734;{% endif %}{% endfor %}
+          <span class="text-muted small ms-1">({{ r.rating }}/5)</span>
+          {% if r.player_geocache_find_count %}<span class="text-muted small ms-2">{% blocktrans with finds=r.player_geocache_find_count als=r.player_completed_adventure_count %}{{ finds }} finds &bull; {{ als }} ALs{% endblocktrans %}</span>{% endif %}
+        </div>
+        {% endif %}
+        {% if r.review_text %}
+        <div class="text-muted small mt-1">{{ r.review_text }}</div>
+        {% endif %}
+        {% if r.images %}
+        <div class="d-flex flex-wrap gap-1 mt-1">
+          {% for img in r.images %}
+          <a href="{{ img.url }}" target="_blank" rel="noopener">
+            <img src="{{ img.url }}" alt="" height="60" style="object-fit:cover;border-radius:3px">
+          </a>
+          {% endfor %}
+        </div>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endif %}

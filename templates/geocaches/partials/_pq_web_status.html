@@ -1,0 +1,34 @@
+{% load i18n %}
+{% if task.state == "completed" %}
+<div class="alert alert-success py-2 small">
+  {% with r=task.result %}
+  {% blocktrans with created=r.created updated=r.updated locked=r.locked %}Done — {{ created }} created, {{ updated }} updated, {{ locked }} locked.{% endblocktrans %}
+  {% endwith %}
+  <a href="{% url 'geocaches:list' %}">{% trans "View caches →" %}</a>
+</div>
+{% if task.result.errors %}
+<ul class="small text-danger mb-0">
+  {% for err in task.result.errors %}<li>{{ err }}</li>{% endfor %}
+</ul>
+{% endif %}
+
+{% elif task.state == "failed" %}
+<div class="alert alert-danger py-2 small">
+  {% blocktrans with err=task.error|default:"unknown error" %}Download failed: {{ err }}{% endblocktrans %}
+</div>
+
+{% elif task.state == "cancelled" %}
+<div class="alert alert-secondary py-2 small">{% trans "Download cancelled." %}</div>
+
+{% else %}
+<div id="pq-web-status-poll"
+     hx-get="{% url 'geocaches:pq_web_status' task_id %}"
+     hx-trigger="load, every 2s"
+     hx-swap="outerHTML"
+     class="d-flex align-items-center gap-2">
+  <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
+  <small class="text-primary">
+    {% if task %}{{ task.completed }}/{{ task.total }} ({{ task.progress_pct }}%){% if task.phase %} — {{ task.phase }}{% endif %}{% else %}{% trans "Starting…" %}{% endif %}
+  </small>
+</div>
+{% endif %}
